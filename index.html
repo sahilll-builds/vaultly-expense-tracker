@@ -234,8 +234,11 @@
           <!-- =================================================================
                VIEW 1: OVERVIEW (HERO, 3D BALANCE, ESSENTIALS, RECENT)
                ================================================================= -->
+          <!-- =================================================================
+               VIEW 1: OVERVIEW (OBSIDIAN CHROME SPATIAL DASHBOARD)
+               ================================================================= -->
           <div class="view-panel active" id="viewOverview" data-view="overview">
-            <!-- Hero Focus Banner -->
+            <!-- 1. Minimal Dashboard Header -->
             <section class="cosmic-hero" aria-label="Dashboard Overview">
               <div class="hero-content">
                 <div class="hero-badge-wrap">
@@ -259,10 +262,9 @@
               </div>
             </section>
 
-            <!-- Financial Summary Cards Row -->
-            <section class="summary-grid" aria-label="Financial Summary Cards">
-              <!-- Total Net Balance Card with Interactive 3D Balance Orb -->
-              <article class="glass-card balance-card">
+            <!-- 2. Large Total Balance Hero with Liquid Chrome Visual -->
+            <section class="hero-balance-section" aria-label="Hero Net Balance">
+              <article class="glass-card balance-card hero-balance-card" id="heroBalanceCard">
                 <div class="border-beam-wrap" aria-hidden="true"><div class="border-beam"></div></div>
                 <div class="card-spotlight" aria-hidden="true"></div>
                 <div class="card-refraction-shine" aria-hidden="true"></div>
@@ -277,22 +279,40 @@
                 </div>
 
                 <div class="spatial-balance-stage">
-                  <div>
+                  <div class="balance-typography-wrap">
                     <div class="balance-display-wrap">
                       <span class="balance-number" id="totalBalance">₹0.00</span>
                     </div>
-                    <div class="card-foot">
+                    <div class="card-foot" style="margin-top: 14px;">
                       <span class="glass-tag" id="balanceStatusBadge">
                         <span class="tag-dot" aria-hidden="true"></span>
                         <span>Net position (Income − Expenses)</span>
                       </span>
                     </div>
+                    <div class="hero-quick-actions" style="margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
+                      <button type="button" class="btn-liquid-primary btn-sm" id="heroAddTxBtn">
+                        <i data-lucide="plus-circle" class="btn-icon-xs"></i>
+                        <span>Add Entry</span>
+                      </button>
+                      <button type="button" class="btn-ghost-glass btn-sm" data-view-target="ai">
+                        <i data-lucide="sparkles" class="btn-icon-xs"></i>
+                        <span>Ask AI</span>
+                      </button>
+                    </div>
                   </div>
-                  <!-- Interactive 3D-inspired Balance Orb -->
-                  <div class="balance-visual-orb" id="spatialBalanceOrb" title="Interactive Spatial Balance Sphere" aria-hidden="true"></div>
+
+                  <!-- 3D Liquid Chrome Sculpture Stage -->
+                  <div class="chrome-sculpture-wrap" id="chromeSculptureWrap" title="Interactive 3D Liquid Chrome Sculpture" aria-hidden="true">
+                    <canvas id="chromeSculptureCanvas" class="chrome-canvas" width="220" height="220"></canvas>
+                    <div class="balance-visual-orb" id="spatialBalanceOrb"></div>
+                    <div class="chrome-ambient-glow"></div>
+                  </div>
                 </div>
               </article>
+            </section>
 
+            <!-- 3. Three Clean Financial Summary Cards -->
+            <section class="summary-metrics-row" aria-label="Financial Summary Cards">
               <!-- Total Income Card -->
               <article class="glass-card metric-card income-card">
                 <div class="card-spotlight" aria-hidden="true"></div>
@@ -334,10 +354,31 @@
                   <span class="metric-footnote" id="expenseCountLabel">0 expenses logged</span>
                 </div>
               </article>
+
+              <!-- Net Savings Rate Card -->
+              <article class="glass-card metric-card savings-card" id="overviewSavingsCard">
+                <div class="card-spotlight" aria-hidden="true"></div>
+                <div class="card-refraction-shine" aria-hidden="true"></div>
+                <div class="card-head">
+                  <div class="card-label-group">
+                    <span class="card-label">Net Savings Rate</span>
+                    <span class="card-caption">Retained percentage of income</span>
+                  </div>
+                  <div class="card-icon-halo halo-mono" aria-hidden="true">
+                    <i data-lucide="trending-up"></i>
+                  </div>
+                </div>
+                <div class="metric-display-wrap">
+                  <span class="metric-number" id="overviewSavingsRate" style="color: #F5F5F5;">0%</span>
+                </div>
+                <div class="card-foot">
+                  <span class="metric-footnote" id="overviewSavingsCaption">0.00 net saved</span>
+                </div>
+              </article>
             </section>
 
-            <!-- Safe to Spend & Insights Row -->
-            <section class="insights-grid" id="safe-spend-section" aria-label="Smart Financial Insights">
+            <!-- 4. Safe to Spend & Financial Goal Previews -->
+            <section class="overview-twin-grid" id="safe-spend-section" aria-label="Smart Financial Insights">
               <!-- Safe to Spend Card -->
               <article class="glass-card safe-spend-card">
                 <div class="border-beam-wrap" aria-hidden="true"><div class="border-beam"></div></div>
@@ -373,20 +414,89 @@
                 </div>
               </article>
 
-              <!-- Live Spending Insights Card -->
-              <article class="glass-card insights-card">
+              <!-- Financial Goal Preview Card -->
+              <article class="glass-card goal-preview-card" id="overviewGoalCard">
+                <div class="card-spotlight" aria-hidden="true"></div>
+                <div class="card-refraction-shine" aria-hidden="true"></div>
+                <div class="panel-header">
+                  <div class="panel-title-wrap">
+                    <div class="panel-icon-sparkle" aria-hidden="true"><i data-lucide="target"></i></div>
+                    <div>
+                      <h2 class="panel-title">Active Savings Goal</h2>
+                      <p class="panel-subtitle">Primary financial milestone tracker</p>
+                    </div>
+                  </div>
+                  <button type="button" class="btn-ghost-glass btn-sm" data-view-target="goals">
+                    <span>View All</span>
+                    <i data-lucide="arrow-right" class="btn-icon-xs"></i>
+                  </button>
+                </div>
+
+                <div class="goal-preview-body" id="overviewGoalContent">
+                  <div class="overview-goal-info">
+                    <h3 class="overview-goal-name" id="overviewGoalTitle">No goal set</h3>
+                    <span class="overview-goal-stat" id="overviewGoalTarget">₹0.00 / ₹0.00</span>
+                  </div>
+                  <div class="goal-progress-track" style="margin-top: 14px;">
+                    <div class="goal-progress-fill" id="overviewGoalBar" style="width: 0%;"></div>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px;">
+                    <span class="glass-tag" id="overviewGoalPercent">0% Funded</span>
+                    <button type="button" class="btn-liquid-secondary btn-sm" id="overviewGoalContribBtn" data-action="contribute-featured-goal">
+                      <i data-lucide="plus" class="btn-icon-xs"></i>
+                      <span>Add Funds</span>
+                    </button>
+                  </div>
+                </div>
+              </article>
+            </section>
+
+            <!-- 5. Spatial Spending Visualizer & Compact AI Insight Panel -->
+            <section class="overview-twin-grid" aria-label="Visual Analytics and AI Analysis">
+              <!-- Spending Distribution Card -->
+              <article class="glass-card spending-dist-card" id="overviewSpendingCard">
+                <div class="card-spotlight" aria-hidden="true"></div>
+                <div class="card-refraction-shine" aria-hidden="true"></div>
+                <div class="panel-header">
+                  <div class="panel-title-wrap">
+                    <div class="panel-icon-box" aria-hidden="true"><i data-lucide="pie-chart"></i></div>
+                    <div>
+                      <h2 class="panel-title">Spending Breakdown</h2>
+                      <p class="panel-subtitle">Top category allocations from your records</p>
+                    </div>
+                  </div>
+                  <button type="button" class="btn-ghost-glass btn-sm" data-view-target="analytics">
+                    <span>Analytics</span>
+                    <i data-lucide="arrow-right" class="btn-icon-xs"></i>
+                  </button>
+                </div>
+
+                <div class="spending-dist-body" id="overviewSpendingBars">
+                  <div class="cosmic-empty-card" style="padding: 24px 16px;">
+                    <p class="cosmic-empty-text">Log expenses to view category allocations.</p>
+                  </div>
+                </div>
+              </article>
+
+              <!-- Spatial AI Insight Panel -->
+              <article class="glass-card spatial-ai-insight-card" id="overviewAiInsightCard">
+                <div class="border-beam-wrap" aria-hidden="true"><div class="border-beam"></div></div>
                 <div class="card-spotlight" aria-hidden="true"></div>
                 <div class="card-refraction-shine" aria-hidden="true"></div>
                 <div class="panel-header">
                   <div class="panel-title-wrap">
                     <div class="panel-icon-sparkle" aria-hidden="true"><i data-lucide="sparkles"></i></div>
                     <div>
-                      <h2 class="panel-title">Spending Insights</h2>
-                      <p class="panel-subtitle">Key trends calculated strictly from your actual financial records</p>
+                      <h2 class="panel-title">Vaultly AI Insights</h2>
+                      <p class="panel-subtitle">Grounded intelligence based on your verified numbers</p>
                     </div>
                   </div>
-                  <span class="glass-tag tag-violet">Live Analysis</span>
+                  <button type="button" class="btn-ghost-glass btn-sm" data-view-target="ai">
+                    <span>Chat AI</span>
+                    <i data-lucide="arrow-right" class="btn-icon-xs"></i>
+                  </button>
                 </div>
+
                 <div class="insights-body" id="insightsBody">
                   <div class="insight-row">
                     <div class="insight-icon-box" aria-hidden="true"><i data-lucide="pie-chart"></i></div>
@@ -410,45 +520,42 @@
                     </div>
                   </div>
                 </div>
+
+                <div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center;">
+                  <span class="panel-subtitle" style="font-size: 0.76rem;">Ask natural language questions about your cashflow</span>
+                  <button type="button" class="btn-liquid-secondary btn-sm" data-view-target="ai">
+                    <i data-lucide="sparkles" class="btn-icon-xs"></i>
+                    <span>Ask Vaultly AI</span>
+                  </button>
+                </div>
               </article>
             </section>
 
-            <!-- Quick Overview Jump Bar to Other Views -->
-            <section class="section-container" aria-label="Feature Quick Cards">
-              <div class="summary-grid">
-                <article class="glass-card" style="cursor: pointer;" data-view-target="budgets">
-                  <div class="card-head">
-                    <span class="card-label">Monthly Budgets</span>
-                    <i data-lucide="wallet" class="nav-icon" aria-hidden="true"></i>
+            <!-- 6. Recent Transactions Preview -->
+            <section class="section-container" aria-label="Recent Transactions">
+              <article class="glass-card overview-recent-card" id="overviewRecentTxCard">
+                <div class="card-spotlight" aria-hidden="true"></div>
+                <div class="card-refraction-shine" aria-hidden="true"></div>
+                <div class="panel-header">
+                  <div class="panel-title-wrap">
+                    <div class="panel-icon-box" aria-hidden="true"><i data-lucide="receipt"></i></div>
+                    <div>
+                      <h2 class="panel-title">Recent Transactions</h2>
+                      <p class="panel-subtitle">Your latest recorded financial entries</p>
+                    </div>
                   </div>
-                  <p class="panel-subtitle" style="margin-top: 8px;">Track limits across categories and avoid overspending.</p>
-                  <div class="card-foot" style="margin-top: 14px;">
-                    <span class="glass-tag">View Budgets &rarr;</span>
-                  </div>
-                </article>
+                  <button type="button" class="btn-ghost-glass btn-sm" data-view-target="transactions">
+                    <span>View All Transactions</span>
+                    <i data-lucide="arrow-right" class="btn-icon-xs"></i>
+                  </button>
+                </div>
 
-                <article class="glass-card" style="cursor: pointer;" data-view-target="goals">
-                  <div class="card-head">
-                    <span class="card-label">Savings Goals</span>
-                    <i data-lucide="target" class="nav-icon" aria-hidden="true"></i>
+                <div class="overview-recent-list" id="overviewRecentTxList">
+                  <div class="cosmic-empty-card" style="padding: 24px 16px;">
+                    <p class="cosmic-empty-text">No transactions recorded yet.</p>
                   </div>
-                  <p class="panel-subtitle" style="margin-top: 8px;">Plan for emergency funds, travel, or hardware purchases.</p>
-                  <div class="card-foot" style="margin-top: 14px;">
-                    <span class="glass-tag">View Goals &rarr;</span>
-                  </div>
-                </article>
-
-                <article class="glass-card" style="cursor: pointer;" data-view-target="ai">
-                  <div class="card-head">
-                    <span class="card-label">Vaultly AI</span>
-                    <i data-lucide="sparkles" class="nav-icon" aria-hidden="true"></i>
-                  </div>
-                  <p class="panel-subtitle" style="margin-top: 8px;">Ask natural language questions about your actual cashflow.</p>
-                  <div class="card-foot" style="margin-top: 14px;">
-                    <span class="glass-tag">Open Assistant &rarr;</span>
-                  </div>
-                </article>
-              </div>
+                </div>
+              </article>
             </section>
           </div>
 

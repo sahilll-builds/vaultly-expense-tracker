@@ -396,14 +396,33 @@ const DOM = {
   sidebarAddTxBtn: document.getElementById('sidebarAddTxBtn'),
   txViewAddBtn: document.getElementById('txViewAddBtn'),
 
-  // Balance & 3D Orb
+  // Balance & 3D Liquid Chrome Sculpture
   totalBalance: document.getElementById('totalBalance'),
   balanceStatusBadge: document.getElementById('balanceStatusBadge'),
   spatialBalanceOrb: document.getElementById('spatialBalanceOrb'),
+  chromeSculptureWrap: document.getElementById('chromeSculptureWrap'),
+  chromeSculptureCanvas: document.getElementById('chromeSculptureCanvas'),
+  heroAddTxBtn: document.getElementById('heroAddTxBtn'),
   totalIncome: document.getElementById('totalIncome'),
   incomeCountLabel: document.getElementById('incomeCountLabel'),
   totalExpense: document.getElementById('totalExpense'),
   expenseCountLabel: document.getElementById('expenseCountLabel'),
+
+  // Overview 7-Section Elements
+  overviewSavingsCard: document.getElementById('overviewSavingsCard'),
+  overviewSavingsRate: document.getElementById('overviewSavingsRate'),
+  overviewSavingsCaption: document.getElementById('overviewSavingsCaption'),
+  overviewGoalCard: document.getElementById('overviewGoalCard'),
+  overviewGoalTitle: document.getElementById('overviewGoalTitle'),
+  overviewGoalTarget: document.getElementById('overviewGoalTarget'),
+  overviewGoalCurrent: document.getElementById('overviewGoalCurrent'),
+  overviewGoalPercent: document.getElementById('overviewGoalPercent'),
+  overviewGoalProgressBar: document.getElementById('overviewGoalProgressBar'),
+  overviewGoalContribBtn: document.getElementById('overviewGoalContribBtn'),
+  overviewSpendingCard: document.getElementById('overviewSpendingCard'),
+  overviewSpendingBars: document.getElementById('overviewSpendingBars'),
+  overviewRecentTxCard: document.getElementById('overviewRecentTxCard'),
+  overviewRecentTxList: document.getElementById('overviewRecentTxList'),
 
   // Safe to Spend Elements
   safeDailySpend: document.getElementById('safeDailySpend'),
@@ -609,8 +628,272 @@ function closeMobileDrawer() {
 }
 
 /* ==============================================================================
-   8. SPATIAL 3D BALANCE VISUALIZER & MOUSE TILT
+   8. OBSIDIAN CHROME 3D SPATIAL VISUALIZER & SPRING-LERPED CARD TILT
    ============================================================================== */
+
+let chromeSculptureLoopId = null;
+
+function initLiquidChromeSculpture() {
+  const canvas = DOM.chromeSculptureCanvas;
+  const orbFallback = DOM.spatialBalanceOrb;
+  const wrap = DOM.chromeSculptureWrap;
+  const card = document.getElementById('heroBalanceCard');
+
+  if (!canvas || !wrap) return;
+
+  const prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (prefersReduced) {
+    if (canvas) canvas.style.display = 'none';
+    if (orbFallback) orbFallback.style.display = 'block';
+    return;
+  }
+
+  // Attempt WebGL context creation with high performance preference
+  const gl = canvas.getContext('webgl', { alpha: true, antialias: true, powerPreference: 'high-performance' }) ||
+             canvas.getContext('experimental-webgl', { alpha: true, antialias: true });
+
+  if (!gl) {
+    console.info('[Vaultly] WebGL unavailable, falling back to CSS spatial orb.');
+    if (canvas) canvas.style.display = 'none';
+    if (orbFallback) orbFallback.style.display = 'block';
+    return;
+  }
+
+  // Reveal WebGL canvas and hide fallback orb
+  if (orbFallback) orbFallback.style.display = 'none';
+  canvas.style.display = 'block';
+
+  // Raymarched Molten Liquid Chrome Shader
+  const vsSource = `
+    attribute vec2 position;
+    void main() {
+      gl_Position = vec4(position, 0.0, 1.0);
+    }
+  `;
+
+  const fsSource = `
+    precision highp float;
+    uniform vec2 u_resolution;
+    uniform float u_time;
+    uniform vec2 u_mouse;
+
+    float smin(float a, float b, float k) {
+      float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
+      return mix(b, a, h) - k * h * (1.0 - h);
+    }
+
+    mat2 rot(float a) {
+      float s = sin(a), c = cos(a);
+      return mat2(c, -s, s, c);
+    }
+
+    float map(vec3 p) {
+      // Idle harmonic float oscillation
+      p.y += sin(u_time * 1.1) * 0.07;
+      p.x += cos(u_time * 0.85) * 0.05;
+
+      // Mouse rotation with smooth inertia
+      p.yz *= rot(u_mouse.y * 0.55);
+      p.xz *= rot(u_mouse.x * 0.75 + u_time * 0.22);
+
+      // Liquid surface ripple harmonics
+      float ripple = sin(p.x * 2.8 + u_time * 1.4) * cos(p.y * 2.8 + u_time * 1.2) * sin(p.z * 2.8 + u_time * 1.3) * 0.11;
+
+      // Central molten chrome sphere
+      float d1 = length(p) - 0.76 + ripple;
+
+      // Orbital satellite droplet 1
+      vec3 p2 = p - vec3(sin(u_time * 0.75) * 0.58, cos(u_time * 1.05) * 0.48, sin(u_time * 0.55) * 0.38);
+      float d2 = length(p2) - 0.27;
+
+      // Orbital satellite droplet 2
+      vec3 p3 = p - vec3(-cos(u_time * 0.95) * 0.48, sin(u_time * 0.65) * 0.48, -cos(u_time * 0.85) * 0.38);
+      float d3 = length(p3) - 0.22;
+
+      return smin(smin(d1, d2, 0.32), d3, 0.28);
+    }
+
+    vec3 calcNormal(vec3 p) {
+      const vec2 e = vec2(0.002, 0.0);
+      return normalize(vec3(
+        map(p + e.xyy) - map(p - e.xyy),
+        map(p + e.yxy) - map(p - e.yxy),
+        map(p + e.yyx) - map(p - e.yyx)
+      ));
+    }
+
+    void main() {
+      vec2 uv = (gl_FragCoord.xy - 0.5 * u_resolution.xy) / min(u_resolution.y, u_resolution.x);
+      vec3 ro = vec3(0.0, 0.0, 2.5);
+      vec3 rd = normalize(vec3(uv, -1.35));
+
+      float t = 0.0;
+      for (int i = 0; i < 56; i++) {
+        vec3 p = ro + rd * t;
+        float d = map(p);
+        if (d < 0.001 || t > 5.0) break;
+        t += d;
+      }
+
+      if (t < 5.0) {
+        vec3 p = ro + rd * t;
+        vec3 n = calcNormal(p);
+        vec3 ref = reflect(rd, n);
+
+        // Three-point studio lighting for obsidian chrome
+        vec3 light1 = normalize(vec3(0.6, 0.8, 0.9));
+        vec3 light2 = normalize(vec3(-0.7, -0.4, 0.6));
+        vec3 light3 = normalize(vec3(0.1, 1.0, -0.4));
+
+        float diff1 = max(dot(n, light1), 0.0);
+        float spec1 = pow(max(dot(ref, light1), 0.0), 36.0);
+        float spec2 = pow(max(dot(ref, light2), 0.0), 64.0);
+        float spec3 = pow(max(dot(ref, light3), 0.0), 18.0);
+
+        // Fresnel edge sheen
+        float fresnel = pow(1.0 - max(dot(-rd, n), 0.0), 3.0);
+
+        // Obsidian body + chrome specular highlights
+        vec3 chrome = vec3(0.06, 0.07, 0.09) * (diff1 * 0.45 + 0.12);
+        chrome += vec3(0.75, 0.78, 0.82) * (spec1 * 0.85 + spec3 * 0.35);
+        chrome += vec3(1.0, 1.0, 1.0) * (spec2 * 1.3);
+        chrome += vec3(0.88, 0.90, 0.96) * (fresnel * 0.7);
+
+        gl_FragColor = vec4(chrome, 1.0);
+      } else {
+        gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
+      }
+    }
+  `;
+
+  function compileShader(type, src) {
+    const s = gl.createShader(type);
+    gl.shaderSource(s, src);
+    gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+      console.warn('Shader compile failed:', gl.getShaderInfoLog(s));
+      gl.deleteShader(s);
+      return null;
+    }
+    return s;
+  }
+
+  const vs = compileShader(gl.VERTEX_SHADER, vsSource);
+  const fs = compileShader(gl.FRAGMENT_SHADER, fsSource);
+  if (!vs || !fs) {
+    if (canvas) canvas.style.display = 'none';
+    if (orbFallback) orbFallback.style.display = 'block';
+    return;
+  }
+
+  const program = gl.createProgram();
+  gl.attachShader(program, vs);
+  gl.attachShader(program, fs);
+  gl.linkProgram(program);
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    console.warn('Program link failed:', gl.getProgramInfoLog(program));
+    if (canvas) canvas.style.display = 'none';
+    if (orbFallback) orbFallback.style.display = 'block';
+    return;
+  }
+
+  gl.useProgram(program);
+
+  // Screen quad buffer
+  const positionLocation = gl.getAttribLocation(program, 'position');
+  const buffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+    -1, -1,
+     1, -1,
+    -1,  1,
+    -1,  1,
+     1, -1,
+     1,  1,
+  ]), gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(positionLocation);
+  gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
+
+  const uResolution = gl.getUniformLocation(program, 'u_resolution');
+  const uTime = gl.getUniformLocation(program, 'u_time');
+  const uMouse = gl.getUniformLocation(program, 'u_mouse');
+
+  // Mouse tracking with smooth spring lerping
+  let targetMouseX = 0;
+  let targetMouseY = 0;
+  let currentMouseX = 0;
+  let currentMouseY = 0;
+
+  if (card) {
+    card.addEventListener('mousemove', (e) => {
+      const rect = card.getBoundingClientRect();
+      const nx = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      const ny = -(((e.clientY - rect.top) / rect.height) * 2 - 1);
+      targetMouseX = nx;
+      targetMouseY = ny;
+    });
+
+    card.addEventListener('mouseleave', () => {
+      targetMouseX = 0;
+      targetMouseY = 0;
+    });
+  }
+
+  function resizeCanvas() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    const displayWidth = canvas.clientWidth || 220;
+    const displayHeight = canvas.clientHeight || 220;
+    const w = Math.floor(displayWidth * dpr);
+    const h = Math.floor(displayHeight * dpr);
+
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width = w;
+      canvas.height = h;
+      gl.viewport(0, 0, w, h);
+    }
+  }
+
+  let startTime = performance.now();
+  let isVisible = true;
+
+  // IntersectionObserver to pause loop when scrolled off-screen
+  if ('IntersectionObserver' in window) {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        isVisible = entry.isIntersecting;
+        if (isVisible && !chromeSculptureLoopId) {
+          render();
+        }
+      });
+    }, { threshold: 0.1 });
+    observer.observe(canvas);
+  }
+
+  function render() {
+    if (!isVisible) {
+      chromeSculptureLoopId = null;
+      return;
+    }
+
+    resizeCanvas();
+
+    const elapsed = (performance.now() - startTime) * 0.001;
+
+    // Smooth lerp mouse coordinates
+    currentMouseX += (targetMouseX - currentMouseX) * 0.08;
+    currentMouseY += (targetMouseY - currentMouseY) * 0.08;
+
+    gl.uniform2f(uResolution, canvas.width, canvas.height);
+    gl.uniform1f(uTime, elapsed);
+    gl.uniform2f(uMouse, currentMouseX, currentMouseY);
+
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+    chromeSculptureLoopId = requestAnimationFrame(render);
+  }
+
+  render();
+}
 
 function initSpatialBalanceOrb() {
   const orb = DOM.spatialBalanceOrb;
@@ -634,10 +917,10 @@ function initSpatialBalanceOrb() {
         const deltaX = (cardX - centerX) / centerX;
         const deltaY = (cardY - centerY) / centerY;
 
-        const rotateX = deltaY * -16;
-        const rotateY = deltaX * 18;
+        const rotateX = deltaY * -12;
+        const rotateY = deltaX * 14;
 
-        orb.style.transform = `perspective(500px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.06)`;
+        orb.style.transform = `perspective(500px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.04)`;
         ticking = false;
       });
       ticking = true;
@@ -649,22 +932,66 @@ function initSpatialBalanceOrb() {
   });
 }
 
-function init3DCardTilt() {
+function initSpatialCardTilt() {
   const prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (prefersReduced || window.innerWidth < 1024) return;
 
-  const cards = document.querySelectorAll('.glass-card:not(.ai-chat-card)');
+  const targetSelector = '.hero-balance-card, .metric-card, .safe-spend-card, .insights-card, .goal-preview-card, .spending-dist-card, .overview-recent-card, .budget-card, .goal-card';
+  const cards = document.querySelectorAll(targetSelector);
+
   cards.forEach(card => {
+    let currentX = 0;
+    let currentY = 0;
+    let targetX = 0;
+    let targetY = 0;
+    let isHovered = false;
+    let animId = null;
+
+    const maxTilt = 3.0; // Restrained 2-4 degrees as specified
+
+    const updateTilt = () => {
+      currentX += (targetX - currentX) * 0.12;
+      currentY += (targetY - currentY) * 0.12;
+
+      card.style.transform = `perspective(1000px) rotateX(${currentX.toFixed(2)}deg) rotateY(${currentY.toFixed(2)}deg) translateY(${isHovered ? -2 : 0}px)`;
+
+      if (!isHovered && Math.abs(currentX) < 0.05 && Math.abs(currentY) < 0.05) {
+        card.style.transform = '';
+        cancelAnimationFrame(animId);
+        animId = null;
+        return;
+      }
+
+      animId = requestAnimationFrame(updateTilt);
+    };
+
+    card.addEventListener('mouseenter', () => {
+      isHovered = true;
+      if (!animId) animId = requestAnimationFrame(updateTilt);
+    });
+
     card.addEventListener('mousemove', e => {
       const rect = card.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
+
+      const normX = (x / rect.width) * 2 - 1;
+      const normY = (y / rect.height) * 2 - 1;
+
+      targetX = -normY * maxTilt;
+      targetY = normX * maxTilt;
 
       const spotlight = card.querySelector('.card-spotlight');
       if (spotlight) {
         spotlight.style.setProperty('--spotlight-x', `${x}px`);
         spotlight.style.setProperty('--spotlight-y', `${y}px`);
       }
+    });
+
+    card.addEventListener('mouseleave', () => {
+      isHovered = false;
+      targetX = 0;
+      targetY = 0;
     });
   });
 }
@@ -1112,6 +1439,15 @@ function handleContributionFormSubmit(e) {
   renderOverview();
 }
 
+function openGoalContributionModal(goalId) {
+  const goal = state.goals.find(g => g.id === goalId);
+  if (!goal) return;
+  DOM.contribGoalId.value = goal.id;
+  DOM.contribGoalSubtitle.textContent = `Contribute to ${goal.title}`;
+  DOM.contribAmountInput.value = '';
+  openModal(DOM.contributionModal);
+}
+
 /* ==============================================================================
    12. AI SPENDING ANALYZER & FORECASTING
    ============================================================================== */
@@ -1469,6 +1805,94 @@ function renderOverview() {
     DOM.insightSavingsRate.textContent = `${retention}% of your earned income is currently retained as net savings.`;
   } else {
     DOM.insightSavingsRate.textContent = 'Log income and expenses to view retention rate.';
+  }
+
+  // Update Net Savings Rate Card
+  const savingsRate = totals.totalIncome > 0 ? Math.max(0, Math.round((totals.netBalance / totals.totalIncome) * 100)) : 0;
+  if (DOM.overviewSavingsRate) DOM.overviewSavingsRate.textContent = `${savingsRate}%`;
+  if (DOM.overviewSavingsCaption) {
+    if (totals.totalIncome === 0) {
+      DOM.overviewSavingsCaption.textContent = 'Log income to calculate retention';
+    } else if (savingsRate >= 30) {
+      DOM.overviewSavingsCaption.textContent = 'Healthy wealth accumulation';
+    } else if (savingsRate > 0) {
+      DOM.overviewSavingsCaption.textContent = 'Positive surplus retention';
+    } else {
+      DOM.overviewSavingsCaption.textContent = 'Expenses currently exceed income';
+    }
+  }
+
+  // Update Goal Preview Card
+  const activeGoal = state.goals.find(g => (g.currentAmount || 0) < g.targetAmount) || state.goals[0];
+  if (activeGoal) {
+    if (DOM.overviewGoalTitle) DOM.overviewGoalTitle.textContent = activeGoal.title;
+    if (DOM.overviewGoalTarget) DOM.overviewGoalTarget.textContent = formatCurrency(activeGoal.targetAmount);
+    if (DOM.overviewGoalCurrent) DOM.overviewGoalCurrent.textContent = formatCurrency(activeGoal.currentAmount || 0);
+    const goalPct = Math.min(100, Math.round(((activeGoal.currentAmount || 0) / activeGoal.targetAmount) * 100));
+    if (DOM.overviewGoalPercent) DOM.overviewGoalPercent.textContent = `${goalPct}%`;
+    if (DOM.overviewGoalProgressBar) DOM.overviewGoalProgressBar.style.width = `${goalPct}%`;
+    if (DOM.overviewGoalContribBtn) {
+      DOM.overviewGoalContribBtn.onclick = () => openGoalContributionModal(activeGoal.id);
+      DOM.overviewGoalContribBtn.hidden = false;
+    }
+  } else {
+    if (DOM.overviewGoalTitle) DOM.overviewGoalTitle.textContent = 'No Active Goals';
+    if (DOM.overviewGoalTarget) DOM.overviewGoalTarget.textContent = '₹0.00';
+    if (DOM.overviewGoalCurrent) DOM.overviewGoalCurrent.textContent = '₹0.00';
+    if (DOM.overviewGoalPercent) DOM.overviewGoalPercent.textContent = '0%';
+    if (DOM.overviewGoalProgressBar) DOM.overviewGoalProgressBar.style.width = '0%';
+    if (DOM.overviewGoalContribBtn) DOM.overviewGoalContribBtn.hidden = true;
+  }
+
+  // Update Spending Distribution Bars
+  if (DOM.overviewSpendingBars) {
+    if (breakdown.length === 0) {
+      DOM.overviewSpendingBars.innerHTML = `<div class="chart-empty-state" style="padding: 1.5rem 0; text-align: center;"><p class="text-muted" style="font-size: 0.85rem;">No expense records yet to display breakdown.</p></div>`;
+    } else {
+      const top4 = breakdown.slice(0, 4);
+      DOM.overviewSpendingBars.innerHTML = top4.map(b => `
+        <div class="spending-bar-row">
+          <div class="spending-bar-header">
+            <span class="spending-bar-cat">${escapeHTML(b.category)}</span>
+            <span class="spending-bar-amount">${formatCurrency(b.total)} <span style="color: var(--text-muted); font-size: 0.78rem;">(${b.percentage}%)</span></span>
+          </div>
+          <div class="spending-bar-track" role="progressbar" aria-valuenow="${b.percentage}" aria-valuemin="0" aria-valuemax="100" aria-label="${escapeHTML(b.category)} spending percentage">
+            <div class="spending-bar-fill" style="width: ${b.percentage}%"></div>
+          </div>
+        </div>
+      `).join('');
+    }
+  }
+
+  // Update Recent Transactions in Overview
+  if (DOM.overviewRecentTxList) {
+    const recentTx = [...state.transactions].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 3);
+    if (recentTx.length === 0) {
+      DOM.overviewRecentTxList.innerHTML = `<div style="text-align: center; padding: 1.5rem 0; color: var(--text-muted); font-size: 0.85rem;">No recent transactions logged yet.</div>`;
+    } else {
+      DOM.overviewRecentTxList.innerHTML = recentTx.map(tx => {
+        const isIncome = tx.type === 'income';
+        return `
+          <div class="overview-recent-row">
+            <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
+              <div class="tx-icon-halo ${isIncome ? 'halo-income' : 'halo-expense'}" style="width: 32px; height: 32px; min-width: 32px;" aria-hidden="true">
+                <i data-lucide="${isIncome ? 'arrow-down-left' : 'arrow-up-right'}" style="width: 16px; height: 16px;"></i>
+              </div>
+              <div style="min-width: 0;">
+                <div style="font-size: 0.9rem; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(tx.title)}</div>
+                <div style="font-size: 0.76rem; color: var(--text-muted);">${escapeHTML(tx.category)} • ${formatDate(tx.date)}</div>
+              </div>
+            </div>
+            <div class="${isIncome ? 'text-income' : 'text-expense'}" style="font-family: var(--font-heading); font-size: 0.92rem; font-weight: 700; white-space: nowrap; margin-left: 12px;">
+              ${isIncome ? '+' : '−'}${formatCurrency(tx.amount)}
+            </div>
+          </div>
+        `;
+      }).join('');
+      if (window.lucide && typeof window.lucide.createIcons === 'function') {
+        window.lucide.createIcons({ root: DOM.overviewRecentTxList });
+      }
+    }
   }
 
   // Update Badges
@@ -1854,7 +2278,7 @@ function setupEventListeners() {
   if (DOM.mobileDrawerBackdrop) DOM.mobileDrawerBackdrop.addEventListener('click', closeMobileDrawer);
 
   // Add Transaction triggers
-  const addButtons = [DOM.openAddModalBtn, DOM.sidebarAddTxBtn, DOM.txViewAddBtn, document.getElementById('emptyAddFirstBtn'), DOM.chartAddExpenseBtn];
+  const addButtons = [DOM.openAddModalBtn, DOM.sidebarAddTxBtn, DOM.txViewAddBtn, document.getElementById('emptyAddFirstBtn'), DOM.chartAddExpenseBtn, DOM.heroAddTxBtn];
   addButtons.forEach(btn => {
     if (btn) btn.addEventListener('click', openAddTransactionModal);
   });
@@ -2133,8 +2557,9 @@ function initApp() {
   // Setup options and views
   updateFormCategoryOptions('expense');
   setupEventListeners();
+  initLiquidChromeSculpture();
   initSpatialBalanceOrb();
-  init3DCardTilt();
+  initSpatialCardTilt();
 
   // Initial render
   renderDashboard();
