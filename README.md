@@ -1,7 +1,8 @@
 # Vaultly — Personal Finance & Expense Tracker
 
 > **Tagline:** Your money. Your control.  
-> 🌐 **Live Demo:** [https://sahilll-builds.github.io/vaultly-expense-tracker/](https://sahilll-builds.github.io/vaultly-expense-tracker/)  
+> ⚡ **Vercel Production:** [https://vaultly-expense-tracker-one.vercel.app](https://vaultly-expense-tracker-one.vercel.app)  
+> 🌐 **GitHub Pages Demo:** [https://sahilll-builds.github.io/vaultly-expense-tracker/](https://sahilll-builds.github.io/vaultly-expense-tracker/)  
 > 📦 **GitHub Repository:** [https://github.com/sahilll-builds/vaultly-expense-tracker](https://github.com/sahilll-builds/vaultly-expense-tracker)
 
 Vaultly is a modern, responsive client-side personal finance and expense-tracking web application built with pure HTML5, CSS3, and Vanilla JavaScript. Designed around a luxury **Minimalist Monochrome Glassmorphism** aesthetic, Vaultly empowers users to gain crystal-clear insights into their cash flow, track income and expenses, monitor spending distribution across categories, compute daily safe-to-spend allowances, and maintain full privacy by keeping all financial data locally in their own browser.

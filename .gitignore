@@ -31,3 +31,5 @@ tmp/
 temp/
 .tmp-chrome-profile/
 screenshot*.png
+
+.vercel
