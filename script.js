@@ -35,28 +35,28 @@ const STORAGE_KEY = 'vaultly_transactions';
 
 /**
  * Expense Categories with metadata for icons and chart color mapping.
- * Colors adhere to the Midnight Emerald aesthetic.
+ * Colors adhere to the Cosmic Glassmorphism aesthetic.
  */
 const EXPENSE_CATEGORIES = [
-  { id: 'Food & Dining', name: 'Food & Dining', icon: 'utensils', color: '#8FE3B0' },
-  { id: 'Transport', name: 'Transport', icon: 'car', color: '#38BDF8' },
-  { id: 'Shopping', name: 'Shopping', icon: 'shopping-bag', color: '#FBBF24' },
+  { id: 'Food & Dining', name: 'Food & Dining', icon: 'utensils', color: '#70F0B2' },
+  { id: 'Transport', name: 'Transport', icon: 'car', color: '#53DDE0' },
+  { id: 'Shopping', name: 'Shopping', icon: 'shopping-bag', color: '#FFD38A' },
   { id: 'Bills & Utilities', name: 'Bills & Utilities', icon: 'zap', color: '#A78BFA' },
-  { id: 'Education', name: 'Education', icon: 'book-open', color: '#34D399' },
-  { id: 'Entertainment', name: 'Entertainment', icon: 'film', color: '#FB7185' },
-  { id: 'Health', name: 'Health', icon: 'heart-pulse', color: '#2DD4BF' },
-  { id: 'Other', name: 'Other', icon: 'more-horizontal', color: '#9CA3AF' }
+  { id: 'Education', name: 'Education', icon: 'book-open', color: '#6C8CFF' },
+  { id: 'Entertainment', name: 'Entertainment', icon: 'film', color: '#FF8F9C' },
+  { id: 'Health', name: 'Health', icon: 'heart-pulse', color: '#38BDF8' },
+  { id: 'Other', name: 'Other', icon: 'more-horizontal', color: '#91A7FF' }
 ];
 
 /**
  * Income Categories for categorizing inward cash flow.
  */
 const INCOME_CATEGORIES = [
-  { id: 'Salary', name: 'Salary', icon: 'briefcase', color: '#8FE3B0' },
-  { id: 'Freelance', name: 'Freelance', icon: 'laptop', color: '#38BDF8' },
-  { id: 'Allowance', name: 'Allowance', icon: 'gift', color: '#FBBF24' },
-  { id: 'Business', name: 'Business', icon: 'trending-up', color: '#34D399' },
-  { id: 'Other', name: 'Other', icon: 'dollar-sign', color: '#9CA3AF' }
+  { id: 'Salary', name: 'Salary', icon: 'briefcase', color: '#70F0B2' },
+  { id: 'Freelance', name: 'Freelance', icon: 'laptop', color: '#53DDE0' },
+  { id: 'Allowance', name: 'Allowance', icon: 'gift', color: '#FFD38A' },
+  { id: 'Business', name: 'Business', icon: 'trending-up', color: '#6C8CFF' },
+  { id: 'Other', name: 'Other', icon: 'dollar-sign', color: '#A78BFA' }
 ];
 
 /**
@@ -331,9 +331,12 @@ function getTodayDateString() {
 
 const DOM = {
   // Navigation & Drawer
-  sidebar: document.getElementById('sidebar'),
   mobileMenuToggle: document.getElementById('mobileMenuToggle'),
-  sidebarBackdrop: document.getElementById('sidebarBackdrop'),
+  mobileDrawer: document.getElementById('mobileDrawer'),
+  mobileDrawerBackdrop: document.getElementById('mobileDrawerBackdrop'),
+  closeDrawerBtn: document.getElementById('closeDrawerBtn'),
+  desktopNavItems: document.querySelectorAll('.nav-links-desktop .nav-item'),
+  drawerLinks: document.querySelectorAll('.drawer-links .drawer-link'),
   dynamicGreeting: document.getElementById('dynamicGreeting'),
   currentDateDisplay: document.getElementById('currentDateDisplay'),
 
@@ -344,6 +347,18 @@ const DOM = {
   incomeCountLabel: document.getElementById('incomeCountLabel'),
   totalExpense: document.getElementById('totalExpense'),
   expenseCountLabel: document.getElementById('expenseCountLabel'),
+
+  // Safe to Spend Elements
+  safeDailySpend: document.getElementById('safeDailySpend'),
+  monthDaysTag: document.getElementById('monthDaysTag'),
+  monthProgressBar: document.getElementById('monthProgressBar'),
+  monthProgressPercent: document.getElementById('monthProgressPercent'),
+  safeSpendDesc: document.getElementById('safeSpendDesc'),
+
+  // Spending Insights Elements
+  insightTopCategory: document.getElementById('insightTopCategory'),
+  insightLargestTx: document.getElementById('insightLargestTx'),
+  insightSavingsRate: document.getElementById('insightSavingsRate'),
 
   // Chart & Breakdown
   chartContainer: document.getElementById('chartContainer'),
@@ -394,9 +409,11 @@ const DOM = {
   // Toast Container
   toastContainer: document.getElementById('toastContainer'),
 
-  // Demo & Reset Buttons
+  // Demo & Reset Buttons (Desktop Header, Mobile Drawer & Empty States)
   loadDemoBtn: document.getElementById('loadDemoBtn'),
   clearAllBtn: document.getElementById('clearAllBtn'),
+  loadDemoBtnMobile: document.getElementById('loadDemoBtnMobile'),
+  clearAllBtnMobile: document.getElementById('clearAllBtnMobile'),
   emptyAddFirstBtn: document.getElementById('emptyAddFirstBtn'),
   emptyLoadDemoBtn: document.getElementById('emptyLoadDemoBtn')
 };
@@ -411,6 +428,8 @@ const DOM = {
  */
 function renderDashboard() {
   renderSummaryCards();
+  renderSafeToSpend();
+  renderSpendingInsights();
   renderTransactionsList();
   renderChart();
   renderCategoryBreakdown();
@@ -433,14 +452,119 @@ function renderSummaryCards() {
 
   // Update Net Position indicator badge text
   if (totals.netBalance > 0) {
-    DOM.balanceStatusBadge.innerHTML = `<span class="badge-dot" style="background-color: var(--accent-primary);" aria-hidden="true"></span><span>Positive Net Savings</span>`;
+    DOM.balanceStatusBadge.innerHTML = `<span class="tag-dot" style="background-color: var(--accent-emerald);" aria-hidden="true"></span><span>Positive Net Savings</span>`;
   } else if (totals.netBalance < 0) {
-    DOM.balanceStatusBadge.innerHTML = `<span class="badge-dot" style="background-color: var(--color-expense);" aria-hidden="true"></span><span>Expenses exceed income</span>`;
+    DOM.balanceStatusBadge.innerHTML = `<span class="tag-dot" style="background-color: var(--color-expense);" aria-hidden="true"></span><span>Expenses exceed income</span>`;
   } else {
-    DOM.balanceStatusBadge.innerHTML = `<span class="badge-dot" aria-hidden="true"></span><span>Net position (Income − Expenses)</span>`;
+    DOM.balanceStatusBadge.innerHTML = `<span class="tag-dot" aria-hidden="true"></span><span>Net position (Income − Expenses)</span>`;
   }
 
   DOM.chartExpenseTotalBadge.textContent = `${formatCurrency(totals.totalExpenses)} Total`;
+}
+
+/**
+ * Computes and renders Safe to Spend panel metrics.
+ * Daily allowance = netBalance > 0 ? (netBalance / daysRemaining) : 0
+ * Month progression = (currentDay / totalDaysInMonth) * 100
+ */
+function renderSafeToSpend() {
+  const totals = calculateTotals(state.transactions);
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth();
+  const currentDay = now.getDate();
+  const totalDaysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+  const daysRemaining = Math.max(1, totalDaysInMonth - currentDay + 1);
+
+  // Month progress percentage
+  const progressPercent = Math.min(100, Math.max(0, Math.round((currentDay / totalDaysInMonth) * 100)));
+
+  if (DOM.monthDaysTag) {
+    DOM.monthDaysTag.textContent = `${daysRemaining} ${daysRemaining === 1 ? 'Day' : 'Days'} Left`;
+  }
+
+  if (DOM.monthProgressPercent) {
+    DOM.monthProgressPercent.textContent = `${progressPercent}%`;
+  }
+
+  if (DOM.monthProgressBar) {
+    DOM.monthProgressBar.style.width = `${progressPercent}%`;
+    const progressTrack = DOM.monthProgressBar.parentElement;
+    if (progressTrack) {
+      progressTrack.setAttribute('aria-valuenow', String(progressPercent));
+    }
+  }
+
+  // Safe daily spend calculation
+  if (DOM.safeDailySpend) {
+    if (totals.netBalance > 0) {
+      const dailyAllowance = totals.netBalance / daysRemaining;
+      DOM.safeDailySpend.textContent = formatCurrency(dailyAllowance);
+      if (DOM.safeSpendDesc) {
+        DOM.safeSpendDesc.textContent = `Based on your net balance of ${formatCurrency(totals.netBalance)} distributed across the remaining ${daysRemaining} days of this month.`;
+      }
+    } else if (totals.netBalance < 0) {
+      DOM.safeDailySpend.textContent = '₹0.00';
+      if (DOM.safeSpendDesc) {
+        DOM.safeSpendDesc.textContent = 'Your total expenses currently exceed income. Pause non-essential spending to restore positive reserves.';
+      }
+    } else {
+      DOM.safeDailySpend.textContent = '₹0.00';
+      if (DOM.safeSpendDesc) {
+        DOM.safeSpendDesc.textContent = 'Add income or adjust expenses to calculate your personalized daily spending allowance.';
+      }
+    }
+  }
+}
+
+/**
+ * Renders live Spending Insights derived strictly from real transaction records.
+ * - Top Spending Category
+ * - Largest Single Transaction
+ * - Savings Retention Rate ( (netBalance / totalIncome) * 100 )
+ */
+function renderSpendingInsights() {
+  const totals = calculateTotals(state.transactions);
+  const breakdown = calculateCategoryBreakdown(state.transactions);
+
+  // 1. Largest Spending Category
+  if (DOM.insightTopCategory) {
+    if (breakdown.length > 0) {
+      const top = breakdown[0];
+      DOM.insightTopCategory.innerHTML = `<strong>${top.category}</strong> accounts for <strong>${top.percentage}%</strong> (${formatCurrency(top.total)}) of your spending.`;
+    } else {
+      DOM.insightTopCategory.textContent = 'No expense records yet to analyze.';
+    }
+  }
+
+  // 2. Largest Single Transaction
+  if (DOM.insightLargestTx) {
+    if (state.transactions.length > 0) {
+      const largest = [...state.transactions].sort((a, b) => b.amount - a.amount)[0];
+      const typeLabel = largest.type === 'income' ? 'Income' : 'Expense';
+      DOM.insightLargestTx.innerHTML = `<strong>${largest.title}</strong> at <strong>${formatCurrency(largest.amount)}</strong> (${typeLabel}).`;
+    } else {
+      DOM.insightLargestTx.textContent = 'No transactions recorded yet.';
+    }
+  }
+
+  // 3. Savings Retention Rate
+  if (DOM.insightSavingsRate) {
+    if (totals.totalIncome > 0) {
+      const retentionRate = Math.round((totals.netBalance / totals.totalIncome) * 100);
+      if (retentionRate > 0) {
+        DOM.insightSavingsRate.innerHTML = `You are retaining <strong>${retentionRate}%</strong> of your total earned income as net savings.`;
+      } else if (retentionRate === 0) {
+        DOM.insightSavingsRate.innerHTML = `Break-even: <strong>0%</strong> net retention (income matches expenses).`;
+      } else {
+        DOM.insightSavingsRate.innerHTML = `Deficit: Spending is <strong>${Math.abs(retentionRate)}%</strong> higher than recorded income.`;
+      }
+    } else if (totals.totalExpenses > 0) {
+      DOM.insightSavingsRate.textContent = 'Only expenses recorded. Log income to track your savings retention rate.';
+    } else {
+      DOM.insightSavingsRate.textContent = 'Log income and expenses to view retention rate.';
+    }
+  }
 }
 
 /**
@@ -796,28 +920,28 @@ function renderChart() {
         datasets: [{
           data: dataValues,
           backgroundColor: backgroundColors,
-          borderColor: '#171B19', // Matches card background for seamless cutout borders
+          borderColor: 'rgba(16, 21, 42, 0.95)', // Matches deep-space glass surface for seamless cutout
           borderWidth: 2,
-          hoverOffset: 6
+          hoverOffset: 8
         }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        cutout: '70%',
+        cutout: '72%',
         plugins: {
           legend: {
-            display: false // We use our bespoke accessible category breakdown chips
+            display: false // Bespoke accessible category breakdown chips provide the legend
           },
           tooltip: {
-            backgroundColor: '#1D2420',
-            titleColor: '#F5F7F5',
-            bodyColor: '#8FE3B0',
-            borderColor: '#29312C',
+            backgroundColor: 'rgba(16, 21, 42, 0.95)',
+            titleColor: '#F5F7FF',
+            bodyColor: '#70F0B2',
+            borderColor: 'rgba(255, 255, 255, 0.16)',
             borderWidth: 1,
             padding: 12,
             boxPadding: 6,
-            cornerRadius: 8,
+            cornerRadius: 10,
             callbacks: {
               label: function(context) {
                 const value = context.parsed;
@@ -1297,9 +1421,16 @@ function refreshIcons() {
  * @param {boolean} isOpen
  */
 function toggleMobileMenu(isOpen) {
-  DOM.sidebar.classList.toggle('open', isOpen);
-  DOM.sidebarBackdrop.classList.toggle('active', isOpen);
-  DOM.mobileMenuToggle.setAttribute('aria-expanded', String(isOpen));
+  if (DOM.mobileDrawer) {
+    DOM.mobileDrawer.classList.toggle('open', isOpen);
+    DOM.mobileDrawer.setAttribute('aria-hidden', String(!isOpen));
+  }
+  if (DOM.mobileDrawerBackdrop) {
+    DOM.mobileDrawerBackdrop.classList.toggle('active', isOpen);
+  }
+  if (DOM.mobileMenuToggle) {
+    DOM.mobileMenuToggle.setAttribute('aria-expanded', String(isOpen));
+  }
 }
 
 /* ==============================================================================
@@ -1309,21 +1440,56 @@ function toggleMobileMenu(isOpen) {
 
 function setupEventListeners() {
   // --- Mobile Drawer ---
-  DOM.mobileMenuToggle.addEventListener('click', () => {
-    const isCurrentlyOpen = DOM.sidebar.classList.contains('open');
-    toggleMobileMenu(!isCurrentlyOpen);
-  });
-
-  DOM.sidebarBackdrop.addEventListener('click', () => toggleMobileMenu(false));
-
-  // Close drawer on sidebar link click
-  DOM.sidebar.querySelectorAll('.nav-link').forEach(link => {
-    link.addEventListener('click', () => {
-      toggleMobileMenu(false);
-      DOM.sidebar.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-      link.classList.add('active');
+  if (DOM.mobileMenuToggle) {
+    DOM.mobileMenuToggle.addEventListener('click', () => {
+      const isCurrentlyOpen = DOM.mobileDrawer && DOM.mobileDrawer.classList.contains('open');
+      toggleMobileMenu(!isCurrentlyOpen);
     });
-  });
+  }
+
+  if (DOM.closeDrawerBtn) {
+    DOM.closeDrawerBtn.addEventListener('click', () => toggleMobileMenu(false));
+  }
+
+  if (DOM.mobileDrawerBackdrop) {
+    DOM.mobileDrawerBackdrop.addEventListener('click', () => toggleMobileMenu(false));
+  }
+
+  // Close drawer on mobile drawer link click
+  if (DOM.drawerLinks) {
+    DOM.drawerLinks.forEach(link => {
+      link.addEventListener('click', () => {
+        toggleMobileMenu(false);
+        DOM.drawerLinks.forEach(l => l.classList.remove('active'));
+        link.classList.add('active');
+      });
+    });
+  }
+
+  // Desktop Navigation active pill state
+  if (DOM.desktopNavItems) {
+    DOM.desktopNavItems.forEach(item => {
+      item.addEventListener('click', () => {
+        DOM.desktopNavItems.forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+      });
+    });
+  }
+
+  // Mobile Drawer Quick Actions
+  if (DOM.loadDemoBtnMobile) {
+    DOM.loadDemoBtnMobile.addEventListener('click', () => {
+      toggleMobileMenu(false);
+      loadSampleData();
+    });
+  }
+
+  if (DOM.clearAllBtnMobile) {
+    DOM.clearAllBtnMobile.addEventListener('click', () => {
+      toggleMobileMenu(false);
+      clearAllData();
+    });
+  }
 
   // --- Add Transaction Modal ---
   DOM.openAddModalBtn.addEventListener('click', () => openAddModal('expense'));

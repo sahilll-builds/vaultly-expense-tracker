@@ -4,7 +4,7 @@
 > 🌐 **Live Demo:** [https://sahilll-builds.github.io/vaultly-expense-tracker/](https://sahilll-builds.github.io/vaultly-expense-tracker/)  
 > 📦 **GitHub Repository:** [https://github.com/sahilll-builds/vaultly-expense-tracker](https://github.com/sahilll-builds/vaultly-expense-tracker)
 
-Vaultly is a modern, responsive client-side personal finance and expense-tracking web application built with pure HTML5, CSS3, and Vanilla JavaScript. Designed around the refined **Midnight Emerald** visual aesthetic, Vaultly empowers users to gain clear insights into their cash flow, track income and expenses, monitor spending distribution across categories, and maintain full privacy by keeping all financial data locally in their own browser.
+Vaultly is a modern, responsive client-side personal finance and expense-tracking web application built with pure HTML5, CSS3, and Vanilla JavaScript. Designed around the futuristic **Cosmic Glassmorphism ("Cosmic Glass — Fluid Finance")** visual aesthetic, Vaultly empowers users to gain crystal-clear insights into their cash flow, track income and expenses, monitor spending distribution across categories, compute daily safe-to-spend allowances, and maintain full privacy by keeping all financial data locally in their own browser.
 
 ---
 
@@ -12,7 +12,9 @@ Vaultly is a modern, responsive client-side personal finance and expense-trackin
 
 Vaultly serves as an intuitive personal finance dashboard where users can:
 - Instantly view their **Total Net Balance** calculated strictly from logged cash flow ($$\text{Net Balance} = \text{Total Income} - \text{Total Expenses}$$).
-- Track incoming cash with positive indicator badges and outgoing expenditures with restrained coral indicators.
+- Monitor a dynamic **Safe to Spend** daily allowance engine that calculates how much you can spend per day based on your current net savings and days remaining in the month.
+- Gain actionable **Spending Insights** derived directly from actual recorded transactions (top spending category, largest single expenditure, and savings retention percentage).
+- Track incoming cash with glowing emerald halos and outgoing expenditures with restrained pink/coral indicators.
 - Analyze spending habits visually through an interactive **Chart.js Doughnut Chart** and detailed category percentage breakdown chips.
 - Perform real-time instant searches across transaction titles, categories, and personal notes.
 - Filter transactions by type (**All**, **Income**, **Expenses**) and category, or sort chronologically and by transaction value.
@@ -22,42 +24,52 @@ Vaultly serves as an intuitive personal finance dashboard where users can:
 
 ## 🚀 Key Features
 
-1. **Midnight Emerald Design System**
-   - Built on carefully curated CSS custom properties (`:root`).
-   - Deep canvas background (`#0C0F0E`), rich elevated surfaces (`#171B19`, `#1D2420`), crisp emerald accents (`#8FE3B0`), and accessible coral indicators (`#F87171`).
-   - Smooth transitions, tactile button states, and WCAG AA contrast compliance.
+1. **Cosmic Glassmorphism Design System**
+   - Built on a celestial foundation: layered deep-space canvas (`#050711`), drifting nebula clouds (emerald, teal, violet, electric blue), multi-depth twinkling star layers, and ambient liquid orbs.
+   - High-contrast glass surfaces with `backdrop-filter: blur()`, ultra-fine translucent luminous borders (`rgba(255, 255, 255, 0.12)`), top-edge refraction highlights (`::before`), and emerald glow effects (`#70F0B2`).
+   - 70% clarity / 30% visual atmosphere balance: data and numbers always remain the primary hero focus with WCAG AA compliance.
 
-2. **Real-Time Financial Arithmetic**
+2. **Safe to Spend Daily Allowance Engine**
+   - Calculates a realistic daily spending budget: $$\text{Daily Allowance} = \frac{\text{Net Balance}}{\text{Days Remaining in Month}}$$.
+   - Includes an animated liquid month progress bar showing exactly where you are in the current calendar cycle.
+
+3. **Live Spending Insights Panel**
+   - Calculates key financial metrics from your active transaction history:
+     - **Largest Spending Category:** Shows dominant category with spending percentage and formatted rupee total.
+     - **Largest Single Transaction:** Highlights highest individual ticket item.
+     - **Savings Retention Rate:** Shows what percentage of total earned income is retained as net savings.
+
+4. **Real-Time Financial Arithmetic**
    - Dynamic currency formatting using modern `Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' })`.
    - Guaranteed correct arithmetic with zero hard-coded summary values.
    - Example scenario: Income of ₹10,000 with expenses of ₹2,000 and ₹500 accurately calculates ₹10,000 Total Income, ₹2,500 Total Expenses, and ₹7,500 Net Balance.
 
-3. **Dynamic Category Allocation**
+5. **Dynamic Category Allocation**
    - Context-aware categories that switch dynamically when toggling between **Expense** (*Food & Dining, Transport, Shopping, Bills & Utilities, Education, Entertainment, Health, Other*) and **Income** (*Salary, Freelance, Allowance, Business, Other*).
 
-4. **Visual Analytics & Chart Fallback**
-   - Chart.js doughnut chart with customized Midnight Emerald palette and dynamic hover tooltips.
+6. **Visual Analytics & Chart Fallback**
+   - Chart.js doughnut chart with cosmic glass cutouts, emerald data series, and dark glass tooltips.
    - Proper lifecycle management: existing chart instances are cleanly destroyed before re-instantiating to prevent canvas memory leaks.
    - **Graceful CDN Fallback:** If internet access is lost or Chart.js fails to load, the UI seamlessly displays the category breakdown cards and percentage indicators.
 
-5. **Local Storage Persistence & Defensive Error Recovery**
+7. **Local Storage Persistence & Defensive Error Recovery**
    - Automatically saves all entries under the dedicated `vaultly_transactions` key.
    - Built with defensive `try...catch` blocks that safely detect missing or corrupted JSON and fall back cleanly without crashing the interface.
 
-6. **Interactive Toolbar & Empty States**
+8. **Interactive Toolbar & Empty States**
    - Live debounced/instant search input with a clear button.
    - Multi-criteria filtering by transaction type and category.
    - Sort by Newest, Oldest, Highest Amount, or Lowest Amount.
    - Thoughtful empty states guiding new users with a "Welcome to Vaultly" call-to-action and a "No matching transactions found" reset state.
 
-7. **Sample Demo Data & Reset Controls**
-   - Includes a one-click **"Load Demo Data"** feature with realistic relative dates to quickly explore all dashboard capabilities.
+9. **Sample Demo Data & Reset Controls**
+   - Includes a one-click **"Demo Data"** feature with realistic relative dates to quickly explore all dashboard capabilities.
    - Includes a **"Reset All Data"** button with confirmation to clear records cleanly.
 
-8. **Fully Responsive & Accessible**
-   - Mobile-first responsive layout with breakpoints tested across 320px, 375px, 768px, 1024px, and 1440px.
-   - Slide-out navigation drawer with backdrop on small screens.
-   - Accessible keyboard navigation (`Escape` closes modals, `Enter` submits forms, visible `:focus-visible` emerald rings, and `@media (prefers-reduced-motion)` support).
+10. **Fully Responsive & Accessible**
+    - Mobile-first responsive layout with breakpoints tested across 320px, 480px, 768px, 1024px, and 1440px.
+    - Slide-out glass navigation drawer with backdrop on small screens.
+    - Accessible keyboard navigation (`Escape` closes modals, `Enter` submits forms, visible `:focus-visible` emerald rings, and `@media (prefers-reduced-motion)` support).
 
 ---
 
