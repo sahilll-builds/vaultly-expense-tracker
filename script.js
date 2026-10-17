@@ -438,14 +438,59 @@ function renderDashboard() {
 }
 
 /**
+ * Smoothly animates a numeric currency value on a DOM element (Magic UI number-ticker style).
+ * If user prefers reduced motion, snaps directly without animation.
+ * @param {HTMLElement} element - Target DOM element
+ * @param {number} targetValue - Number to animate to
+ * @param {number} [duration=450] - Animation duration in ms
+ */
+function animateCurrencyTicker(element, targetValue, duration = 450) {
+  if (!element) return;
+
+  const prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (prefersReduced) {
+    element.textContent = formatCurrency(targetValue);
+    return;
+  }
+
+  const startValue = typeof element._currentValue === 'number' ? element._currentValue : 0;
+  element._currentValue = targetValue;
+
+  if (startValue === targetValue) {
+    element.textContent = formatCurrency(targetValue);
+    return;
+  }
+
+  const startTime = performance.now();
+
+  function updateTicker(now) {
+    const elapsed = now - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    // Smooth easeOutCubic curve
+    const easeProgress = 1 - Math.pow(1 - progress, 3);
+    const currentValue = startValue + (targetValue - startValue) * easeProgress;
+
+    element.textContent = formatCurrency(currentValue);
+
+    if (progress < 1) {
+      requestAnimationFrame(updateTicker);
+    } else {
+      element.textContent = formatCurrency(targetValue);
+    }
+  }
+
+  requestAnimationFrame(updateTicker);
+}
+
+/**
  * Updates summary cards (Balance, Income, Expenses, labels).
  */
 function renderSummaryCards() {
   const totals = calculateTotals(state.transactions);
 
-  DOM.totalBalance.textContent = formatCurrency(totals.netBalance);
-  DOM.totalIncome.textContent = formatCurrency(totals.totalIncome);
-  DOM.totalExpense.textContent = formatCurrency(totals.totalExpenses);
+  animateCurrencyTicker(DOM.totalBalance, totals.netBalance);
+  animateCurrencyTicker(DOM.totalIncome, totals.totalIncome);
+  animateCurrencyTicker(DOM.totalExpense, totals.totalExpenses);
 
   DOM.incomeCountLabel.textContent = `${totals.incomeCount} ${totals.incomeCount === 1 ? 'record' : 'records'}`;
   DOM.expenseCountLabel.textContent = `${totals.expenseCount} ${totals.expenseCount === 1 ? 'record' : 'records'}`;
@@ -499,17 +544,17 @@ function renderSafeToSpend() {
   if (DOM.safeDailySpend) {
     if (totals.netBalance > 0) {
       const dailyAllowance = totals.netBalance / daysRemaining;
-      DOM.safeDailySpend.textContent = formatCurrency(dailyAllowance);
+      animateCurrencyTicker(DOM.safeDailySpend, dailyAllowance);
       if (DOM.safeSpendDesc) {
         DOM.safeSpendDesc.textContent = `Based on your net balance of ${formatCurrency(totals.netBalance)} distributed across the remaining ${daysRemaining} days of this month.`;
       }
     } else if (totals.netBalance < 0) {
-      DOM.safeDailySpend.textContent = '₹0.00';
+      animateCurrencyTicker(DOM.safeDailySpend, 0);
       if (DOM.safeSpendDesc) {
         DOM.safeSpendDesc.textContent = 'Your total expenses currently exceed income. Pause non-essential spending to restore positive reserves.';
       }
     } else {
-      DOM.safeDailySpend.textContent = '₹0.00';
+      animateCurrencyTicker(DOM.safeDailySpend, 0);
       if (DOM.safeSpendDesc) {
         DOM.safeSpendDesc.textContent = 'Add income or adjust expenses to calculate your personalized daily spending allowance.';
       }
@@ -1582,7 +1627,108 @@ function setupEventListeners() {
 }
 
 /* ==============================================================================
-   15. APPLICATION BOOTSTRAP
+   15. 3D CARD TILT & WATER-WHITE SPOTLIGHT INTERACTION
+   Magic UI style interactive cursor tracker & 3D card tilt.
+   ============================================================================== */
+
+/**
+ * Initializes interactive 3D Mouse Tilt and water-white spotlight tracker for glass cards.
+ * Automatically skipped on touch devices and if user prefers reduced motion.
+ */
+function init3DCardTilt() {
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    return;
+  }
+
+  // Detect touch devices
+  if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+    return;
+  }
+
+  const cards = document.querySelectorAll('.glass-card');
+
+  cards.forEach(card => {
+    let bounds;
+
+    function onMouseEnter() {
+      bounds = card.getBoundingClientRect();
+      card.classList.add('is-tilting');
+    }
+
+    function onMouseMove(event) {
+      if (!bounds) bounds = card.getBoundingClientRect();
+      const mouseX = event.clientX - bounds.left;
+      const mouseY = event.clientY - bounds.top;
+
+      const percentX = (mouseX / bounds.width) * 100;
+      const percentY = (mouseY / bounds.height) * 100;
+
+      // Restrained 3D tilt: max ~5 degrees for elegant feel
+      const tiltX = ((mouseY / bounds.height) - 0.5) * -6;
+      const tiltY = ((mouseX / bounds.width) - 0.5) * 6;
+
+      card.style.setProperty('--mouse-x', `${percentX.toFixed(1)}%`);
+      card.style.setProperty('--mouse-y', `${percentY.toFixed(1)}%`);
+      card.style.setProperty('--tilt-x', `${tiltX.toFixed(2)}deg`);
+      card.style.setProperty('--tilt-y', `${tiltY.toFixed(2)}deg`);
+    }
+
+    function onMouseLeave() {
+      card.classList.remove('is-tilting');
+      card.style.setProperty('--tilt-x', '0deg');
+      card.style.setProperty('--tilt-y', '0deg');
+      bounds = null;
+    }
+
+    card.addEventListener('mouseenter', onMouseEnter);
+    card.addEventListener('mousemove', onMouseMove);
+    card.addEventListener('mouseleave', onMouseLeave);
+  });
+}
+
+/**
+ * Attaches liquid water ripple feedback on clicks for interactive buttons.
+ */
+function initWaterRipple() {
+  const interactiveSelectors = [
+    '.btn-liquid-primary',
+    '.btn-liquid-secondary',
+    '.btn-liquid-danger',
+    '.btn-ghost-glass',
+    '.filter-glass-pill',
+    '.tx-row'
+  ];
+
+  document.addEventListener('click', event => {
+    const target = event.target.closest(interactiveSelectors.join(','));
+    if (!target) return;
+
+    const rect = target.getBoundingClientRect();
+    const ripple = document.createElement('span');
+    ripple.className = 'water-ripple-wave';
+
+    const size = Math.max(rect.width, rect.height) * 1.5;
+    ripple.style.width = `${size}px`;
+    ripple.style.height = `${size}px`;
+    ripple.style.left = `${event.clientX - rect.left - size / 2}px`;
+    ripple.style.top = `${event.clientY - rect.top - size / 2}px`;
+
+    // Clean up any existing ripple inside this element
+    const existing = target.querySelector('.water-ripple-wave');
+    if (existing) existing.remove();
+
+    target.appendChild(ripple);
+
+    setTimeout(() => {
+      if (ripple.parentElement) {
+        ripple.parentElement.removeChild(ripple);
+      }
+    }, 600);
+  });
+}
+
+/* ==============================================================================
+   16. APPLICATION BOOTSTRAP
    Loads persisted state, prepares UI, and attaches listeners.
    ============================================================================== */
 
@@ -1599,7 +1745,11 @@ function initApp() {
   // 4. Attach event listeners
   setupEventListeners();
 
-  // 5. Initial render of entire application
+  // 5. Initialize 3D Mouse Tilt & Water Ripple effects
+  init3DCardTilt();
+  initWaterRipple();
+
+  // 6. Initial render of entire application
   renderDashboard();
 
   console.info('[Vaultly] Application initialized successfully with', state.transactions.length, 'records.');
