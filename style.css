@@ -114,6 +114,11 @@ body {
   border: 0 !important;
 }
 
+/* Ensure HTML5 hidden attribute always takes absolute precedence over flex/grid */
+[hidden] {
+  display: none !important;
+}
+
 /* --------------------------------------------------------------------------
    3. APP CONTAINER & MASTER LAYOUT
    Desktop has a persistent sidebar on the left and scrollable content.

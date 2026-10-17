@@ -605,23 +605,32 @@ function renderTransactionsList() {
   if (state.transactions.length === 0) {
     // State 1: User has no transactions at all
     DOM.emptyStateNoData.hidden = false;
+    DOM.emptyStateNoData.style.display = 'flex';
     DOM.emptyStateNoResults.hidden = true;
+    DOM.emptyStateNoResults.style.display = 'none';
     DOM.transactionsList.hidden = true;
+    DOM.transactionsList.style.display = 'none';
     return;
   }
 
   if (filteredList.length === 0) {
     // State 2: Active filter/search query yielded zero results
     DOM.emptyStateNoData.hidden = true;
+    DOM.emptyStateNoData.style.display = 'none';
     DOM.emptyStateNoResults.hidden = false;
+    DOM.emptyStateNoResults.style.display = 'flex';
     DOM.transactionsList.hidden = true;
+    DOM.transactionsList.style.display = 'none';
     return;
   }
 
   // State 3: We have matching transactions to display
   DOM.emptyStateNoData.hidden = true;
+  DOM.emptyStateNoData.style.display = 'none';
   DOM.emptyStateNoResults.hidden = true;
+  DOM.emptyStateNoResults.style.display = 'none';
   DOM.transactionsList.hidden = false;
+  DOM.transactionsList.style.display = 'flex';
 
   const fragment = document.createDocumentFragment();
   filteredList.forEach(tx => {
@@ -681,10 +690,12 @@ function renderCategoryBreakdown() {
 
   if (breakdown.length === 0) {
     DOM.categoryBreakdownList.hidden = true;
+    DOM.categoryBreakdownList.style.display = 'none';
     return;
   }
 
   DOM.categoryBreakdownList.hidden = false;
+  DOM.categoryBreakdownList.style.display = 'grid';
   const fragment = document.createDocumentFragment();
 
   breakdown.forEach(item => {
@@ -742,7 +753,9 @@ function renderChart() {
   // If there are no expenses, show clean empty state
   if (breakdown.length === 0) {
     DOM.chartEmptyState.hidden = false;
+    DOM.chartEmptyState.style.display = 'flex';
     DOM.spendingChartCanvas.hidden = true;
+    DOM.spendingChartCanvas.style.display = 'none';
 
     // Properly destroy existing chart to release canvas memory
     if (state.chartInstance) {
@@ -753,7 +766,9 @@ function renderChart() {
   }
 
   DOM.chartEmptyState.hidden = true;
+  DOM.chartEmptyState.style.display = 'none';
   DOM.spendingChartCanvas.hidden = false;
+  DOM.spendingChartCanvas.style.display = 'block';
 
   // Defensive check: Verify Chart.js library is loaded
   if (typeof Chart === 'undefined') {
