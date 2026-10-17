@@ -20,7 +20,38 @@
   <!-- Cosmic Glassmorphism Stylesheet -->
   <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="is-loading">
+  <!-- =========================================================================
+       CINEMATIC OPENING LOADING SCREEN
+       - Centered VAULTLY typographic wordmark
+       - Luminous orbital liquid ring & progress bar
+       - Auto-dismiss on window load with safety timeout
+       - Respects prefers-reduced-motion
+       ========================================================================= -->
+  <div id="cinematicLoader" class="cinematic-loader" role="status" aria-live="polite" aria-label="Loading Vaultly">
+    <div class="loader-backdrop-glow" aria-hidden="true"></div>
+    <div class="loader-content">
+      <div class="loader-logo-cluster">
+        <div class="loader-orbital-ring" aria-hidden="true">
+          <div class="orbital-dot dot-1"></div>
+          <div class="orbital-dot dot-2"></div>
+        </div>
+        <div class="loader-badge" aria-hidden="true">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+        </div>
+      </div>
+      <div class="loader-brand-title">VAULTLY</div>
+      <div class="loader-brand-tagline">YOUR MONEY • YOUR CONTROL</div>
+      <div class="loader-track-wrap" aria-hidden="true">
+        <div class="loader-liquid-bar"></div>
+      </div>
+      <span class="loader-status-text" id="loaderStatusText">INITIALIZING SECURE VAULT...</span>
+    </div>
+  </div>
+
   <!-- =========================================================================
        COSMIC GALAXY & FLUID BACKGROUND SYSTEM
        Pure CSS multi-layered celestial environment:
@@ -546,6 +577,7 @@
   <!-- ADD / EDIT TRANSACTION MODAL -->
   <div class="modal-overlay" id="transactionModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" aria-hidden="true">
     <div class="glass-modal-dialog">
+      <div class="sheet-handle-bar" aria-hidden="true"></div>
       <div class="card-refraction-shine" aria-hidden="true"></div>
       <div class="modal-head">
         <div class="modal-title-group">
@@ -683,6 +715,7 @@
   <!-- DELETE CONFIRMATION MODAL -->
   <div class="modal-overlay" id="deleteConfirmModal" role="alertdialog" aria-modal="true" aria-labelledby="deleteModalTitle" aria-describedby="deleteModalDesc" aria-hidden="true">
     <div class="glass-modal-dialog modal-dialog-compact">
+      <div class="sheet-handle-bar" aria-hidden="true"></div>
       <div class="card-refraction-shine" aria-hidden="true"></div>
       <div class="delete-halo" aria-hidden="true">
         <i data-lucide="alert-triangle"></i>

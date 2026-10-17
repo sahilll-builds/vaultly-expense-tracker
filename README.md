@@ -91,14 +91,36 @@ Vaultly serves as an intuitive personal finance dashboard where users can:
 ```text
 vaultly-expense-tracker/
 │
-├── index.html        # Semantic HTML5 markup, modal dialogs, accessible containers
-├── style.css         # Midnight Emerald design tokens, layout grids, responsive rules
-├── script.js         # Modular application logic, calculation engine, event handlers
-├── test-runner.js    # Automated unit tests for math, validation, and filter pipelines
-└── README.md         # Comprehensive project documentation
+├── index.html            # Semantic HTML5 markup, cinematic loading screen, bottom sheet dialogs
+├── style.css             # Cosmic Glassmorphism, fluid clamp typography, comprehensive responsive breakpoints
+├── script.js             # Modular application logic, calculation engine, event handlers, loader lifecycle
+├── test-runner.js        # Automated unit tests for math, validation, and filter pipelines
+├── verify-responsive.mjs # Headless browser CDP test suite validating 14 viewports (320px to 1920px)
+└── README.md             # Comprehensive project documentation
 ```
 
 ---
+
+## 📱 Responsive Design & Device Architecture
+
+Vaultly was architected from the ground up for seamless usability across all device form factors:
+
+| Device Category | Target Viewports | Layout Behavior & Adaptation |
+| :--- | :--- | :--- |
+| **Ultra-Compact Mobile** | 320px – 360px | Zero horizontal overflow, compact 10px padding, vertically stacked dropdowns, hidden micro-tagline, fluid clamp typography. |
+| **Standard Mobile** | 375px – 480px | 1-column summary stack, fluid balance display, full-width search & type filter pills, 2-tier transaction cards. |
+| **Large Mobile / Phablets**| 480px – 640px | Bottom-sheet modal dialog with tactile pull handle, comfortable touch targets, stacked action buttons. |
+| **Small & Medium Tablets** | 768px – 1024px | 2-column grid (`Total Net Balance` full-width; `Income` & `Expense` side-by-side), compact horizontal navigation. |
+| **Laptops & Desktops** | 1280px – 1440px | 3-column financial summary grid, horizontal navigation bar, 3D mouse tilt with interactive spotlights. |
+| **Ultra-Wide & 4K Displays** | 1600px – 2560px | Bounded 1440px max-width container, centered cosmic background, balanced optical alignment. |
+| **Landscape Mobile** | <= 520px height | Compact sticky header, scrollable bottom-sheet modal with max 94vh height. |
+| **Touch Devices** | `pointer: coarse` | Enforced `>= 44px` tap target hitboxes on all interactive buttons, selects, and toggles. |
+
+### 🎬 Cinematic Opening Loading Screen
+- **Centred Typography Wordmark:** Prominently introduces Vaultly on initial page load.
+- **Orbital Ring & Liquid Bar:** Smooth orbital ring animation and shimmering liquid beam reflect the celestial water-white aesthetic.
+- **Scroll Lock & Dismissal Safety:** Prevents underlying page scroll while active (`body.is-loading`), dismisses automatically with smooth fade-out upon asset load, and includes an 1800ms safety timeout so the UI never hangs.
+- **Reduced Motion Support:** Respects `prefers-reduced-motion` with instant fade-out and disabled orbital rotations.
 
 ## 💻 Running the Application Locally
 

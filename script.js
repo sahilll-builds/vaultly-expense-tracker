@@ -372,7 +372,7 @@ const DOM = {
   transactionCountBadge: document.getElementById('transactionCountBadge'),
   searchInput: document.getElementById('searchInput'),
   clearSearchBtn: document.getElementById('clearSearchBtn'),
-  filterPills: document.querySelectorAll('.filter-pill'),
+  filterPills: document.querySelectorAll('.filter-glass-pill, .filter-pill'),
   categoryFilterSelect: document.getElementById('categoryFilterSelect'),
   sortSelect: document.getElementById('sortSelect'),
   transactionsList: document.getElementById('transactionsList'),
@@ -1476,6 +1476,7 @@ function toggleMobileMenu(isOpen) {
   if (DOM.mobileMenuToggle) {
     DOM.mobileMenuToggle.setAttribute('aria-expanded', String(isOpen));
   }
+  document.body.classList.toggle('drawer-open', isOpen);
 }
 
 /* ==============================================================================
@@ -1601,8 +1602,11 @@ function setupEventListeners() {
 
   // --- Keyboard & Accessibility Shortcuts ---
   document.addEventListener('keydown', event => {
-    // Escape key closes open modals
+    // Escape key closes open modals or drawer
     if (event.key === 'Escape') {
+      if (DOM.mobileDrawer && DOM.mobileDrawer.classList.contains('open')) {
+        toggleMobileMenu(false);
+      }
       if (DOM.transactionModal.getAttribute('aria-hidden') === 'false') {
         closeAddModal();
       }
@@ -1728,28 +1732,106 @@ function initWaterRipple() {
 }
 
 /* ==============================================================================
-   16. APPLICATION BOOTSTRAP
+   16. CINEMATIC OPENING LOADER CONTROLLER
+   Smoothly introduces Vaultly, prevents body scroll during load, and dismisses safely.
+   ============================================================================== */
+
+/**
+ * Dismisses the cinematic loader with a smooth fade-out and removes it from DOM.
+ */
+function dismissCinematicLoader() {
+  const loader = document.getElementById('cinematicLoader');
+  if (!loader || loader.classList.contains('loader-dismissed')) return;
+
+  loader.classList.add('loader-dismissed');
+  loader.setAttribute('aria-hidden', 'true');
+  document.body.classList.remove('is-loading');
+
+  // Remove element after transition completes to release memory
+  setTimeout(() => {
+    if (loader && loader.parentElement) {
+      loader.remove();
+    }
+  }, 600);
+}
+
+/**
+ * Initializes the cinematic loading screen lifecycle with guaranteed safety fallback.
+ */
+function initCinematicLoader() {
+  const prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const minDisplayTime = prefersReduced ? 50 : 700;
+  const maxTimeout = prefersReduced ? 100 : 1800; // Guaranteed safety fallback
+
+  const startTime = Date.now();
+
+  const handleDismiss = () => {
+    const elapsed = Date.now() - startTime;
+    const remaining = Math.max(0, minDisplayTime - elapsed);
+    setTimeout(dismissCinematicLoader, remaining);
+  };
+
+  if (document.readyState === 'complete') {
+    handleDismiss();
+  } else {
+    window.addEventListener('load', handleDismiss, { once: true });
+  }
+
+  // Guaranteed safety fallback: dismisses even on slow CDN or offline state
+  setTimeout(dismissCinematicLoader, maxTimeout);
+}
+
+/**
+ * Responsive viewport resize & orientation listener.
+ * Dynamically resizes Chart.js instance on device rotation or browser resizing.
+ */
+function setupResponsiveWatchers() {
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      if (state.chartInstance) {
+        state.chartInstance.resize();
+      }
+    }, 150);
+  });
+
+  window.addEventListener('orientationchange', () => {
+    setTimeout(() => {
+      if (state.chartInstance) {
+        state.chartInstance.resize();
+      }
+    }, 200);
+  });
+}
+
+/* ==============================================================================
+   17. APPLICATION BOOTSTRAP
    Loads persisted state, prepares UI, and attaches listeners.
    ============================================================================== */
 
 function initApp() {
-  // 1. Establish greeting & live formatted date
+  // 1. Initialize cinematic opening loading screen
+  initCinematicLoader();
+
+  // 2. Establish greeting & live formatted date
   updateDynamicGreetingAndDate();
 
-  // 2. Set default category options in form
+  // 3. Set default category options in form
   updateFormCategoryOptions('expense');
 
-  // 3. Load transactions from Local Storage
+  // 4. Load transactions from Local Storage
   state.transactions = loadTransactions();
 
-  // 4. Attach event listeners
+  // 5. Attach centralized event listeners & responsive watchers
   setupEventListeners();
+  setupResponsiveWatchers();
 
-  // 5. Initialize 3D Mouse Tilt & Water Ripple effects
+  // 6. Initialize 3D Mouse Tilt & Water Ripple effects
   init3DCardTilt();
   initWaterRipple();
 
-  // 6. Initial render of entire application
+  // 7. Initial render of entire application
   renderDashboard();
 
   console.info('[Vaultly] Application initialized successfully with', state.transactions.length, 'records.');

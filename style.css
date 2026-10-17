@@ -103,6 +103,192 @@
 
   /* 3D Perspective for card containers */
   --perspective-distance: 1200px;
+
+  /* Fluid Typography Scale (clamp-based) */
+  --font-size-hero: clamp(1.75rem, 3.8vw + 0.8rem, 2.75rem);
+  --font-size-balance: clamp(1.75rem, 3.2vw + 0.8rem, 2.65rem);
+  --font-size-metric: clamp(1.35rem, 2.2vw + 0.6rem, 2.05rem);
+  --font-size-title: clamp(1.1rem, 1.2vw + 0.7rem, 1.45rem);
+  --font-size-body: clamp(0.88rem, 0.35vw + 0.78rem, 0.98rem);
+}
+
+/* --------------------------------------------------------------------------
+   1.1 CINEMATIC OPENING LOADING SCREEN
+   -------------------------------------------------------------------------- */
+body.is-loading {
+  overflow: hidden !important;
+  touch-action: none !important;
+}
+
+body.drawer-open {
+  overflow: hidden !important;
+}
+
+.cinematic-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: var(--bg-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  padding: 24px;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.5s ease;
+}
+
+.cinematic-loader.loader-dismissed {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.loader-backdrop-glow {
+  position: absolute;
+  inset: 0;
+  background: 
+    radial-gradient(circle at 50% 45%, rgba(112, 240, 178, 0.12) 0%, transparent 55%),
+    radial-gradient(circle at 45% 55%, rgba(83, 221, 224, 0.10) 0%, transparent 50%),
+    radial-gradient(circle at 55% 40%, rgba(167, 139, 250, 0.08) 0%, transparent 50%);
+  pointer-events: none;
+  filter: blur(40px);
+}
+
+.loader-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  max-width: 420px;
+  width: 100%;
+}
+
+.loader-logo-cluster {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 22px;
+}
+
+.loader-orbital-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1.5px solid rgba(112, 240, 178, 0.22);
+  border-top-color: var(--accent-emerald);
+  border-right-color: var(--accent-teal);
+  animation: spinOrbital 2.2s linear infinite;
+  box-shadow: 0 0 24px rgba(112, 240, 178, 0.25), inset 0 0 16px rgba(83, 221, 224, 0.15);
+}
+
+.orbital-dot {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  box-shadow: 0 0 10px #FFFFFF, 0 0 18px var(--accent-emerald);
+}
+
+.orbital-dot.dot-1 {
+  top: -3px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.orbital-dot.dot-2 {
+  bottom: -3px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--accent-teal);
+}
+
+@keyframes spinOrbital {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.loader-badge {
+  width: 62px;
+  height: 62px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(112, 240, 178, 0.25), rgba(83, 221, 224, 0.12));
+  border: 1px solid rgba(112, 240, 178, 0.45);
+  color: var(--accent-emerald);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 30px var(--accent-emerald-glow);
+  position: relative;
+  backdrop-filter: var(--blur-md);
+  -webkit-backdrop-filter: var(--blur-md);
+}
+
+.loader-brand-title {
+  font-family: var(--font-heading);
+  font-size: clamp(2rem, 5vw, 2.75rem);
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: #FFFFFF;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  background: linear-gradient(135deg, #FFFFFF 0%, #E6FAF0 40%, var(--accent-emerald) 80%, var(--accent-teal) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 40px rgba(112, 240, 178, 0.3);
+}
+
+.loader-brand-tagline {
+  font-size: clamp(0.72rem, 1.8vw, 0.82rem);
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  margin-bottom: 26px;
+}
+
+.loader-track-wrap {
+  width: 100%;
+  max-width: 250px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  position: relative;
+  margin-bottom: 16px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.loader-liquid-bar {
+  position: absolute;
+  height: 100%;
+  width: 45%;
+  background: linear-gradient(90deg, transparent 0%, var(--accent-emerald) 50%, var(--accent-teal) 100%);
+  border-radius: var(--radius-pill);
+  animation: loaderSweep 1.6s ease-in-out infinite;
+  box-shadow: 0 0 14px var(--accent-emerald);
+}
+
+@keyframes loaderSweep {
+  0% { left: -45%; }
+  50% { left: 40%; width: 55%; }
+  100% { left: 100%; width: 45%; }
+}
+
+.loader-status-text {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  color: var(--accent-emerald);
+  opacity: 0.9;
 }
 
 /* --------------------------------------------------------------------------
@@ -907,11 +1093,12 @@ body {
 
 .hero-headline {
   font-family: var(--font-heading);
-  font-size: 2.35rem;
+  font-size: var(--font-size-hero);
   font-weight: 700;
   letter-spacing: -0.03em;
   color: var(--text-primary);
   line-height: 1.15;
+  overflow-wrap: break-word;
 }
 
 .gradient-text-emerald {
@@ -1071,23 +1258,25 @@ body {
 
 .balance-number {
   font-family: var(--font-heading);
-  font-size: 2.35rem;
+  font-size: var(--font-size-balance);
   font-weight: 700;
   letter-spacing: -0.03em;
   color: #FFFFFF;
   line-height: 1.1;
   font-variant-numeric: tabular-nums;
   display: block;
+  overflow-wrap: break-word;
 }
 
 .metric-number {
   font-family: var(--font-heading);
-  font-size: 1.95rem;
+  font-size: var(--font-size-metric);
   font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1.1;
   font-variant-numeric: tabular-nums;
   display: block;
+  overflow-wrap: break-word;
 }
 
 .text-income { color: var(--color-income); }
@@ -1222,12 +1411,13 @@ body {
 
 .safe-daily-amount {
   font-family: var(--font-heading);
-  font-size: 2.3rem;
+  font-size: var(--font-size-balance);
   font-weight: 700;
   letter-spacing: -0.03em;
   color: var(--accent-emerald);
   font-variant-numeric: tabular-nums;
   line-height: 1;
+  overflow-wrap: break-word;
 }
 
 .safe-daily-unit {
@@ -1871,6 +2061,10 @@ body {
   pointer-events: auto;
 }
 
+.sheet-handle-bar {
+  display: none;
+}
+
 .glass-modal-dialog {
   background: rgba(16, 21, 42, 0.82);
   border: 1px solid var(--glass-border-highlight);
@@ -2398,62 +2592,117 @@ body {
 .w-full { width: 100%; justify-content: center; }
 
 /* --------------------------------------------------------------------------
-   17. RESPONSIVE BREAKPOINTS
+   17. COMPREHENSIVE RESPONSIVE BREAKPOINT SYSTEM
+   Strict support across:
+   • 4K & Ultra-wide displays (>= 1600px, 1920px+)
+   • Standard desktops & laptops (1025px - 1440px)
+   • Large & medium tablets (769px - 1024px)
+   • Small tablets & phablets (601px - 768px)
+   • Standard smartphones (361px - 600px)
+   • Ultra-compact smartphones (320px - 360px)
+   • Landscape orientation on mobile devices
+   • Coarse touch pointer accessibility (min 44px tap targets)
    -------------------------------------------------------------------------- */
 
-/* Medium Desktops & Tablets (<= 1024px) */
+/* ── 1. ULTRA-WIDE & LARGE DESKTOPS (>= 1600px) ── */
+@media (min-width: 1600px) {
+  .content-bound {
+    max-width: 1440px;
+    margin: 0 auto;
+    gap: 36px;
+  }
+
+  .nav-container {
+    max-width: 1440px;
+  }
+
+  .glass-card {
+    padding: 30px;
+  }
+}
+
+/* ── 2. TABLETS & SMALL DESKTOPS (<= 1024px) ── */
 @media (max-width: 1024px) {
-  .nav-links-desktop { display: none; }
-  .mobile-toggle-btn { display: flex; }
-  .btn-text-desktop { display: none; }
-  
+  .nav-links-desktop {
+    display: none;
+  }
+
+  .mobile-toggle-btn {
+    display: flex;
+  }
+
+  .btn-text-desktop {
+    display: none;
+  }
+
+  .nav-container {
+    padding: 12px 20px;
+  }
+
   .summary-grid {
     grid-template-columns: 1fr 1fr;
+    gap: 16px;
   }
-  
+
   .balance-card {
     grid-column: 1 / -1;
   }
 
   .insights-grid {
     grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .category-breakdown-list {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   }
 }
 
-/* Tablets & Mobile (<= 768px) */
+/* ── 3. SMALL TABLETS & LARGE MOBILE (<= 768px) ── */
 @media (max-width: 768px) {
-  .nav-container { padding: 12px 16px; }
-  .dashboard-viewport { padding: 20px 16px 40px; }
-  
+  .nav-container {
+    padding: 10px 16px;
+    gap: 12px;
+  }
+
+  .dashboard-viewport {
+    padding: 20px 16px 44px;
+  }
+
+  .content-bound {
+    gap: 24px;
+  }
+
   .cosmic-hero {
     flex-direction: column;
     align-items: flex-start;
-    gap: 14px;
+    gap: 16px;
   }
-  
-  .hero-headline {
-    font-size: 1.85rem;
-  }
-  
+
   .hero-stats-badge {
     align-self: flex-start;
-  }
-  
-  .summary-grid {
-    grid-template-columns: 1fr;
+    width: 100%;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
   }
 
   .transactions-toolbar {
     flex-direction: column;
     align-items: stretch;
+    gap: 10px;
   }
 
   .glass-search-box {
     max-width: 100%;
+    min-width: 0;
+    width: 100%;
   }
 
   .glass-filter-group {
     width: 100%;
+    display: flex;
     justify-content: space-around;
   }
 
@@ -2464,18 +2713,17 @@ body {
 
   .glass-select-cluster {
     width: 100%;
+    display: flex;
+    gap: 8px;
   }
 
   .select-glass-wrap {
     flex: 1;
+    min-width: 0;
   }
 
   .glass-select {
     width: 100%;
-  }
-
-  .form-dual-row {
-    grid-template-columns: 1fr;
   }
 
   .toast-stage {
@@ -2489,17 +2737,39 @@ body {
   }
 }
 
-/* Small Screens (320px - 480px) */
-@media (max-width: 480px) {
-  .hero-headline { font-size: 1.55rem; }
-  .balance-number { font-size: 1.85rem; }
-  .metric-number { font-size: 1.55rem; }
-  .safe-daily-amount { font-size: 1.8rem; }
-  
+/* ── 4. MOBILE SCREENS & BOTTOM-SHEET MODAL (<= 640px) ── */
+@media (max-width: 640px) {
+  /* 1-Column Balanced Summary Stack */
+  .summary-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .glass-card {
+    padding: 20px 18px;
+  }
+
+  /* Two-tier mobile transaction layout to prevent truncation & clipping */
   .tx-row {
     flex-direction: column;
     align-items: stretch;
     gap: 12px;
+    padding: 14px 16px;
+  }
+
+  .tx-left {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .tx-title {
+    white-space: normal;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
 
   .tx-right {
@@ -2509,18 +2779,299 @@ body {
     border-top: 1px solid var(--glass-border);
   }
 
-  .glass-card {
-    padding: 18px;
+  .tx-delete-btn {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  /* Mobile Bottom-Sheet Modal Transformation */
+  .modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .sheet-handle-bar {
+    display: block;
+    width: 42px;
+    height: 5px;
+    border-radius: var(--radius-pill);
+    background: rgba(255, 255, 255, 0.28);
+    margin: 0 auto 16px auto;
+  }
+
+  .glass-modal-dialog {
+    max-width: 100%;
+    width: 100%;
+    margin-top: auto;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    border-top-left-radius: 26px;
+    border-top-right-radius: 26px;
+    padding: 18px 20px 32px;
+    max-height: 90vh;
+    overflow-y: auto;
+    transform: translateY(100%);
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.8), 0 0 60px rgba(0, 0, 0, 0.5);
+  }
+
+  .modal-overlay[aria-hidden="false"] .glass-modal-dialog {
+    transform: translateY(0);
+  }
+
+  .modal-dialog-compact {
+    max-width: 100%;
+    width: 100%;
+    margin-top: auto;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    border-top-left-radius: 26px;
+    border-top-right-radius: 26px;
+    padding: 20px 20px 34px;
+  }
+
+  .form-dual-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .modal-foot {
+    flex-direction: column-reverse;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .modal-foot .btn-liquid-primary,
+  .modal-foot .btn-liquid-secondary {
+    width: 100%;
+    min-height: 48px;
+    justify-content: center;
+  }
+
+  .modal-actions-centered {
+    flex-direction: column-reverse;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .modal-actions-centered .btn-liquid-danger,
+  .modal-actions-centered .btn-liquid-secondary {
+    width: 100%;
+    min-height: 48px;
+    justify-content: center;
+  }
+}
+
+/* ── 5. STANDARD SMARTPHONES (<= 480px) ── */
+@media (max-width: 480px) {
+  .nav-container {
+    padding: 10px 14px;
+  }
+
+  .dashboard-viewport {
+    padding: 16px 12px 40px;
+  }
+
+  .cosmic-pill {
+    font-size: 0.74rem;
+    padding: 4px 10px;
+  }
+
+  .panel-header {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .chart-stage {
+    min-height: 240px;
+    max-height: 280px;
+  }
+
+  #spendingChart {
+    max-height: 240px;
   }
 
   .category-breakdown-list {
     grid-template-columns: 1fr;
   }
+
+  .category-breakdown-list .breakdown-chip {
+    padding: 10px 14px;
+  }
+
+  .panel-title-wrap {
+    gap: 10px;
+  }
+
+  .panel-icon-shield,
+  .panel-icon-sparkle {
+    width: 34px;
+    height: 34px;
+    flex-shrink: 0;
+  }
 }
 
-/* --------------------------------------------------------------------------
-   18. PREFERS-REDUCED-MOTION (ACCESSIBILITY)
-   -------------------------------------------------------------------------- */
+/* ── 6. ULTRA-COMPACT MOBILE (<= 360px down to 320px) ── */
+@media (max-width: 360px) {
+  .dashboard-viewport {
+    padding: 12px 8px 36px;
+  }
+
+  .nav-container {
+    padding: 8px 10px;
+    gap: 8px;
+  }
+
+  /* Hide subtitle on micro screens to eliminate horizontal squishing */
+  .brand-tagline {
+    display: none;
+  }
+
+  .brand-title {
+    font-size: 1.15rem;
+  }
+
+  .brand-badge-liquid {
+    width: 36px;
+    height: 36px;
+  }
+
+  /* Wrap cosmic pill date elements */
+  .cosmic-pill {
+    flex-wrap: wrap;
+    justify-content: center;
+    text-align: center;
+    font-size: 0.70rem;
+    padding: 4px 8px;
+  }
+
+  .pill-divider {
+    display: none;
+  }
+
+  .glass-card {
+    padding: 16px 12px;
+  }
+
+  /* Prevent toolbar selects from overflowing 320px screen */
+  .glass-select-cluster {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .select-glass-wrap {
+    width: 100%;
+  }
+
+  .filter-glass-pill {
+    padding: 8px 4px;
+    font-size: 0.74rem;
+  }
+
+  .tx-category-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .glass-modal-dialog,
+  .modal-dialog-compact {
+    padding: 16px 14px 28px;
+  }
+}
+
+/* ── 7. LANDSCAPE MOBILE (max-height <= 520px & orientation: landscape) ── */
+@media (max-height: 520px) and (orientation: landscape) {
+  .glass-navbar {
+    position: relative;
+  }
+
+  .nav-container {
+    padding: 6px 16px;
+  }
+
+  .dashboard-viewport {
+    padding: 12px 16px 32px;
+  }
+
+  .cosmic-hero {
+    gap: 8px;
+  }
+
+  .glass-modal-dialog {
+    max-height: 94vh;
+    padding: 14px 20px;
+  }
+}
+
+/* ── 8. TOUCH & COARSE POINTER ACCESSIBILITY ── */
+@media (pointer: coarse) {
+  /* Enforce min 44px tap targets for effortless touch interaction */
+  .btn-ghost-glass {
+    min-height: 44px;
+    padding: 8px 14px;
+  }
+
+  .btn-liquid-primary,
+  .btn-liquid-secondary,
+  .btn-liquid-danger {
+    min-height: 44px;
+  }
+
+  .mobile-toggle-btn {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .drawer-close-btn,
+  .modal-close-glass-btn {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .filter-glass-pill {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .glass-select {
+    min-height: 44px;
+  }
+
+  .glass-search-input {
+    min-height: 44px;
+  }
+
+  .search-clear-glass-btn {
+    width: 44px;
+    height: 44px;
+  }
+
+  .tx-delete-btn {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  /* Disable mouse-tilt transforms on touch screens to prevent sticky angled states */
+  .glass-card.is-tilting,
+  .glass-card:hover {
+    transform: none !important;
+  }
+
+  .card-spotlight {
+    display: none !important;
+  }
+}
+
+/* ── 9. PREFERS-REDUCED-MOTION (ACCESSIBILITY) ── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
@@ -2531,7 +3082,15 @@ body {
   
   .nebula-cloud,
   .liquid-orb,
-  .stars-layer {
+  .stars-layer,
+  .border-beam,
+  .loader-orbital-ring,
+  .loader-liquid-bar,
+  .water-ripple-wave {
     animation: none !important;
+  }
+
+  .cinematic-loader {
+    transition: opacity 0.05s linear !important;
   }
 }
