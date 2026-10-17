@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Vaultly — Personal Finance and Expense Tracker. Track your income, manage expenses, and visualize your spending with clarity.">
+  <title>Vaultly — Personal Finance Tracker</title>
+
+  <!-- Google Font: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Lucide Icons (CDN with graceful fallback) -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
+  <!-- Chart.js (CDN with graceful fallback) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- SIDEBAR NAVIGATION (Desktop) -->
+    <aside class="sidebar" id="sidebar" aria-label="Main Navigation">
+      <div class="sidebar-brand">
+        <div class="brand-logo" aria-hidden="true">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <span class="brand-name">Vaultly</span>
+          <span class="brand-tagline">Your money. Your control.</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <ul class="nav-list">
+          <li class="nav-item">
+            <a href="#dashboard" class="nav-link active" data-section="dashboard">
+              <i data-lucide="layout-dashboard" class="nav-icon" aria-hidden="true"></i>
+              <span>Dashboard</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#transactions-section" class="nav-link" data-section="transactions">
+              <i data-lucide="receipt" class="nav-icon" aria-hidden="true"></i>
+              <span>Transactions</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#spending-section" class="nav-link" data-section="analytics">
+              <i data-lucide="pie-chart" class="nav-icon" aria-hidden="true"></i>
+              <span>Spending Analysis</span>
+            </a>
+          </li>
+        </ul>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="storage-badge" title="Data stored locally in your browser">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span class="storage-text">Local Storage Active</span>
+        </div>
+        <div class="demo-actions">
+          <button type="button" id="loadDemoBtn" class="btn-sidebar-action" title="Load sample transactions for demonstration">
+            <i data-lucide="sparkles" class="btn-icon-sm" aria-hidden="true"></i>
+            <span>Load Demo Data</span>
+          </button>
+          <button type="button" id="clearAllBtn" class="btn-sidebar-action btn-danger-ghost" title="Clear all stored transactions">
+            <i data-lucide="trash-2" class="btn-icon-sm" aria-hidden="true"></i>
+            <span>Reset All Data</span>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MOBILE BACKDROP -->
+    <div class="sidebar-backdrop" id="sidebarBackdrop" aria-hidden="true"></div>
+
+    <!-- MAIN WRAPPER -->
+    <div class="main-wrapper">
+      <!-- TOP MOBILE BAR / HEADER -->
+      <header class="top-bar">
+        <div class="top-bar-left">
+          <button type="button" class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="sidebar">
+            <i data-lucide="menu" class="menu-icon" aria-hidden="true"></i>
+          </button>
+          <div class="mobile-brand">
+            <div class="brand-logo-sm" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </div>
+            <span class="brand-name-sm">Vaultly</span>
+          </div>
+        </div>
+
+        <div class="header-greeting-wrap">
+          <div class="greeting-texts">
+            <h1 class="header-greeting" id="dynamicGreeting">Good day</h1>
+            <p class="header-subtitle">Here's your personal financial overview.</p>
+          </div>
+          <div class="header-date" id="currentDateDisplay" aria-label="Current date">
+            <!-- Populated via JavaScript -->
+          </div>
+        </div>
+
+        <div class="header-cta">
+          <button type="button" class="btn btn-primary" id="openAddModalBtn">
+            <i data-lucide="plus-circle" class="btn-icon" aria-hidden="true"></i>
+            <span>Add Transaction</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- MAIN CONTENT -->
+      <main class="content-container" id="dashboard">
+        <!-- 1. SUMMARY CARDS ROW -->
+        <section class="summary-cards" aria-label="Financial Summary Cards">
+          <!-- Main Net Balance Card -->
+          <article class="card balance-card">
+            <div class="card-header">
+              <span class="card-label">Total Net Balance</span>
+              <div class="card-icon-wrap icon-balance" aria-hidden="true">
+                <i data-lucide="wallet"></i>
+              </div>
+            </div>
+            <div class="balance-amount-wrap">
+              <span class="card-value" id="totalBalance">₹0.00</span>
+            </div>
+            <div class="card-footer">
+              <span class="badge badge-neutral" id="balanceStatusBadge">
+                <span class="badge-dot" aria-hidden="true"></span>
+                <span>Net position (Income − Expenses)</span>
+              </span>
+            </div>
+          </article>
+
+          <!-- Total Income Card -->
+          <article class="card income-card">
+            <div class="card-header">
+              <span class="card-label">Total Income</span>
+              <div class="card-icon-wrap icon-income" aria-hidden="true">
+                <i data-lucide="arrow-down-left"></i>
+              </div>
+            </div>
+            <div class="amount-wrap">
+              <span class="card-value text-income" id="totalIncome">₹0.00</span>
+            </div>
+            <div class="card-footer">
+              <span class="card-subtext" id="incomeCountLabel">0 income sources</span>
+            </div>
+          </article>
+
+          <!-- Total Expenses Card -->
+          <article class="card expense-card">
+            <div class="card-header">
+              <span class="card-label">Total Expenses</span>
+              <div class="card-icon-wrap icon-expense" aria-hidden="true">
+                <i data-lucide="arrow-up-right"></i>
+              </div>
+            </div>
+            <div class="amount-wrap">
+              <span class="card-value text-expense" id="totalExpense">₹0.00</span>
+            </div>
+            <div class="card-footer">
+              <span class="card-subtext" id="expenseCountLabel">0 expenses logged</span>
+            </div>
+          </article>
+        </section>
+
+        <!-- 2. ANALYTICS & SPENDING CHART SECTION -->
+        <section class="section-grid" id="spending-section" aria-label="Spending Analysis">
+          <article class="card chart-card">
+            <div class="section-card-header">
+              <div>
+                <h2 class="section-title">Spending by Category</h2>
+                <p class="section-subtitle">Visual breakdown of your logged expense distribution</p>
+              </div>
+              <div class="chart-badge-wrap">
+                <span class="badge badge-outline" id="chartExpenseTotalBadge">₹0.00 Total</span>
+              </div>
+            </div>
+
+            <!-- Chart Display Area -->
+            <div class="chart-container" id="chartContainer">
+              <canvas id="spendingChart" aria-label="Doughnut chart showing expenses by category" role="img"></canvas>
+              
+              <!-- Empty State for Chart -->
+              <div class="chart-empty-state" id="chartEmptyState">
+                <div class="empty-icon-wrap" aria-hidden="true">
+                  <i data-lucide="pie-chart"></i>
+                </div>
+                <h3 class="empty-title">No expense data to display</h3>
+                <p class="empty-desc">Chart insights will appear here once you record at least one expense transaction.</p>
+                <button type="button" class="btn btn-secondary btn-sm" id="chartAddExpenseBtn">
+                  <i data-lucide="plus" class="btn-icon-sm" aria-hidden="true"></i>
+                  Add an Expense
+                </button>
+              </div>
+            </div>
+
+            <!-- Category Summary List -->
+            <div class="category-breakdown-list" id="categoryBreakdownList" aria-label="Category expenditure breakdown">
+              <!-- Dynamically populated -->
+            </div>
+          </article>
+        </section>
+
+        <!-- 3. TRANSACTIONS SECTION -->
+        <section class="transactions-section" id="transactions-section" aria-label="Transactions Records">
+          <div class="card transactions-card">
+            <!-- Header with Search & Controls -->
+            <div class="transactions-header">
+              <div class="transactions-title-group">
+                <div class="title-with-badge">
+                  <h2 class="section-title">Transactions</h2>
+                  <span class="count-badge" id="transactionCountBadge">0</span>
+                </div>
+                <p class="section-subtitle">Manage, search, and filter your financial records</p>
+              </div>
+
+              <!-- Controls Toolbar -->
+              <div class="transactions-toolbar">
+                <!-- Search Box -->
+                <div class="search-box">
+                  <i data-lucide="search" class="search-icon" aria-hidden="true"></i>
+                  <input 
+                    type="search" 
+                    id="searchInput" 
+                    class="search-input" 
+                    placeholder="Search by title or category..."
+                    aria-label="Search transactions by title or category"
+                    autocomplete="off"
+                  >
+                  <button type="button" id="clearSearchBtn" class="search-clear-btn" aria-label="Clear search input" hidden>
+                    <i data-lucide="x" class="btn-icon-xs" aria-hidden="true"></i>
+                  </button>
+                </div>
+
+                <!-- Type Filter Pills -->
+                <div class="filter-pills" role="radiogroup" aria-label="Filter transactions by type">
+                  <button type="button" class="filter-pill active" data-filter="all" role="radio" aria-checked="true">
+                    All
+                  </button>
+                  <button type="button" class="filter-pill" data-filter="income" role="radio" aria-checked="false">
+                    Income
+                  </button>
+                  <button type="button" class="filter-pill" data-filter="expense" role="radio" aria-checked="false">
+                    Expenses
+                  </button>
+                </div>
+
+                <!-- Secondary Filters: Category & Sort -->
+                <div class="toolbar-dropdowns">
+                  <!-- Category Filter Dropdown -->
+                  <div class="select-wrapper">
+                    <label for="categoryFilterSelect" class="visually-hidden">Filter by category</label>
+                    <select id="categoryFilterSelect" class="toolbar-select">
+                      <option value="all">All Categories</option>
+                      <!-- Populated dynamically via JS -->
+                    </select>
+                  </div>
+
+                  <!-- Sort Dropdown -->
+                  <div class="select-wrapper">
+                    <label for="sortSelect" class="visually-hidden">Sort transactions</label>
+                    <select id="sortSelect" class="toolbar-select">
+                      <option value="date-desc">Newest First</option>
+                      <option value="date-asc">Oldest First</option>
+                      <option value="amount-desc">Highest Amount</option>
+                      <option value="amount-asc">Lowest Amount</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Transactions List -->
+            <div class="transactions-list-container">
+              <div class="transactions-list" id="transactionsList" role="feed" aria-busy="false" aria-label="List of transactions">
+                <!-- Dynamically generated rows -->
+              </div>
+
+              <!-- Empty State: No Transactions at all -->
+              <div class="empty-state" id="emptyStateNoData">
+                <div class="empty-icon-circle" aria-hidden="true">
+                  <i data-lucide="receipt"></i>
+                </div>
+                <h3 class="empty-state-title">Welcome to Vaultly</h3>
+                <p class="empty-state-text">
+                  Take control of your money. Add your first transaction to calculate your net balance and track your spending habits.
+                </p>
+                <div class="empty-state-actions">
+                  <button type="button" class="btn btn-primary" id="emptyAddFirstBtn">
+                    <i data-lucide="plus-circle" class="btn-icon" aria-hidden="true"></i>
+                    Add Your First Transaction
+                  </button>
+                  <button type="button" class="btn btn-secondary" id="emptyLoadDemoBtn">
+                    <i data-lucide="sparkles" class="btn-icon" aria-hidden="true"></i>
+                    Try Sample Data
+                  </button>
+                </div>
+              </div>
+
+              <!-- Empty State: No Search/Filter Results -->
+              <div class="empty-state" id="emptyStateNoResults" hidden>
+                <div class="empty-icon-circle" aria-hidden="true">
+                  <i data-lucide="search-x"></i>
+                </div>
+                <h3 class="empty-state-title">No matching transactions</h3>
+                <p class="empty-state-text">
+                  We couldn't find any records matching your search query or filter selection. Try adjusting your search keywords.
+                </p>
+                <button type="button" class="btn btn-secondary btn-sm" id="resetFiltersBtn">
+                  Reset Filters
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <!-- FOOTER -->
+      <footer class="app-footer">
+        <p class="footer-credit">
+          <strong>Vaultly</strong> — Personal Finance &amp; Expense Tracker. Crafted with HTML5, CSS3 &amp; Vanilla JavaScript.
+        </p>
+        <p class="footer-privacy-note">
+          <i data-lucide="shield-check" class="footer-shield-icon" aria-hidden="true"></i>
+          Privacy first: All transaction data is stored purely in your browser's Local Storage. No external servers or telemetry.
+        </p>
+      </footer>
+    </div>
+  </div>
+
+  <!-- ADD / EDIT TRANSACTION MODAL -->
+  <div class="modal-overlay" id="transactionModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <div class="modal-icon-badge" aria-hidden="true">
+            <i data-lucide="plus" id="modalHeaderIcon"></i>
+          </div>
+          <div>
+            <h2 class="modal-title" id="modalTitle">Add Transaction</h2>
+            <p class="modal-subtitle">Record a new income or expense entry</p>
+          </div>
+        </div>
+        <button type="button" class="modal-close-btn" id="closeModalBtn" aria-label="Close transaction modal">
+          <i data-lucide="x" aria-hidden="true"></i>
+        </button>
+      </div>
+
+      <form id="transactionForm" class="modal-form" novalidate>
+        <!-- Transaction Type Switcher -->
+        <div class="form-group">
+          <label class="form-label" id="typeGroupLabel">Transaction Type <span class="required-mark" aria-hidden="true">*</span></label>
+          <div class="type-toggle-group" role="radiogroup" aria-labelledby="typeGroupLabel">
+            <label class="type-toggle-option">
+              <input type="radio" name="transactionType" value="expense" checked id="typeExpense">
+              <span class="type-toggle-card expense-option">
+                <i data-lucide="arrow-up-right" class="toggle-icon" aria-hidden="true"></i>
+                <span class="toggle-text">Expense</span>
+              </span>
+            </label>
+            <label class="type-toggle-option">
+              <input type="radio" name="transactionType" value="income" id="typeIncome">
+              <span class="type-toggle-card income-option">
+                <i data-lucide="arrow-down-left" class="toggle-icon" aria-hidden="true"></i>
+                <span class="toggle-text">Income</span>
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Title / Description -->
+        <div class="form-group">
+          <label for="txTitle" class="form-label">
+            Title <span class="required-mark" aria-hidden="true">*</span>
+          </label>
+          <input 
+            type="text" 
+            id="txTitle" 
+            name="txTitle" 
+            class="form-input" 
+            placeholder="e.g. Monthly Grocery Run, Client Project Payout" 
+            maxlength="80" 
+            required 
+            aria-describedby="txTitleError"
+          >
+          <span class="form-error" id="txTitleError" aria-live="polite"></span>
+        </div>
+
+        <!-- Amount & Currency -->
+        <div class="form-group">
+          <label for="txAmount" class="form-label">
+            Amount (₹ INR) <span class="required-mark" aria-hidden="true">*</span>
+          </label>
+          <div class="input-prefix-wrapper">
+            <span class="currency-prefix" aria-hidden="true">₹</span>
+            <input 
+              type="number" 
+              id="txAmount" 
+              name="txAmount" 
+              class="form-input input-with-prefix" 
+              placeholder="0.00" 
+              min="0.01" 
+              step="0.01" 
+              required 
+              aria-describedby="txAmountError"
+            >
+          </div>
+          <span class="form-error" id="txAmountError" aria-live="polite"></span>
+        </div>
+
+        <!-- Category & Date Row -->
+        <div class="form-row">
+          <!-- Category Selector -->
+          <div class="form-group">
+            <label for="txCategory" class="form-label">
+              Category <span class="required-mark" aria-hidden="true">*</span>
+            </label>
+            <select id="txCategory" name="txCategory" class="form-select" required aria-describedby="txCategoryError">
+              <!-- Dynamically populated based on selected type -->
+            </select>
+            <span class="form-error" id="txCategoryError" aria-live="polite"></span>
+          </div>
+
+          <!-- Date Picker -->
+          <div class="form-group">
+            <label for="txDate" class="form-label">
+              Date <span class="required-mark" aria-hidden="true">*</span>
+            </label>
+            <input 
+              type="date" 
+              id="txDate" 
+              name="txDate" 
+              class="form-input" 
+              required 
+              aria-describedby="txDateError"
+            >
+            <span class="form-error" id="txDateError" aria-live="polite"></span>
+          </div>
+        </div>
+
+        <!-- Optional Notes -->
+        <div class="form-group">
+          <div class="label-with-hint">
+            <label for="txNotes" class="form-label">Notes</label>
+            <span class="field-hint">Optional</span>
+          </div>
+          <textarea 
+            id="txNotes" 
+            name="txNotes" 
+            class="form-textarea" 
+            rows="2" 
+            placeholder="Add any extra reference notes or tags..." 
+            maxlength="200"
+          ></textarea>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" id="cancelModalBtn">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="saveTransactionBtn">
+            <i data-lucide="check" class="btn-icon-sm" aria-hidden="true"></i>
+            <span>Save Transaction</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- DELETE CONFIRMATION DIALOG -->
+  <div class="modal-overlay" id="deleteConfirmModal" role="alertdialog" aria-modal="true" aria-labelledby="deleteModalTitle" aria-describedby="deleteModalDesc" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-sm">
+      <div class="delete-icon-badge" aria-hidden="true">
+        <i data-lucide="alert-triangle"></i>
+      </div>
+      <h3 class="modal-title text-center" id="deleteModalTitle">Delete Transaction?</h3>
+      <p class="modal-desc text-center" id="deleteModalDesc">
+        Are you sure you want to delete <strong id="deleteTargetTitle">this transaction</strong>? This action will update your balance and cannot be undone.
+      </p>
+      <div class="modal-actions modal-actions-center">
+        <button type="button" class="btn btn-secondary" id="cancelDeleteBtn">Cancel</button>
+        <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+          <i data-lucide="trash-2" class="btn-icon-sm" aria-hidden="true"></i>
+          Delete
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <aside class="toast-container" id="toastContainer" aria-live="polite" aria-atomic="true"></aside>
+
+  <!-- Application Script -->
+  <script src="script.js"></script>
+</body>
+</html>

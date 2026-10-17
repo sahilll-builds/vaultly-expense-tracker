@@ -1,0 +1,1730 @@
+/* ==========================================================================
+   VAULTLY — Personal Finance & Expense Tracker
+   Theme: Midnight Emerald
+   Style System, Components, Layout & Responsive Design
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. CSS DESIGN TOKENS (:root)
+   These custom properties act as the single source of truth for colors,
+   radii, transitions, and typography across the entire interface.
+   -------------------------------------------------------------------------- */
+:root {
+  /* Midnight Emerald Palette */
+  --bg-main: #0C0F0E;             /* Deepest canvas background */
+  --bg-card: #171B19;             /* Card and panel background */
+  --bg-surface: #1D2420;          /* Elevated surface, hovered items */
+  --bg-input: #111512;            /* Form input field background */
+
+  /* Emerald Accent & Focus Tokens */
+  --accent-primary: #8FE3B0;       /* Signature emerald accent */
+  --accent-primary-hover: #7cd19f; /* Slightly deeper hover state */
+  --accent-primary-rgb: 143, 227, 176;
+  --accent-glow: rgba(143, 227, 176, 0.15);
+
+  /* Typography Colors */
+  --text-primary: #F5F7F5;        /* Highest contrast primary text */
+  --text-secondary: #929A95;      /* Secondary descriptive text */
+  --text-muted: #5E6761;          /* Disabled, hints, subtle metadata */
+
+  /* Structural Borders */
+  --border-color: #29312C;        /* Clean card and divider borders */
+  --border-hover: #3D4841;        /* Subtle border illumination on hover */
+  --border-focus: #8FE3B0;        /* Accessible focus ring border */
+
+  /* Semantic Financial Indicators */
+  --color-income: #8FE3B0;        /* Emerald for positive cash inflows */
+  --color-income-bg: rgba(143, 227, 176, 0.12);
+  --color-expense: #F87171;       /* Restrained coral/red for cash outflows */
+  --color-expense-bg: rgba(248, 113, 113, 0.12);
+  --color-warning: #FBBF24;       /* Amber warning state */
+  --color-warning-bg: rgba(251, 191, 36, 0.12);
+
+  /* Typography */
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  /* Geometry & Border Radii */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-card: 16px;            /* Standard 16px card curvature */
+  --radius-pill: 9999px;
+
+  /* Shadows (subtle & restrained for dark theme) */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.25);
+  --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.4);
+  --shadow-modal: 0 20px 40px rgba(0, 0, 0, 0.65);
+
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-smooth: 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Spacing Scale */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+}
+
+/* --------------------------------------------------------------------------
+   2. RESET & BASE ELEMENTS
+   Ensure cross-browser consistency without heavy reset libraries.
+   -------------------------------------------------------------------------- */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--bg-main);
+  color: var(--text-primary);
+  line-height: 1.5;
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Accessible focus outlines */
+:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+/* Accessible hidden text for screen readers */
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* --------------------------------------------------------------------------
+   3. APP CONTAINER & MASTER LAYOUT
+   Desktop has a persistent sidebar on the left and scrollable content.
+   -------------------------------------------------------------------------- */
+.app-container {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+  background-color: var(--bg-main);
+}
+
+.main-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0; /* Prevents flex children from overflowing horizontally */
+}
+
+.content-container {
+  flex: 1;
+  padding: var(--space-xl) var(--space-xl) var(--space-lg);
+  max-width: 1360px;
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
+
+/* --------------------------------------------------------------------------
+   4. SIDEBAR NAVIGATION (Desktop)
+   Compact, visually quiet, dark emerald aesthetics.
+   -------------------------------------------------------------------------- */
+.sidebar {
+  width: 260px;
+  background-color: var(--bg-card);
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  z-index: 100;
+  padding: var(--space-lg) var(--space-md);
+  transition: transform var(--transition-smooth);
+}
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: var(--space-xs) var(--space-sm) var(--space-lg);
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: var(--space-lg);
+}
+
+.brand-logo {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, rgba(143, 227, 176, 0.2), rgba(143, 227, 176, 0.05));
+  border: 1px solid rgba(143, 227, 176, 0.3);
+  color: var(--accent-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 16px var(--accent-glow);
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.brand-name {
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+
+.brand-tagline {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.01em;
+}
+
+.sidebar-nav {
+  flex: 1;
+}
+
+.nav-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 0.92rem;
+  font-weight: 500;
+  transition: all var(--transition-fast);
+  position: relative;
+}
+
+.nav-link:hover {
+  color: var(--text-primary);
+  background-color: var(--bg-surface);
+}
+
+.nav-link.active {
+  color: var(--accent-primary);
+  background-color: rgba(143, 227, 176, 0.08);
+  font-weight: 600;
+}
+
+.nav-link.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 18%;
+  bottom: 18%;
+  width: 3px;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  background-color: var(--accent-primary);
+}
+
+.nav-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.sidebar-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--border-color);
+}
+
+.storage-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  padding: 6px 10px;
+  background-color: var(--bg-surface);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--accent-primary);
+  box-shadow: 0 0 6px var(--accent-primary);
+}
+
+.demo-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.btn-sidebar-action {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all var(--transition-fast);
+  text-align: left;
+  font-family: inherit;
+}
+
+.btn-sidebar-action:hover {
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+  border-color: var(--border-hover);
+}
+
+.btn-danger-ghost:hover {
+  color: var(--color-expense);
+  border-color: rgba(248, 113, 113, 0.4);
+  background-color: var(--color-expense-bg);
+}
+
+/* --------------------------------------------------------------------------
+   5. TOP BAR & HEADER
+   Contains dynamic personalized greeting, formatted date & Add Transaction CTA.
+   -------------------------------------------------------------------------- */
+.top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-lg) var(--space-xl);
+  border-bottom: 1px solid var(--border-color);
+  background-color: var(--bg-main);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  backdrop-filter: blur(8px);
+}
+
+.top-bar-left {
+  display: none; /* Shown on mobile screens */
+  align-items: center;
+  gap: 12px;
+}
+
+.mobile-menu-toggle {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.mobile-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.brand-logo-sm {
+  color: var(--accent-primary);
+  display: flex;
+}
+
+.brand-name-sm {
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.header-greeting-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.header-greeting {
+  font-size: 1.45rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+
+.header-subtitle {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+}
+
+.header-date {
+  font-size: 0.78rem;
+  color: var(--accent-primary);
+  font-weight: 500;
+  margin-top: 2px;
+  letter-spacing: 0.01em;
+}
+
+.header-cta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* --------------------------------------------------------------------------
+   6. BUTTON SYSTEM
+   Reusable, accessible, styled with distinct hierarchy.
+   -------------------------------------------------------------------------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 10px 18px;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+  text-decoration: none;
+  min-height: 42px;
+}
+
+.btn-primary {
+  background-color: var(--accent-primary);
+  color: #070908; /* High-contrast dark text on bright emerald */
+  box-shadow: 0 2px 10px rgba(143, 227, 176, 0.2);
+}
+
+.btn-primary:hover {
+  background-color: var(--accent-primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(143, 227, 176, 0.3);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-secondary {
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}
+
+.btn-secondary:hover {
+  background-color: #242c27;
+  border-color: var(--border-hover);
+  color: #ffffff;
+}
+
+.btn-danger {
+  background-color: var(--color-expense);
+  color: #0c0f0e;
+  font-weight: 600;
+}
+
+.btn-danger:hover {
+  background-color: #fca5a5;
+  transform: translateY(-1px);
+}
+
+.btn-sm {
+  font-size: 0.82rem;
+  padding: 6px 14px;
+  min-height: 34px;
+  border-radius: var(--radius-sm);
+}
+
+.btn-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.btn-icon-sm {
+  width: 16px;
+  height: 16px;
+}
+
+.btn-icon-xs {
+  width: 14px;
+  height: 14px;
+}
+
+/* --------------------------------------------------------------------------
+   7. CARDS & SUMMARY METRICS
+   3 primary cards: Total Net Balance, Total Income, Total Expenses.
+   -------------------------------------------------------------------------- */
+.card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-card);
+  padding: var(--space-lg);
+  box-shadow: var(--shadow-sm);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  position: relative;
+}
+
+.card:hover {
+  border-color: var(--border-hover);
+}
+
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-lg);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-md);
+}
+
+.card-label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.card-icon-wrap {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-balance {
+  background: rgba(143, 227, 176, 0.12);
+  color: var(--accent-primary);
+  border: 1px solid rgba(143, 227, 176, 0.25);
+}
+
+.icon-income {
+  background: var(--color-income-bg);
+  color: var(--color-income);
+  border: 1px solid rgba(143, 227, 176, 0.2);
+}
+
+.icon-expense {
+  background: var(--color-expense-bg);
+  color: var(--color-expense);
+  border: 1px solid rgba(248, 113, 113, 0.2);
+}
+
+/* Value Amounts */
+.card-value {
+  font-size: 1.85rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--text-primary);
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  display: block;
+}
+
+.balance-card .card-value {
+  font-size: 2.15rem;
+  color: #FFFFFF;
+}
+
+.text-income {
+  color: var(--color-income);
+}
+
+.text-expense {
+  color: var(--color-expense);
+}
+
+.card-footer {
+  margin-top: var(--space-md);
+  display: flex;
+  align-items: center;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.card-subtext {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+/* Badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.badge-neutral {
+  background-color: var(--bg-surface);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.badge-outline {
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  font-weight: 600;
+  background-color: var(--bg-surface);
+}
+
+.badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--accent-primary);
+}
+
+/* --------------------------------------------------------------------------
+   8. SPENDING OVERVIEW & CHART.JS SECTION
+   Refined visual presentation of expenses by category.
+   -------------------------------------------------------------------------- */
+.chart-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.section-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: var(--space-md);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.section-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+
+.section-subtitle {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.chart-container {
+  position: relative;
+  min-height: 280px;
+  max-height: 320px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-md) 0;
+}
+
+#spendingChart {
+  max-height: 300px;
+  max-width: 100%;
+}
+
+/* Empty Chart State */
+.chart-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: var(--space-xl) var(--space-md);
+  gap: 10px;
+}
+
+.empty-icon-wrap {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--space-xs);
+}
+
+.empty-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.empty-desc {
+  font-size: 0.84rem;
+  color: var(--text-secondary);
+  max-width: 380px;
+  line-height: 1.4;
+}
+
+/* Category Breakdown Chips/List */
+.category-breakdown-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--border-color);
+}
+
+.breakdown-chip {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  transition: transform var(--transition-fast);
+}
+
+.breakdown-chip:hover {
+  transform: translateY(-1px);
+  border-color: var(--border-hover);
+}
+
+.breakdown-chip-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.breakdown-color-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.breakdown-name {
+  font-size: 0.84rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.breakdown-chip-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+
+.breakdown-amount {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.breakdown-percentage {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+/* --------------------------------------------------------------------------
+   9. TRANSACTIONS SECTION & TOOLBAR
+   Search, filters, sort dropdown, and transaction list.
+   -------------------------------------------------------------------------- */
+.transactions-card {
+  padding: var(--space-xl);
+}
+
+.transactions-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  margin-bottom: var(--space-lg);
+  padding-bottom: var(--space-lg);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.transactions-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.title-with-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.count-badge {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  color: var(--accent-primary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+}
+
+.transactions-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* Search Box */
+.search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 240px;
+  max-width: 360px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 12px;
+  width: 16px;
+  height: 16px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.search-input {
+  width: 100%;
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 9px 36px 9px 38px;
+  color: var(--text-primary);
+  font-size: 0.88rem;
+  font-family: inherit;
+  transition: all var(--transition-fast);
+}
+
+.search-input:focus {
+  border-color: var(--border-focus);
+  outline: none;
+  background-color: var(--bg-surface);
+  box-shadow: 0 0 0 3px rgba(143, 227, 176, 0.15);
+}
+
+.search-input::placeholder {
+  color: var(--text-muted);
+}
+
+.search-clear-btn {
+  position: absolute;
+  right: 10px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.search-clear-btn:hover {
+  color: var(--text-primary);
+  background-color: var(--bg-surface);
+}
+
+/* Filter Pills (All / Income / Expense) */
+.filter-pills {
+  display: flex;
+  background-color: var(--bg-input);
+  padding: 4px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  gap: 2px;
+}
+
+.filter-pill {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 500;
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  font-family: inherit;
+}
+
+.filter-pill:hover {
+  color: var(--text-primary);
+}
+
+.filter-pill.active {
+  background-color: var(--bg-surface);
+  color: var(--accent-primary);
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
+}
+
+/* Toolbar Select Dropdowns */
+.toolbar-dropdowns {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.select-wrapper {
+  position: relative;
+}
+
+.toolbar-select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  font-weight: 500;
+  padding: 8px 32px 8px 12px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all var(--transition-fast);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23929A95' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+}
+
+.toolbar-select:focus {
+  border-color: var(--border-focus);
+  outline: none;
+}
+
+.toolbar-select:hover {
+  border-color: var(--border-hover);
+}
+
+/* --------------------------------------------------------------------------
+   10. TRANSACTION ROW COMPONENT
+   Clean, modern row with category icon, title, date, signed amount, delete btn.
+   -------------------------------------------------------------------------- */
+.transactions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tx-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  transition: all var(--transition-fast);
+  gap: 16px;
+}
+
+.tx-row:hover {
+  border-color: var(--border-hover);
+  background-color: #212924;
+  transform: translateY(-1px);
+}
+
+.tx-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  flex: 1;
+}
+
+.tx-category-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.tx-category-icon.type-income {
+  background: var(--color-income-bg);
+  color: var(--color-income);
+  border: 1px solid rgba(143, 227, 176, 0.25);
+}
+
+.tx-category-icon.type-expense {
+  background: var(--color-expense-bg);
+  color: var(--color-expense);
+  border: 1px solid rgba(248, 113, 113, 0.25);
+}
+
+.tx-details {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.tx-title {
+  font-size: 0.94rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tx-metadata {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.tx-category-pill {
+  background-color: rgba(255, 255, 255, 0.05);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 0.72rem;
+  font-weight: 500;
+}
+
+.tx-notes-preview {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  max-width: 220px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-style: italic;
+}
+
+.tx-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+.tx-amount {
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.tx-amount.type-income {
+  color: var(--color-income);
+}
+
+.tx-amount.type-expense {
+  color: var(--color-expense);
+}
+
+.tx-delete-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.tx-delete-btn:hover {
+  background-color: var(--color-expense-bg);
+  border-color: rgba(248, 113, 113, 0.3);
+  color: var(--color-expense);
+}
+
+/* --------------------------------------------------------------------------
+   11. EMPTY STATES
+   Warm, instructive, providing next steps for first-time or filtered states.
+   -------------------------------------------------------------------------- */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--space-xl) var(--space-md);
+  background-color: var(--bg-surface);
+  border-radius: var(--radius-card);
+  border: 1px dashed var(--border-color);
+  margin: var(--space-md) 0;
+}
+
+.empty-icon-circle {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background-color: rgba(143, 227, 176, 0.08);
+  border: 1px solid rgba(143, 227, 176, 0.2);
+  color: var(--accent-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--space-md);
+}
+
+.empty-state-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+.empty-state-text {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  max-width: 440px;
+  line-height: 1.5;
+  margin-bottom: var(--space-lg);
+}
+
+.empty-state-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+}
+
+/* --------------------------------------------------------------------------
+   12. MODAL DIALOGS (Add Transaction & Delete Confirmation)
+   Standard, keyboard accessible, animated backdrop.
+   -------------------------------------------------------------------------- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(6, 9, 8, 0.82);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-md);
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity var(--transition-normal), visibility var(--transition-normal);
+}
+
+.modal-overlay[aria-hidden="false"] {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.modal-dialog {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-modal);
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: var(--space-xl);
+  transform: scale(0.96) translateY(8px);
+  transition: transform var(--transition-normal);
+}
+
+.modal-overlay[aria-hidden="false"] .modal-dialog {
+  transform: scale(1) translateY(0);
+}
+
+.modal-dialog-sm {
+  max-width: 420px;
+  padding: var(--space-xl);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-lg);
+  padding-bottom: var(--space-md);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.modal-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.modal-icon-badge {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background-color: rgba(143, 227, 176, 0.12);
+  color: var(--accent-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.delete-icon-badge {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background-color: var(--color-expense-bg);
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  color: var(--color-expense);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--space-md);
+}
+
+.modal-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+
+.text-center {
+  text-align: center;
+}
+
+.modal-subtitle {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.modal-desc {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: var(--space-lg);
+}
+
+.modal-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.modal-close-btn:hover {
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+}
+
+/* --------------------------------------------------------------------------
+   13. FORM CONTROLS & VALIDATION
+   Clear labels, input styling, validation error messages.
+   -------------------------------------------------------------------------- */
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-md);
+}
+
+.form-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.01em;
+}
+
+.label-with-hint {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.field-hint {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.required-mark {
+  color: var(--color-expense);
+}
+
+/* Type Toggle (Segmented control) */
+.type-toggle-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.type-toggle-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.type-toggle-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px;
+  border-radius: var(--radius-md);
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.type-toggle-option input:checked + .type-toggle-card.expense-option {
+  background-color: var(--color-expense-bg);
+  border-color: rgba(248, 113, 113, 0.4);
+  color: var(--color-expense);
+}
+
+.type-toggle-option input:checked + .type-toggle-card.income-option {
+  background-color: var(--color-income-bg);
+  border-color: rgba(143, 227, 176, 0.4);
+  color: var(--color-income);
+}
+
+.toggle-icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* Input Fields */
+.form-input,
+.form-select,
+.form-textarea {
+  width: 100%;
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-family: inherit;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
+  border-color: var(--border-focus);
+  outline: none;
+  background-color: var(--bg-surface);
+  box-shadow: 0 0 0 3px rgba(143, 227, 176, 0.15);
+}
+
+.form-input.has-error,
+.form-select.has-error {
+  border-color: var(--color-expense);
+}
+
+.form-error {
+  font-size: 0.74rem;
+  color: var(--color-expense);
+  min-height: 16px;
+  font-weight: 500;
+}
+
+/* Currency Prefix Input */
+.input-prefix-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.currency-prefix {
+  position: absolute;
+  left: 14px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--accent-primary);
+  pointer-events: none;
+}
+
+.input-with-prefix {
+  padding-left: 32px;
+  font-variant-numeric: tabular-nums;
+}
+
+.form-select {
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23929A95' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 38px;
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 70px;
+}
+
+.modal-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: var(--space-md);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--border-color);
+}
+
+.modal-actions-center {
+  justify-content: center;
+  width: 100%;
+}
+
+/* --------------------------------------------------------------------------
+   14. TOAST NOTIFICATIONS
+   Non-intrusive floating feedback.
+   -------------------------------------------------------------------------- */
+.toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 2000;
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  border-radius: var(--radius-md);
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-modal);
+  font-size: 0.86rem;
+  font-weight: 500;
+  min-width: 260px;
+  max-width: 400px;
+  transform: translateY(16px);
+  opacity: 0;
+  transition: all var(--transition-normal);
+}
+
+.toast.show {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.toast.toast-success {
+  border-left: 4px solid var(--accent-primary);
+}
+
+.toast.toast-danger {
+  border-left: 4px solid var(--color-expense);
+}
+
+.toast.toast-info {
+  border-left: 4px solid #38BDF8;
+}
+
+.toast-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.toast.toast-success .toast-icon {
+  color: var(--accent-primary);
+}
+
+.toast.toast-danger .toast-icon {
+  color: var(--color-expense);
+}
+
+.toast-message {
+  flex: 1;
+}
+
+/* --------------------------------------------------------------------------
+   15. FOOTER
+   -------------------------------------------------------------------------- */
+.app-footer {
+  padding: var(--space-xl) 0 var(--space-lg);
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  margin-top: auto;
+}
+
+.footer-privacy-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+}
+
+.footer-shield-icon {
+  width: 14px;
+  height: 14px;
+  color: var(--accent-primary);
+}
+
+/* --------------------------------------------------------------------------
+   16. RESPONSIVE BREAKPOINTS
+   Ensures seamless viewing on desktop, tablet, and mobile (down to 320px).
+   -------------------------------------------------------------------------- */
+
+/* Medium Desktops & Tablets (<= 1024px) */
+@media (max-width: 1024px) {
+  .summary-cards {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .balance-card {
+    grid-column: 1 / -1; /* Balance card spans full width */
+  }
+
+  .content-container {
+    padding: var(--space-lg) var(--space-md);
+  }
+}
+
+/* Tablets & Mobile Screens (<= 768px) */
+@media (max-width: 768px) {
+  /* Hide permanent sidebar, enable mobile drawer */
+  .sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    transform: translateX(-100%);
+    box-shadow: var(--shadow-modal);
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  /* Backdrop for mobile drawer */
+  .sidebar-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.7);
+    z-index: 90;
+    backdrop-filter: blur(4px);
+  }
+
+  .sidebar-backdrop.active {
+    display: block;
+  }
+
+  .top-bar-left {
+    display: flex;
+  }
+
+  .top-bar {
+    padding: var(--space-md);
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .header-greeting-wrap {
+    order: 3;
+    width: 100%;
+  }
+
+  .header-greeting {
+    font-size: 1.25rem;
+  }
+
+  .transactions-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-box {
+    max-width: 100%;
+  }
+
+  .filter-pills {
+    width: 100%;
+    justify-content: space-around;
+  }
+
+  .filter-pill {
+    flex: 1;
+    text-align: center;
+  }
+
+  .toolbar-dropdowns {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .select-wrapper {
+    flex: 1;
+  }
+
+  .toolbar-select {
+    width: 100%;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .toast-container {
+    bottom: 16px;
+    right: 16px;
+    left: 16px;
+  }
+
+  .toast {
+    max-width: 100%;
+  }
+}
+
+/* Small Mobile Screens (<= 480px down to 320px) */
+@media (max-width: 480px) {
+  .summary-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .card-value {
+    font-size: 1.6rem;
+  }
+
+  .balance-card .card-value {
+    font-size: 1.85rem;
+  }
+
+  .header-cta .btn {
+    padding: 8px 12px;
+    font-size: 0.82rem;
+  }
+
+  .tx-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .tx-right {
+    justify-content: space-between;
+    width: 100%;
+    padding-top: 8px;
+    border-top: 1px solid var(--border-color);
+  }
+
+  .tx-amount {
+    font-size: 1.15rem;
+  }
+
+  .category-breakdown-list {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-dialog {
+    padding: var(--space-md);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   17. ACCESSIBILITY & PREFERS-REDUCED-MOTION
+   Respect users with motion sensitivities.
+   -------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
