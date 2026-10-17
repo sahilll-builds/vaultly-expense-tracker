@@ -1,23 +1,26 @@
 /**
  * ==============================================================================
- * VAULTLY — Personal Finance & Expense Tracker
- * Architecture: Clean Vanilla JavaScript (ES6+) with Separation of Concerns
+ * VAULTLY — AI-Powered Personal Finance Platform
+ * Architecture: Modular Vanilla JavaScript (ES6+) with Unidirectional Data Flow
  *
  * Core Modules:
  * 1. Constants & Category Taxonomy
- * 2. Application State Management
- * 3. Local Storage Persistence & Error Recovery
+ * 2. Multi-Store Local Storage Persistence & Error Recovery
+ * 3. Application State Management
  * 4. Financial Calculation Engine
  * 5. Internationalization & Formatting (INR Currency & Dates)
  * 6. DOM Element Selectors & Cache
- * 7. Rendering Engine (Cards, Transactions, Categories, Fallbacks)
- * 8. Chart.js Visualization Controller
- * 9. Form Validation & Transaction Handling
- * 10. Delete Confirmation Flow
- * 11. Search, Filtering, and Sorting Pipeline
- * 12. Demo Data & Reset Handlers
- * 13. UI Enhancements (Toasts, Mobile Drawer, Greetings)
- * 14. Initialization Bootstrap
+ * 7. Client-Side 7-View Router (switchView)
+ * 8. Spatial 3D Balance Visualizer & Mouse Tilt Engine
+ * 9. Transaction Management (CRUD, Custom Categories & CSV Export)
+ * 10. Smart Budgets & Recurring Subscriptions
+ * 11. Financial Goals & Savings Planner
+ * 12. AI Spending Analyzer & Forecasting
+ * 13. Vaultly AI Conversational Assistant & NL Parser
+ * 14. Settings, Backup & Diagnostics
+ * 15. UI Enhancements (Toasts, Mobile Drawer, Tactile Wave)
+ * 16. Cinematic Loader Controller (<= 1.0s)
+ * 17. Application Bootstrap
  * ==============================================================================
  */
 
@@ -27,16 +30,14 @@
    1. CONSTANTS & CATEGORY TAXONOMY
    ============================================================================== */
 
-/**
- * Storage key used to persist transactions in the browser's Local Storage.
- * Using a dedicated namespace prevents collisions with other web applications.
- */
-const STORAGE_KEY = 'vaultly_transactions';
+const STORAGE_KEYS = {
+  transactions: 'vaultly_transactions',
+  budgets: 'vaultly_budgets',
+  goals: 'vaultly_goals',
+  recurring: 'vaultly_recurring',
+  customCategories: 'vaultly_custom_categories'
+};
 
-/**
- * Expense Categories with metadata for icons and chart color mapping.
- * Colors adhere to the Cosmic Glassmorphism aesthetic.
- */
 const EXPENSE_CATEGORIES = [
   { id: 'Food & Dining', name: 'Food & Dining', icon: 'utensils', color: '#FFFFFF' },
   { id: 'Transport', name: 'Transport', icon: 'car', color: '#E2E2E2' },
@@ -48,9 +49,6 @@ const EXPENSE_CATEGORIES = [
   { id: 'Other', name: 'Other', icon: 'more-horizontal', color: '#3A3A3A' }
 ];
 
-/**
- * Income Categories for categorizing inward cash flow.
- */
 const INCOME_CATEGORIES = [
   { id: 'Salary', name: 'Salary', icon: 'briefcase', color: '#FFFFFF' },
   { id: 'Freelance', name: 'Freelance', icon: 'laptop', color: '#D4D4D4' },
@@ -59,10 +57,6 @@ const INCOME_CATEGORIES = [
   { id: 'Other', name: 'Other', icon: 'dollar-sign', color: '#545454' }
 ];
 
-/**
- * Curated Demo Transactions to help first-time users explore features immediately.
- * Dates are dynamically adjusted relative to today's date when loaded.
- */
 const SAMPLE_TRANSACTIONS = [
   {
     id: 'demo-tx-1',
@@ -89,7 +83,7 @@ const SAMPLE_TRANSACTIONS = [
     type: 'expense',
     category: 'Food & Dining',
     dateOffsetDays: 1,
-    notes: 'Fresh veggies, staples, and fruits'
+    notes: 'Fresh staples, fruits and vegetables'
   },
   {
     id: 'demo-tx-4',
@@ -111,90 +105,138 @@ const SAMPLE_TRANSACTIONS = [
   }
 ];
 
+const SAMPLE_BUDGETS = [
+  { category: 'Food & Dining', limit: 8000 },
+  { category: 'Transport', limit: 3000 },
+  { category: 'Shopping', limit: 5000 },
+  { category: 'Bills & Utilities', limit: 6000 }
+];
+
+const SAMPLE_GOALS = [
+  { id: 'demo-goal-1', title: 'Emergency Fund', targetAmount: 75000, currentAmount: 35000, targetDate: '2026-12-31' },
+  { id: 'demo-goal-2', title: 'Hardware Setup', targetAmount: 45000, currentAmount: 20000, targetDate: '2026-11-30' }
+];
+
+const SAMPLE_RECURRING = [
+  { id: 'demo-rec-1', name: 'High-Speed Fiber Internet', amount: 999, frequency: 'monthly', nextDate: '2026-11-05', active: true },
+  { id: 'demo-rec-2', name: 'Cloud Server Hosting', amount: 750, frequency: 'monthly', nextDate: '2026-11-12', active: true }
+];
+
 /* ==============================================================================
    2. APPLICATION STATE MANAGEMENT
-   Single source of truth for the active session.
    ============================================================================== */
 
 const state = {
-  transactions: [],          // Array of transaction objects
-  activeTypeFilter: 'all',   // 'all' | 'income' | 'expense'
-  searchQuery: '',           // Current search filter string
-  selectedCategory: 'all',   // Category filter or 'all'
-  sortBy: 'date-desc',       // 'date-desc' | 'date-asc' | 'amount-desc' | 'amount-asc'
-  pendingDeleteId: null,     // Holds ID while delete confirmation modal is open
-  chartInstance: null        // References active Chart.js instance for cleanup
+  transactions: [],
+  budgets: [],
+  goals: [],
+  recurring: [],
+  customCategories: [],
+  activeView: 'overview',
+  activeTypeFilter: 'all',
+  searchQuery: '',
+  selectedCategory: 'all',
+  sortBy: 'date-desc',
+  pendingDeleteId: null,
+  editingTxId: null,
+  chartInstance: null,
+  aiMessages: [
+    {
+      sender: 'assistant',
+      text: 'Welcome to Vaultly AI. I analyze your verified records to give you clear, accurate answers about your cashflow, budgets, and savings goals. Ask me a question or enter a transaction like: "Spent ₹250 on lunch today".'
+    }
+  ]
 };
 
 /* ==============================================================================
-   3. LOCAL STORAGE PERSISTENCE & ERROR RECOVERY
-   Safe JSON serialization with defensive error handling.
+   3. MULTI-STORE PERSISTENCE & DEFENSIVE PARSING
    ============================================================================== */
 
-/**
- * Safely loads transactions from the browser's Local Storage.
- * Returns an empty array if storage is empty or contains malformed data.
- * @returns {Array<Object>} List of valid transactions
- */
-function loadTransactions() {
+function safeLoad(key, validator, fallback = []) {
   try {
-    const rawData = localStorage.getItem(STORAGE_KEY);
-    if (!rawData) {
-      return [];
-    }
-
-    const parsed = JSON.parse(rawData);
-
-    // Defensively verify parsed output is an array
-    if (!Array.isArray(parsed)) {
-      console.warn('[Vaultly] Stored data was not an array. Resetting to empty list.');
-      return [];
-    }
-
-    // Filter and sanitize items to ensure required fields exist
-    return parsed.filter(item => (
-      item &&
-      typeof item.id === 'string' &&
-      typeof item.title === 'string' &&
-      typeof item.amount === 'number' &&
-      !isNaN(item.amount) &&
-      (item.type === 'income' || item.type === 'expense') &&
-      typeof item.category === 'string' &&
-      typeof item.date === 'string'
-    ));
-  } catch (error) {
-    console.error('[Vaultly] Failed to load transactions from Local Storage:', error);
-    showToast('Could not load saved transactions. Local storage might be corrupted.', 'danger');
-    return [];
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return fallback;
+    return parsed.filter(validator);
+  } catch (err) {
+    console.warn(`[Vaultly] Failed to parse ${key}:`, err);
+    return fallback;
   }
 }
 
-/**
- * Persists transactions array into Local Storage.
- * @param {Array<Object>} transactionsList - Array to serialize
- * @returns {boolean} True if successfully saved
- */
-function saveTransactions(transactionsList) {
+function safeSave(key, data) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(transactionsList));
+    localStorage.setItem(key, JSON.stringify(data));
     return true;
-  } catch (error) {
-    console.error('[Vaultly] Local Storage save error:', error);
-    showToast('Failed to save to local storage. Your browser storage might be full.', 'danger');
+  } catch (err) {
+    console.error(`[Vaultly] Storage save error for ${key}:`, err);
     return false;
   }
 }
 
+function loadTransactions() {
+  return safeLoad(STORAGE_KEYS.transactions, item => (
+    item &&
+    typeof item.id === 'string' &&
+    typeof item.title === 'string' &&
+    typeof item.amount === 'number' &&
+    !isNaN(item.amount) &&
+    (item.type === 'income' || item.type === 'expense') &&
+    typeof item.category === 'string' &&
+    typeof item.date === 'string'
+  ));
+}
+
+function saveTransactions(data) {
+  return safeSave(STORAGE_KEYS.transactions, data);
+}
+
+function loadBudgets() {
+  return safeLoad(STORAGE_KEYS.budgets, b => (
+    b && typeof b.category === 'string' && typeof b.limit === 'number' && b.limit > 0
+  ), SAMPLE_BUDGETS);
+}
+
+function saveBudgets(data) {
+  return safeSave(STORAGE_KEYS.budgets, data);
+}
+
+function loadGoals() {
+  return safeLoad(STORAGE_KEYS.goals, g => (
+    g && typeof g.id === 'string' && typeof g.title === 'string' && typeof g.targetAmount === 'number' && g.targetAmount > 0
+  ), SAMPLE_GOALS);
+}
+
+function saveGoals(data) {
+  return safeSave(STORAGE_KEYS.goals, data);
+}
+
+function loadRecurring() {
+  return safeLoad(STORAGE_KEYS.recurring, r => (
+    r && typeof r.id === 'string' && typeof r.name === 'string' && typeof r.amount === 'number'
+  ), SAMPLE_RECURRING);
+}
+
+function saveRecurring(data) {
+  return safeSave(STORAGE_KEYS.recurring, data);
+}
+
+function loadCustomCategories() {
+  return safeLoad(STORAGE_KEYS.customCategories, c => (
+    c && typeof c.id === 'string' && typeof c.name === 'string'
+  ), []);
+}
+
+function saveCustomCategories(data) {
+  return safeSave(STORAGE_KEYS.customCategories, data);
+}
+
 /* ==============================================================================
    4. FINANCIAL CALCULATION ENGINE
-   All metrics are computed purely on-the-fly from stored records.
+   Deterministic arithmetic strictly from verified stored records.
    ============================================================================== */
 
-/**
- * Calculates financial totals from transaction records.
- * @param {Array<Object>} transactionsList
- * @returns {{ totalIncome: number, totalExpenses: number, netBalance: number, incomeCount: number, expenseCount: number }}
- */
 function calculateTotals(transactionsList) {
   let totalIncome = 0;
   let totalExpenses = 0;
@@ -211,66 +253,93 @@ function calculateTotals(transactionsList) {
     }
   }
 
-  // Net Balance is defined strictly as: Total Income − Total Expenses
   const netBalance = totalIncome - totalExpenses;
-
-  return {
-    totalIncome,
-    totalExpenses,
-    netBalance,
-    incomeCount,
-    expenseCount
-  };
+  return { totalIncome, totalExpenses, netBalance, incomeCount, expenseCount };
 }
 
-/**
- * Aggregates expenses grouped by category for Chart.js and breakdown cards.
- * @param {Array<Object>} transactionsList
- * @returns {Array<{ category: string, total: number, percentage: number, color: string }>}
- */
 function calculateCategoryBreakdown(transactionsList) {
   const expenseTransactions = transactionsList.filter(tx => tx.type === 'expense');
   const totalExpenseSum = expenseTransactions.reduce((acc, curr) => acc + curr.amount, 0);
 
-  if (totalExpenseSum === 0) {
-    return [];
-  }
+  if (totalExpenseSum === 0) return [];
 
   const categoryTotals = {};
-
   for (const tx of expenseTransactions) {
     categoryTotals[tx.category] = (categoryTotals[tx.category] || 0) + tx.amount;
   }
 
-  // Map to structured breakdown array with colors
+  const allCategories = [...EXPENSE_CATEGORIES, ...state.customCategories];
+
   const breakdown = Object.keys(categoryTotals).map(categoryName => {
     const total = categoryTotals[categoryName];
-    const categoryMeta = EXPENSE_CATEGORIES.find(c => c.name === categoryName) || {
-      color: '#9CA3AF'
-    };
+    const categoryMeta = allCategories.find(c => c.name === categoryName) || { color: '#858585' };
+    const percentage = Math.round((total / totalExpenseSum) * 100);
 
     return {
       category: categoryName,
-      total: total,
-      percentage: Math.round((total / totalExpenseSum) * 100),
+      total,
+      percentage,
       color: categoryMeta.color
     };
   });
 
-  // Sort descending by highest spending
   breakdown.sort((a, b) => b.total - a.total);
-
   return breakdown;
 }
 
+function calculateSafeToSpend(transactionsList, recurringList = []) {
+  const { netBalance } = calculateTotals(transactionsList);
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const totalDaysInMonth = new Date(year, month + 1, 0).getDate();
+  const currentDay = now.getDate();
+  const daysRemaining = Math.max(1, totalDaysInMonth - currentDay + 1);
+
+  // Deduct remaining active recurring commitments for this month
+  const activeRecurringSum = recurringList
+    .filter(r => r.active !== false)
+    .reduce((sum, r) => sum + r.amount, 0);
+
+  const availableSurplus = Math.max(0, netBalance - activeRecurringSum);
+  const dailyAllowance = netBalance > 0 ? (availableSurplus / daysRemaining) : 0;
+  const monthProgress = Math.min(100, Math.round((currentDay / totalDaysInMonth) * 100));
+
+  return {
+    netBalance,
+    dailyAllowance,
+    daysRemaining,
+    totalDaysInMonth,
+    currentDay,
+    monthProgress,
+    activeRecurringSum
+  };
+}
+
+function calculateSpendingForecast(transactionsList) {
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+  const totalDays = new Date(currentYear, currentMonth + 1, 0).getDate();
+  const currentDay = Math.max(1, now.getDate());
+
+  const thisMonthExpenses = transactionsList.filter(tx => {
+    if (tx.type !== 'expense') return false;
+    const d = new Date(tx.date);
+    return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+  });
+
+  const spentSoFar = thisMonthExpenses.reduce((sum, tx) => sum + tx.amount, 0);
+  const avgDaily = spentSoFar / currentDay;
+  const projectedEnd = Math.round(spentSoFar + (avgDaily * (totalDays - currentDay)));
+
+  return { spentSoFar, currentDay, totalDays, avgDaily, projectedEnd };
+}
+
 /* ==============================================================================
-   5. INTERNATIONALIZATION & FORMATTING (INR CURRENCY & DATES)
+   5. CURRENCY & DATE FORMATTING
    ============================================================================== */
 
-/**
- * Standard Indian Rupee (INR) currency formatter using the modern Intl API.
- * e.g., 65000 -> ₹65,000.00
- */
 const inrFormatter = new Intl.NumberFormat('en-IN', {
   style: 'currency',
   currency: 'INR',
@@ -278,44 +347,24 @@ const inrFormatter = new Intl.NumberFormat('en-IN', {
   maximumFractionDigits: 2
 });
 
-/**
- * Formats a numeric amount to INR.
- * @param {number} amount
- * @returns {string} Formatted currency string
- */
 function formatCurrency(amount) {
   if (typeof amount !== 'number' || isNaN(amount)) {
-    return '₹0.00';
+    return inrFormatter.format(0);
   }
   return inrFormatter.format(amount);
 }
 
-/**
- * Formats a standard YYYY-MM-DD date string into a user-friendly date.
- * e.g., '2026-10-17' -> '17 Oct 2026'
- * @param {string} dateString - YYYY-MM-DD
- * @returns {string} Human readable date
- */
 function formatDate(dateString) {
   if (!dateString) return '';
   try {
     const [year, month, day] = dateString.split('-').map(Number);
     const dateObj = new Date(year, month - 1, day);
-
-    return dateObj.toLocaleDateString('en-IN', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
-    });
+    return dateObj.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
   } catch (error) {
     return dateString;
   }
 }
 
-/**
- * Returns today's date formatted as YYYY-MM-DD for form default value.
- * @returns {string}
- */
 function getTodayDateString() {
   const now = new Date();
   const year = now.getFullYear();
@@ -326,7 +375,6 @@ function getTodayDateString() {
 
 /* ==============================================================================
    6. DOM ELEMENT SELECTORS
-   Cached element references for clean performance and readability.
    ============================================================================== */
 
 const DOM = {
@@ -335,14 +383,23 @@ const DOM = {
   mobileDrawer: document.getElementById('mobileDrawer'),
   mobileDrawerBackdrop: document.getElementById('mobileDrawerBackdrop'),
   closeDrawerBtn: document.getElementById('closeDrawerBtn'),
-  desktopNavItems: document.querySelectorAll('.nav-links-desktop .nav-item'),
-  drawerLinks: document.querySelectorAll('.drawer-links .drawer-link'),
   dynamicGreeting: document.getElementById('dynamicGreeting'),
   currentDateDisplay: document.getElementById('currentDateDisplay'),
 
-  // Summary Metrics
+  // Views & Sidebar
+  viewPanels: document.querySelectorAll('.view-panel'),
+  sidebarNavItems: document.querySelectorAll('.sidebar-nav-item'),
+  headerNavItems: document.querySelectorAll('.nav-links-desktop .nav-item'),
+  drawerNavItems: document.querySelectorAll('.drawer-links .drawer-link'),
+  bottomNavItems: document.querySelectorAll('.mobile-bottom-nav .bottom-nav-item'),
+  sidebarTxCount: document.getElementById('sidebarTxCount'),
+  sidebarAddTxBtn: document.getElementById('sidebarAddTxBtn'),
+  txViewAddBtn: document.getElementById('txViewAddBtn'),
+
+  // Balance & 3D Orb
   totalBalance: document.getElementById('totalBalance'),
   balanceStatusBadge: document.getElementById('balanceStatusBadge'),
+  spatialBalanceOrb: document.getElementById('spatialBalanceOrb'),
   totalIncome: document.getElementById('totalIncome'),
   incomeCountLabel: document.getElementById('incomeCountLabel'),
   totalExpense: document.getElementById('totalExpense'),
@@ -355,1390 +412,1385 @@ const DOM = {
   monthProgressPercent: document.getElementById('monthProgressPercent'),
   safeSpendDesc: document.getElementById('safeSpendDesc'),
 
-  // Spending Insights Elements
+  // Insights Elements
+  insightsBody: document.getElementById('insightsBody'),
   insightTopCategory: document.getElementById('insightTopCategory'),
   insightLargestTx: document.getElementById('insightLargestTx'),
   insightSavingsRate: document.getElementById('insightSavingsRate'),
 
   // Chart & Breakdown
+  spendingChart: document.getElementById('spendingChart'),
   chartContainer: document.getElementById('chartContainer'),
-  spendingChartCanvas: document.getElementById('spendingChart'),
   chartEmptyState: document.getElementById('chartEmptyState'),
   chartExpenseTotalBadge: document.getElementById('chartExpenseTotalBadge'),
   categoryBreakdownList: document.getElementById('categoryBreakdownList'),
   chartAddExpenseBtn: document.getElementById('chartAddExpenseBtn'),
 
-  // Transactions & Toolbar
+  // Transactions View
   transactionCountBadge: document.getElementById('transactionCountBadge'),
   searchInput: document.getElementById('searchInput'),
   clearSearchBtn: document.getElementById('clearSearchBtn'),
-  filterPills: document.querySelectorAll('.filter-glass-pill, .filter-pill'),
   categoryFilterSelect: document.getElementById('categoryFilterSelect'),
   sortSelect: document.getElementById('sortSelect'),
   transactionsList: document.getElementById('transactionsList'),
   emptyStateNoData: document.getElementById('emptyStateNoData'),
   emptyStateNoResults: document.getElementById('emptyStateNoResults'),
-  resetFiltersBtn: document.getElementById('resetFiltersBtn'),
+  exportCsvBtn: document.getElementById('exportCsvBtn'),
 
-  // Add Transaction Modal
+  // Analytics Forecast & Report
+  forecastEndAmount: document.getElementById('forecastEndAmount'),
+  forecastExplanation: document.getElementById('forecastExplanation'),
+  monthlyReportContent: document.getElementById('monthlyReportContent'),
+  exportReportBtn: document.getElementById('exportReportBtn'),
+
+  // Budgets & Recurring
+  budgetsGrid: document.getElementById('budgetsGrid'),
+  openAddBudgetBtn: document.getElementById('openAddBudgetBtn'),
+  budgetModal: document.getElementById('budgetModal'),
+  budgetForm: document.getElementById('budgetForm'),
+  budgetCategorySelect: document.getElementById('budgetCategorySelect'),
+  budgetLimitInput: document.getElementById('budgetLimitInput'),
+  closeBudgetModalBtn: document.getElementById('closeBudgetModalBtn'),
+  cancelBudgetBtn: document.getElementById('cancelBudgetBtn'),
+
+  recurringGrid: document.getElementById('recurringGrid'),
+  openAddRecurringBtn: document.getElementById('openAddRecurringBtn'),
+  recurringModal: document.getElementById('recurringModal'),
+  recurringForm: document.getElementById('recurringForm'),
+  recurringNameInput: document.getElementById('recurringNameInput'),
+  recurringAmountInput: document.getElementById('recurringAmountInput'),
+  recurringFrequencySelect: document.getElementById('recurringFrequencySelect'),
+  recurringNextDateInput: document.getElementById('recurringNextDateInput'),
+  closeRecurringModalBtn: document.getElementById('closeRecurringModalBtn'),
+  cancelRecurringBtn: document.getElementById('cancelRecurringBtn'),
+
+  // Goals
+  goalsGrid: document.getElementById('goalsGrid'),
+  openAddGoalBtn: document.getElementById('openAddGoalBtn'),
+  goalModal: document.getElementById('goalModal'),
+  goalForm: document.getElementById('goalForm'),
+  goalTitleInput: document.getElementById('goalTitleInput'),
+  goalTargetInput: document.getElementById('goalTargetInput'),
+  goalDateInput: document.getElementById('goalDateInput'),
+  closeGoalModalBtn: document.getElementById('closeGoalModalBtn'),
+  cancelGoalBtn: document.getElementById('cancelGoalBtn'),
+
+  // Contribution Modal
+  contributionModal: document.getElementById('contributionModal'),
+  contributionForm: document.getElementById('contributionForm'),
+  contribGoalId: document.getElementById('contribGoalId'),
+  contribGoalSubtitle: document.getElementById('contribGoalSubtitle'),
+  contribAmountInput: document.getElementById('contribAmountInput'),
+  closeContribModalBtn: document.getElementById('closeContribModalBtn'),
+  cancelContribBtn: document.getElementById('cancelContribBtn'),
+
+  // AI Assistant
+  aiChatThread: document.getElementById('aiChatThread'),
+  aiChatForm: document.getElementById('aiChatForm'),
+  aiChatInput: document.getElementById('aiChatInput'),
+  aiPromptChips: document.getElementById('aiPromptChips'),
+  aiResetChatBtn: document.getElementById('aiResetChatBtn'),
+  aiParseBtn: document.getElementById('aiParseBtn'),
+  aiStatusPill: document.getElementById('aiStatusPill'),
+
+  // Settings View
+  exportJsonBtn: document.getElementById('exportJsonBtn'),
+  loadDemoBtnSettings: document.getElementById('loadDemoBtnSettings'),
+  clearAllBtnSettings: document.getElementById('clearAllBtnSettings'),
+  storageMetricsText: document.getElementById('storageMetricsText'),
+
+  // Modals (Transactions & Delete)
   openAddModalBtn: document.getElementById('openAddModalBtn'),
   transactionModal: document.getElementById('transactionModal'),
   closeModalBtn: document.getElementById('closeModalBtn'),
   cancelModalBtn: document.getElementById('cancelModalBtn'),
   transactionForm: document.getElementById('transactionForm'),
-  typeExpenseRadio: document.getElementById('typeExpense'),
-  typeIncomeRadio: document.getElementById('typeIncome'),
-  txTitleInput: document.getElementById('txTitle'),
-  txAmountInput: document.getElementById('txAmount'),
-  txCategorySelect: document.getElementById('txCategory'),
-  txDateInput: document.getElementById('txDate'),
-  txNotesInput: document.getElementById('txNotes'),
-
-  // Form Validation Errors
+  modalTitle: document.getElementById('modalTitle'),
+  modalSubtitle: document.getElementById('modalSubtitle'),
+  modalHeaderIcon: document.getElementById('modalHeaderIcon'),
+  txEditId: document.getElementById('txEditId'),
+  saveTransactionBtn: document.getElementById('saveTransactionBtn'),
+  typeExpense: document.getElementById('typeExpense'),
+  typeIncome: document.getElementById('typeIncome'),
+  txTitle: document.getElementById('txTitle'),
   txTitleError: document.getElementById('txTitleError'),
+  txAmount: document.getElementById('txAmount'),
   txAmountError: document.getElementById('txAmountError'),
+  txCategory: document.getElementById('txCategory'),
   txCategoryError: document.getElementById('txCategoryError'),
+  txDate: document.getElementById('txDate'),
   txDateError: document.getElementById('txDateError'),
+  txNotes: document.getElementById('txNotes'),
 
-  // Delete Confirmation Modal
   deleteConfirmModal: document.getElementById('deleteConfirmModal'),
   deleteTargetTitle: document.getElementById('deleteTargetTitle'),
   cancelDeleteBtn: document.getElementById('cancelDeleteBtn'),
   confirmDeleteBtn: document.getElementById('confirmDeleteBtn'),
 
   // Toast Container
-  toastContainer: document.getElementById('toastContainer'),
-
-  // Demo & Reset Buttons (Desktop Header, Mobile Drawer & Empty States)
-  loadDemoBtn: document.getElementById('loadDemoBtn'),
-  clearAllBtn: document.getElementById('clearAllBtn'),
-  loadDemoBtnMobile: document.getElementById('loadDemoBtnMobile'),
-  clearAllBtnMobile: document.getElementById('clearAllBtnMobile'),
-  emptyAddFirstBtn: document.getElementById('emptyAddFirstBtn'),
-  emptyLoadDemoBtn: document.getElementById('emptyLoadDemoBtn')
+  toastContainer: document.getElementById('toastContainer')
 };
 
 /* ==============================================================================
-   7. RENDERING ENGINE
-   Safe DOM construction without unsanitized innerHTML.
+   7. 7-VIEW CLIENT-SIDE ROUTER
    ============================================================================== */
 
-/**
- * Master render routine: synchronizes all visual components with state.
- */
-function renderDashboard() {
-  renderSummaryCards();
-  renderSafeToSpend();
-  renderSpendingInsights();
-  renderTransactionsList();
-  renderChart();
-  renderCategoryBreakdown();
-  renderFilterCategoryOptions();
-  refreshIcons();
-}
-
-/**
- * Smoothly animates a numeric currency value on a DOM element (Magic UI number-ticker style).
- * If user prefers reduced motion, snaps directly without animation.
- * @param {HTMLElement} element - Target DOM element
- * @param {number} targetValue - Number to animate to
- * @param {number} [duration=450] - Animation duration in ms
- */
-function animateCurrencyTicker(element, targetValue, duration = 450) {
-  if (!element) return;
-
-  const prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (prefersReduced) {
-    element.textContent = formatCurrency(targetValue);
-    return;
+function switchView(viewName) {
+  const validViews = ['overview', 'transactions', 'analytics', 'budgets', 'goals', 'ai', 'settings'];
+  if (!validViews.includes(viewName)) {
+    viewName = 'overview';
   }
 
-  const startValue = typeof element._currentValue === 'number' ? element._currentValue : 0;
-  element._currentValue = targetValue;
+  state.activeView = viewName;
 
-  if (startValue === targetValue) {
-    element.textContent = formatCurrency(targetValue);
-    return;
-  }
-
-  const startTime = performance.now();
-
-  function updateTicker(now) {
-    const elapsed = now - startTime;
-    const progress = Math.min(elapsed / duration, 1);
-    // Smooth easeOutCubic curve
-    const easeProgress = 1 - Math.pow(1 - progress, 3);
-    const currentValue = startValue + (targetValue - startValue) * easeProgress;
-
-    element.textContent = formatCurrency(currentValue);
-
-    if (progress < 1) {
-      requestAnimationFrame(updateTicker);
+  // Toggle view panels
+  document.querySelectorAll('.view-panel').forEach(panel => {
+    if (panel.getAttribute('data-view') === viewName) {
+      panel.classList.add('active');
     } else {
-      element.textContent = formatCurrency(targetValue);
+      panel.classList.remove('active');
     }
-  }
+  });
 
-  requestAnimationFrame(updateTicker);
-}
-
-/**
- * Updates summary cards (Balance, Income, Expenses, labels).
- */
-function renderSummaryCards() {
-  const totals = calculateTotals(state.transactions);
-
-  animateCurrencyTicker(DOM.totalBalance, totals.netBalance);
-  animateCurrencyTicker(DOM.totalIncome, totals.totalIncome);
-  animateCurrencyTicker(DOM.totalExpense, totals.totalExpenses);
-
-  DOM.incomeCountLabel.textContent = `${totals.incomeCount} ${totals.incomeCount === 1 ? 'record' : 'records'}`;
-  DOM.expenseCountLabel.textContent = `${totals.expenseCount} ${totals.expenseCount === 1 ? 'record' : 'records'}`;
-
-  // Update Net Position indicator badge text
-  if (totals.netBalance > 0) {
-    DOM.balanceStatusBadge.innerHTML = `<span class="tag-dot tag-dot-positive" aria-hidden="true"></span><span>Positive Net Savings</span>`;
-  } else if (totals.netBalance < 0) {
-    DOM.balanceStatusBadge.innerHTML = `<span class="tag-dot tag-dot-negative" aria-hidden="true"></span><span>Expenses exceed income</span>`;
-  } else {
-    DOM.balanceStatusBadge.innerHTML = `<span class="tag-dot" aria-hidden="true"></span><span>Net position (Income − Expenses)</span>`;
-  }
-
-  DOM.chartExpenseTotalBadge.textContent = `${formatCurrency(totals.totalExpenses)} Total`;
-}
-
-/**
- * Computes and renders Safe to Spend panel metrics.
- * Daily allowance = netBalance > 0 ? (netBalance / daysRemaining) : 0
- * Month progression = (currentDay / totalDaysInMonth) * 100
- */
-function renderSafeToSpend() {
-  const totals = calculateTotals(state.transactions);
-  const now = new Date();
-  const currentYear = now.getFullYear();
-  const currentMonth = now.getMonth();
-  const currentDay = now.getDate();
-  const totalDaysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-  const daysRemaining = Math.max(1, totalDaysInMonth - currentDay + 1);
-
-  // Month progress percentage
-  const progressPercent = Math.min(100, Math.max(0, Math.round((currentDay / totalDaysInMonth) * 100)));
-
-  if (DOM.monthDaysTag) {
-    DOM.monthDaysTag.textContent = `${daysRemaining} ${daysRemaining === 1 ? 'Day' : 'Days'} Left`;
-  }
-
-  if (DOM.monthProgressPercent) {
-    DOM.monthProgressPercent.textContent = `${progressPercent}%`;
-  }
-
-  if (DOM.monthProgressBar) {
-    DOM.monthProgressBar.style.width = `${progressPercent}%`;
-    const progressTrack = DOM.monthProgressBar.parentElement;
-    if (progressTrack) {
-      progressTrack.setAttribute('aria-valuenow', String(progressPercent));
-    }
-  }
-
-  // Safe daily spend calculation
-  if (DOM.safeDailySpend) {
-    if (totals.netBalance > 0) {
-      const dailyAllowance = totals.netBalance / daysRemaining;
-      animateCurrencyTicker(DOM.safeDailySpend, dailyAllowance);
-      if (DOM.safeSpendDesc) {
-        DOM.safeSpendDesc.textContent = `Based on your net balance of ${formatCurrency(totals.netBalance)} distributed across the remaining ${daysRemaining} days of this month.`;
-      }
-    } else if (totals.netBalance < 0) {
-      animateCurrencyTicker(DOM.safeDailySpend, 0);
-      if (DOM.safeSpendDesc) {
-        DOM.safeSpendDesc.textContent = 'Your total expenses currently exceed income. Pause non-essential spending to restore positive reserves.';
-      }
-    } else {
-      animateCurrencyTicker(DOM.safeDailySpend, 0);
-      if (DOM.safeSpendDesc) {
-        DOM.safeSpendDesc.textContent = 'Add income or adjust expenses to calculate your personalized daily spending allowance.';
-      }
-    }
-  }
-}
-
-/**
- * Renders live Spending Insights derived strictly from real transaction records.
- * - Top Spending Category
- * - Largest Single Transaction
- * - Savings Retention Rate ( (netBalance / totalIncome) * 100 )
- */
-function renderSpendingInsights() {
-  const totals = calculateTotals(state.transactions);
-  const breakdown = calculateCategoryBreakdown(state.transactions);
-
-  // 1. Largest Spending Category
-  if (DOM.insightTopCategory) {
-    if (breakdown.length > 0) {
-      const top = breakdown[0];
-      DOM.insightTopCategory.innerHTML = `<strong>${top.category}</strong> accounts for <strong>${top.percentage}%</strong> (${formatCurrency(top.total)}) of your spending.`;
-    } else {
-      DOM.insightTopCategory.textContent = 'No expense records yet to analyze.';
-    }
-  }
-
-  // 2. Largest Single Transaction
-  if (DOM.insightLargestTx) {
-    if (state.transactions.length > 0) {
-      const largest = [...state.transactions].sort((a, b) => b.amount - a.amount)[0];
-      const typeLabel = largest.type === 'income' ? 'Income' : 'Expense';
-      DOM.insightLargestTx.innerHTML = `<strong>${largest.title}</strong> at <strong>${formatCurrency(largest.amount)}</strong> (${typeLabel}).`;
-    } else {
-      DOM.insightLargestTx.textContent = 'No transactions recorded yet.';
-    }
-  }
-
-  // 3. Savings Retention Rate
-  if (DOM.insightSavingsRate) {
-    if (totals.totalIncome > 0) {
-      const retentionRate = Math.round((totals.netBalance / totals.totalIncome) * 100);
-      if (retentionRate > 0) {
-        DOM.insightSavingsRate.innerHTML = `You are retaining <strong>${retentionRate}%</strong> of your total earned income as net savings.`;
-      } else if (retentionRate === 0) {
-        DOM.insightSavingsRate.innerHTML = `Break-even: <strong>0%</strong> net retention (income matches expenses).`;
+  // Sync nav active classes
+  const updateNavActive = (nodeList) => {
+    nodeList.forEach(item => {
+      if (item.getAttribute('data-view-target') === viewName) {
+        item.classList.add('active');
       } else {
-        DOM.insightSavingsRate.innerHTML = `Deficit: Spending is <strong>${Math.abs(retentionRate)}%</strong> higher than recorded income.`;
-      }
-    } else if (totals.totalExpenses > 0) {
-      DOM.insightSavingsRate.textContent = 'Only expenses recorded. Log income to track your savings retention rate.';
-    } else {
-      DOM.insightSavingsRate.textContent = 'Log income and expenses to view retention rate.';
-    }
-  }
-}
-
-/**
- * Filters and sorts the transactions list based on active user controls.
- * @returns {Array<Object>} Processed list ready for display
- */
-function getFilteredAndSortedTransactions() {
-  return state.transactions
-    .filter(tx => {
-      // 1. Type Filter (all / income / expense)
-      if (state.activeTypeFilter !== 'all' && tx.type !== state.activeTypeFilter) {
-        return false;
-      }
-
-      // 2. Category Filter
-      if (state.selectedCategory !== 'all' && tx.category !== state.selectedCategory) {
-        return false;
-      }
-
-      // 3. Search Query Filter (Title or Category)
-      if (state.searchQuery.trim() !== '') {
-        const query = state.searchQuery.toLowerCase().trim();
-        const matchesTitle = tx.title.toLowerCase().includes(query);
-        const matchesCategory = tx.category.toLowerCase().includes(query);
-        const matchesNotes = tx.notes ? tx.notes.toLowerCase().includes(query) : false;
-        if (!matchesTitle && !matchesCategory && !matchesNotes) {
-          return false;
-        }
-      }
-
-      return true;
-    })
-    .sort((a, b) => {
-      switch (state.sortBy) {
-        case 'date-asc':
-          return new Date(a.date) - new Date(b.date);
-        case 'amount-desc':
-          return b.amount - a.amount;
-        case 'amount-asc':
-          return a.amount - b.amount;
-        case 'date-desc':
-        default:
-          return new Date(b.date) - new Date(a.date);
+        item.classList.remove('active');
       }
     });
-}
+  };
 
-/**
- * Helper to retrieve an icon name for a given category.
- * @param {string} categoryName
- * @param {string} type
- * @returns {string} Lucide icon name
- */
-function getCategoryIcon(categoryName, type) {
-  const pool = type === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
-  const match = pool.find(item => item.name === categoryName);
-  if (match) return match.icon;
-  return type === 'income' ? 'arrow-down-left' : 'arrow-up-right';
-}
+  updateNavActive(document.querySelectorAll('.sidebar-nav-item'));
+  updateNavActive(document.querySelectorAll('.nav-links-desktop .nav-item'));
+  updateNavActive(document.querySelectorAll('.drawer-links .drawer-link'));
+  updateNavActive(document.querySelectorAll('.mobile-bottom-nav .bottom-nav-item'));
 
-/**
- * Builds a single transaction row safely using DOM APIs (preventing XSS).
- * @param {Object} tx - Transaction data object
- * @returns {HTMLElement} The transaction row element
- */
-function createTransactionRowElement(tx) {
-  const isIncome = tx.type === 'income';
-
-  const row = document.createElement('div');
-  row.className = 'tx-row';
-  row.setAttribute('data-id', tx.id);
-
-  // Left Section (Icon + Details)
-  const left = document.createElement('div');
-  left.className = 'tx-left';
-
-  const iconWrap = document.createElement('div');
-  iconWrap.className = `tx-category-icon type-${tx.type}`;
-  iconWrap.setAttribute('aria-hidden', 'true');
-
-  const iconElem = document.createElement('i');
-  iconElem.setAttribute('data-lucide', getCategoryIcon(tx.category, tx.type));
-  iconWrap.appendChild(iconElem);
-
-  const details = document.createElement('div');
-  details.className = 'tx-details';
-
-  const title = document.createElement('span');
-  title.className = 'tx-title';
-  title.textContent = tx.title; // Safe textContent prevents HTML injection
-
-  const meta = document.createElement('div');
-  meta.className = 'tx-metadata';
-
-  const categoryPill = document.createElement('span');
-  categoryPill.className = 'tx-category-pill';
-  categoryPill.textContent = tx.category;
-
-  const dateSpan = document.createElement('span');
-  dateSpan.className = 'tx-date';
-  dateSpan.textContent = formatDate(tx.date);
-
-  meta.appendChild(categoryPill);
-  meta.appendChild(document.createTextNode('•'));
-  meta.appendChild(dateSpan);
-
-  if (tx.notes && tx.notes.trim() !== '') {
-    const notesSpan = document.createElement('span');
-    notesSpan.className = 'tx-notes-preview';
-    notesSpan.textContent = `— ${tx.notes}`;
-    meta.appendChild(notesSpan);
+  // Trigger view-specific rendering
+  if (viewName === 'overview') {
+    renderOverview();
+  } else if (viewName === 'transactions') {
+    renderTransactionsList();
+  } else if (viewName === 'analytics') {
+    renderAnalyticsView();
+  } else if (viewName === 'budgets') {
+    renderBudgetsView();
+    renderRecurringSubscriptions();
+  } else if (viewName === 'goals') {
+    renderGoalsView();
+  } else if (viewName === 'ai') {
+    renderAiMessages();
+  } else if (viewName === 'settings') {
+    renderSettingsView();
   }
 
-  details.appendChild(title);
-  details.appendChild(meta);
+  // Close mobile drawer if open
+  closeMobileDrawer();
 
-  left.appendChild(iconWrap);
-  left.appendChild(details);
+  // Scroll to top
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 
-  // Right Section (Amount + Delete Button)
-  const right = document.createElement('div');
-  right.className = 'tx-right';
-
-  const amountSpan = document.createElement('span');
-  amountSpan.className = `tx-amount type-${tx.type}`;
-  const prefix = isIncome ? '+' : '−';
-  amountSpan.textContent = `${prefix}${formatCurrency(tx.amount)}`;
-
-  const deleteBtn = document.createElement('button');
-  deleteBtn.type = 'button';
-  deleteBtn.className = 'tx-delete-btn';
-  deleteBtn.setAttribute('aria-label', `Delete transaction: ${tx.title}`);
-  deleteBtn.title = 'Delete transaction';
-  deleteBtn.dataset.action = 'delete';
-  deleteBtn.dataset.id = tx.id;
-
-  const deleteIcon = document.createElement('i');
-  deleteIcon.setAttribute('data-lucide', 'trash-2');
-  deleteIcon.className = 'btn-icon-sm';
-  deleteIcon.setAttribute('aria-hidden', 'true');
-  deleteBtn.appendChild(deleteIcon);
-
-  right.appendChild(amountSpan);
-  right.appendChild(deleteBtn);
-
-  row.appendChild(left);
-  row.appendChild(right);
-
-  return row;
-}
-
-/**
- * Renders the transactions list and manages empty states.
- */
-function renderTransactionsList() {
-  DOM.transactionsList.innerHTML = '';
-  const filteredList = getFilteredAndSortedTransactions();
-
-  DOM.transactionCountBadge.textContent = String(filteredList.length);
-
-  // Handle Empty States
-  if (state.transactions.length === 0) {
-    // State 1: User has no transactions at all
-    DOM.emptyStateNoData.hidden = false;
-    DOM.emptyStateNoData.style.display = 'flex';
-    DOM.emptyStateNoResults.hidden = true;
-    DOM.emptyStateNoResults.style.display = 'none';
-    DOM.transactionsList.hidden = true;
-    DOM.transactionsList.style.display = 'none';
-    return;
+  // Refresh Lucide icons in newly rendered panels
+  if (window.lucide && typeof window.lucide.createIcons === 'function') {
+    window.lucide.createIcons();
   }
+}
 
-  if (filteredList.length === 0) {
-    // State 2: Active filter/search query yielded zero results
-    DOM.emptyStateNoData.hidden = true;
-    DOM.emptyStateNoData.style.display = 'none';
-    DOM.emptyStateNoResults.hidden = false;
-    DOM.emptyStateNoResults.style.display = 'flex';
-    DOM.transactionsList.hidden = true;
-    DOM.transactionsList.style.display = 'none';
-    return;
+function closeMobileDrawer() {
+  if (DOM.mobileDrawer && DOM.mobileDrawer.classList.contains('open')) {
+    DOM.mobileDrawer.classList.remove('open');
+    if (DOM.mobileDrawerBackdrop) DOM.mobileDrawerBackdrop.classList.remove('open');
+    if (DOM.mobileMenuToggle) DOM.mobileMenuToggle.setAttribute('aria-expanded', 'false');
+    document.body.classList.remove('drawer-open');
+    document.body.classList.remove('drawer-locked');
   }
-
-  // State 3: We have matching transactions to display
-  DOM.emptyStateNoData.hidden = true;
-  DOM.emptyStateNoData.style.display = 'none';
-  DOM.emptyStateNoResults.hidden = true;
-  DOM.emptyStateNoResults.style.display = 'none';
-  DOM.transactionsList.hidden = false;
-  DOM.transactionsList.style.display = 'flex';
-
-  const fragment = document.createDocumentFragment();
-  filteredList.forEach(tx => {
-    fragment.appendChild(createTransactionRowElement(tx));
-  });
-
-  DOM.transactionsList.appendChild(fragment);
-}
-
-/**
- * Populates category dropdown in form according to currently selected Type (Expense or Income).
- * @param {string} type - 'expense' | 'income'
- */
-function updateFormCategoryOptions(type) {
-  DOM.txCategorySelect.innerHTML = '';
-  const categories = type === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
-
-  categories.forEach(cat => {
-    const option = document.createElement('option');
-    option.value = cat.name;
-    option.textContent = cat.name;
-    DOM.txCategorySelect.appendChild(option);
-  });
-}
-
-/**
- * Populates category filter dropdown in the toolbar with all unique categories present.
- */
-function renderFilterCategoryOptions() {
-  const currentSelection = DOM.categoryFilterSelect.value;
-  DOM.categoryFilterSelect.innerHTML = '<option value="all">All Categories</option>';
-
-  // Combine unique categories from defined lists
-  const allCategories = [
-    ...EXPENSE_CATEGORIES.map(c => c.name),
-    ...INCOME_CATEGORIES.map(c => c.name)
-  ];
-  const uniqueCategories = Array.from(new Set(allCategories));
-
-  uniqueCategories.forEach(categoryName => {
-    const opt = document.createElement('option');
-    opt.value = categoryName;
-    opt.textContent = categoryName;
-    if (categoryName === currentSelection) {
-      opt.selected = true;
-    }
-    DOM.categoryFilterSelect.appendChild(opt);
-  });
-}
-
-/**
- * Renders the breakdown chips list underneath the chart.
- */
-function renderCategoryBreakdown() {
-  DOM.categoryBreakdownList.innerHTML = '';
-  const breakdown = calculateCategoryBreakdown(state.transactions);
-
-  if (breakdown.length === 0) {
-    DOM.categoryBreakdownList.hidden = true;
-    DOM.categoryBreakdownList.style.display = 'none';
-    return;
-  }
-
-  DOM.categoryBreakdownList.hidden = false;
-  DOM.categoryBreakdownList.style.display = 'grid';
-  const fragment = document.createDocumentFragment();
-
-  breakdown.forEach(item => {
-    const chip = document.createElement('div');
-    chip.className = 'breakdown-chip';
-
-    const left = document.createElement('div');
-    left.className = 'breakdown-chip-left';
-
-    const colorDot = document.createElement('span');
-    colorDot.className = 'breakdown-color-indicator';
-    colorDot.style.backgroundColor = item.color;
-    colorDot.setAttribute('aria-hidden', 'true');
-
-    const name = document.createElement('span');
-    name.className = 'breakdown-name';
-    name.textContent = item.category;
-
-    left.appendChild(colorDot);
-    left.appendChild(name);
-
-    const right = document.createElement('div');
-    right.className = 'breakdown-chip-right';
-
-    const amount = document.createElement('span');
-    amount.className = 'breakdown-amount';
-    amount.textContent = formatCurrency(item.total);
-
-    const percentage = document.createElement('span');
-    percentage.className = 'breakdown-percentage';
-    percentage.textContent = `${item.percentage}% of spending`;
-
-    right.appendChild(amount);
-    right.appendChild(percentage);
-
-    chip.appendChild(left);
-    chip.appendChild(right);
-    fragment.appendChild(chip);
-  });
-
-  DOM.categoryBreakdownList.appendChild(fragment);
 }
 
 /* ==============================================================================
-   8. CHART.JS VISUALIZATION CONTROLLER
-   Clean lifecycle management: safely handles updates, canvas destruction & empty states.
+   8. SPATIAL 3D BALANCE VISUALIZER & MOUSE TILT
    ============================================================================== */
 
+function initSpatialBalanceOrb() {
+  const orb = DOM.spatialBalanceOrb;
+  const balanceCard = document.querySelector('.balance-card');
+  if (!orb || !balanceCard) return;
+
+  const prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (prefersReduced) return;
+
+  let ticking = false;
+
+  balanceCard.addEventListener('mousemove', (e) => {
+    if (!ticking) {
+      window.requestAnimationFrame(() => {
+        const rect = balanceCard.getBoundingClientRect();
+        const cardX = e.clientX - rect.left;
+        const cardY = e.clientY - rect.top;
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+
+        const deltaX = (cardX - centerX) / centerX;
+        const deltaY = (cardY - centerY) / centerY;
+
+        const rotateX = deltaY * -16;
+        const rotateY = deltaX * 18;
+
+        orb.style.transform = `perspective(500px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.06)`;
+        ticking = false;
+      });
+      ticking = true;
+    }
+  });
+
+  balanceCard.addEventListener('mouseleave', () => {
+    orb.style.transform = 'perspective(500px) rotateX(0deg) rotateY(0deg) scale(1)';
+  });
+}
+
+function init3DCardTilt() {
+  const prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (prefersReduced || window.innerWidth < 1024) return;
+
+  const cards = document.querySelectorAll('.glass-card:not(.ai-chat-card)');
+  cards.forEach(card => {
+    card.addEventListener('mousemove', e => {
+      const rect = card.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      const spotlight = card.querySelector('.card-spotlight');
+      if (spotlight) {
+        spotlight.style.setProperty('--spotlight-x', `${x}px`);
+        spotlight.style.setProperty('--spotlight-y', `${y}px`);
+      }
+    });
+  });
+}
+
+/* ==============================================================================
+   9. TRANSACTION MANAGEMENT & CRUD
+   ============================================================================== */
+
+function openAddTransactionModal() {
+  state.editingTxId = null;
+  DOM.modalTitle.textContent = 'Add Transaction';
+  if (DOM.modalSubtitle) DOM.modalSubtitle.textContent = 'Record a new income or expense entry';
+  DOM.txEditId.value = '';
+  DOM.transactionForm.reset();
+  DOM.typeExpense.checked = true;
+  updateFormCategoryOptions('expense');
+  DOM.txDate.value = getTodayDateString();
+  clearFormValidationErrors();
+  openModal(DOM.transactionModal);
+}
+
+function openEditTransactionModal(id) {
+  const tx = state.transactions.find(t => t.id === id);
+  if (!tx) return;
+
+  state.editingTxId = id;
+  DOM.modalTitle.textContent = 'Edit Transaction';
+  if (DOM.modalSubtitle) DOM.modalSubtitle.textContent = 'Update recorded details';
+  DOM.txEditId.value = tx.id;
+  DOM.txTitle.value = tx.title;
+  DOM.txAmount.value = tx.amount;
+  DOM.txDate.value = tx.date;
+  DOM.txNotes.value = tx.notes || '';
+
+  if (tx.type === 'income') {
+    DOM.typeIncome.checked = true;
+    updateFormCategoryOptions('income');
+  } else {
+    DOM.typeExpense.checked = true;
+    updateFormCategoryOptions('expense');
+  }
+
+  DOM.txCategory.value = tx.category;
+  clearFormValidationErrors();
+  openModal(DOM.transactionModal);
+}
+
+function handleTransactionFormSubmit(e) {
+  e.preventDefault();
+  clearFormValidationErrors();
+
+  const title = DOM.txTitle.value.trim();
+  const amountStr = DOM.txAmount.value.trim();
+  const amount = parseFloat(amountStr);
+  const type = DOM.typeIncome.checked ? 'income' : 'expense';
+  const category = DOM.txCategory.value;
+  const date = DOM.txDate.value;
+  const notes = DOM.txNotes.value.trim();
+
+  let hasError = false;
+
+  if (!title) {
+    showFieldError(DOM.txTitleError, 'Please enter a title for the transaction.');
+    hasError = true;
+  } else if (title.length > 80) {
+    showFieldError(DOM.txTitleError, 'Title cannot exceed 80 characters.');
+    hasError = true;
+  }
+
+  if (!amountStr || isNaN(amount) || amount <= 0) {
+    showFieldError(DOM.txAmountError, 'Please enter a valid amount greater than ₹0.');
+    hasError = true;
+  }
+
+  if (!category) {
+    showFieldError(DOM.txCategoryError, 'Please select a category.');
+    hasError = true;
+  }
+
+  if (!date) {
+    showFieldError(DOM.txDateError, 'Please select a date.');
+    hasError = true;
+  }
+
+  if (hasError) return;
+
+  if (state.editingTxId) {
+    // Edit existing transaction
+    const idx = state.transactions.findIndex(t => t.id === state.editingTxId);
+    if (idx !== -1) {
+      state.transactions[idx] = {
+        ...state.transactions[idx],
+        title,
+        amount,
+        type,
+        category,
+        date,
+        notes
+      };
+      saveTransactions(state.transactions);
+      showToast(`Updated "${title}" successfully.`, 'success');
+    }
+  } else {
+    // Add new transaction
+    const newTx = {
+      id: 'tx-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6),
+      title,
+      amount,
+      type,
+      category,
+      date,
+      notes
+    };
+    state.transactions.unshift(newTx);
+    saveTransactions(state.transactions);
+    showToast(`Added "${title}" (${formatCurrency(amount)}).`, 'success');
+  }
+
+  closeModal(DOM.transactionModal);
+  renderDashboard();
+}
+
+function deleteTransaction(id) {
+  const tx = state.transactions.find(t => t.id === id);
+  if (!tx) return;
+
+  state.transactions = state.transactions.filter(t => t.id !== id);
+  saveTransactions(state.transactions);
+  showToast(`Deleted "${tx.title}".`, 'info');
+  closeModal(DOM.deleteConfirmModal);
+  renderDashboard();
+}
+
+function exportTransactionsCSV() {
+  if (state.transactions.length === 0) {
+    showToast('No transactions to export.', 'warning');
+    return;
+  }
+
+  const headers = ['ID', 'Date', 'Title', 'Type', 'Category', 'Amount (INR)', 'Notes'];
+  const rows = state.transactions.map(tx => [
+    `"${tx.id}"`,
+    `"${tx.date}"`,
+    `"${tx.title.replace(/"/g, '""')}"`,
+    `"${tx.type}"`,
+    `"${tx.category.replace(/"/g, '""')}"`,
+    tx.amount.toFixed(2),
+    `"${(tx.notes || '').replace(/"/g, '""')}"`
+  ]);
+
+  const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.setAttribute('href', url);
+  link.setAttribute('download', `vaultly_transactions_${getTodayDateString()}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  showToast('Transactions exported as CSV.', 'success');
+}
+
+/* ==============================================================================
+   10. SMART BUDGETS & RECURRING SUBSCRIPTIONS
+   ============================================================================== */
+
+function renderBudgetsView() {
+  const grid = DOM.budgetsGrid;
+  if (!grid) return;
+
+  grid.innerHTML = '';
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+
+  // Calculate spent per category for current month
+  const categorySpent = {};
+  state.transactions.forEach(tx => {
+    if (tx.type === 'expense') {
+      const d = new Date(tx.date);
+      if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
+        categorySpent[tx.category] = (categorySpent[tx.category] || 0) + tx.amount;
+      }
+    }
+  });
+
+  if (state.budgets.length === 0) {
+    grid.innerHTML = `
+      <div class="cosmic-empty-card" style="grid-column: 1 / -1;">
+        <div class="cosmic-empty-halo"><i data-lucide="wallet"></i></div>
+        <h3 class="cosmic-empty-heading">No budgets established</h3>
+        <p class="cosmic-empty-text">Create monthly spending limits per category to stay in complete control.</p>
+      </div>
+    `;
+    return;
+  }
+
+  state.budgets.forEach(b => {
+    const spent = categorySpent[b.category] || 0;
+    const remaining = Math.max(0, b.limit - spent);
+    const percent = Math.min(100, Math.round((spent / b.limit) * 100));
+    const isWarning = percent >= 80 && percent < 100;
+    const isOver = spent > b.limit;
+
+    let fillClass = '';
+    let badgeText = `${percent}% Used`;
+    let badgeTagClass = '';
+
+    if (isOver) {
+      fillClass = 'danger';
+      badgeText = 'Budget Exceeded';
+      badgeTagClass = 'tag-danger';
+    } else if (isWarning) {
+      fillClass = 'warn';
+      badgeText = 'Approaching Limit';
+      badgeTagClass = 'tag-warning';
+    }
+
+    const card = document.createElement('article');
+    card.className = 'glass-card budget-card';
+    card.innerHTML = `
+      <div class="budget-head">
+        <div>
+          <h3 class="budget-cat-name">${escapeHTML(b.category)}</h3>
+          <span class="panel-subtitle">Monthly Limit: ${formatCurrency(b.limit)}</span>
+        </div>
+        <span class="glass-tag ${badgeTagClass}">${badgeText}</span>
+      </div>
+      <div>
+        <div class="budget-progress-track">
+          <div class="budget-progress-fill ${fillClass}" style="width: ${percent}%;"></div>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.82rem; color: var(--text-secondary);">
+          <span>Spent: ${formatCurrency(spent)}</span>
+          <span>Remaining: ${formatCurrency(remaining)}</span>
+        </div>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px;">
+        <button type="button" class="btn-ghost-glass btn-sm" data-action="delete-budget" data-category="${escapeHTML(b.category)}">
+          <i data-lucide="trash-2" class="btn-icon-xs"></i>
+          <span>Remove</span>
+        </button>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function handleBudgetFormSubmit(e) {
+  e.preventDefault();
+  const category = DOM.budgetCategorySelect.value;
+  const limit = parseFloat(DOM.budgetLimitInput.value);
+
+  if (!category || isNaN(limit) || limit <= 0) {
+    showToast('Please enter a valid monthly limit amount.', 'danger');
+    return;
+  }
+
+  const existingIdx = state.budgets.findIndex(b => b.category === category);
+  if (existingIdx !== -1) {
+    state.budgets[existingIdx].limit = limit;
+  } else {
+    state.budgets.push({ category, limit });
+  }
+
+  saveBudgets(state.budgets);
+  closeModal(DOM.budgetModal);
+  showToast(`Saved ${category} budget of ${formatCurrency(limit)}.`, 'success');
+  renderBudgetsView();
+}
+
+function renderRecurringSubscriptions() {
+  const grid = DOM.recurringGrid;
+  if (!grid) return;
+
+  grid.innerHTML = '';
+  if (state.recurring.length === 0) {
+    grid.innerHTML = `
+      <div class="cosmic-empty-card" style="grid-column: 1 / -1;">
+        <div class="cosmic-empty-halo"><i data-lucide="repeat"></i></div>
+        <h3 class="cosmic-empty-heading">No recurring commitments</h3>
+        <p class="cosmic-empty-text">Add subscriptions, fixed utilities, or rent to account for monthly fixed commitments.</p>
+      </div>
+    `;
+    return;
+  }
+
+  state.recurring.forEach(rec => {
+    const card = document.createElement('article');
+    card.className = 'glass-card recurring-card';
+    card.innerHTML = `
+      <div class="recurring-head">
+        <div>
+          <h3 class="recurring-title">${escapeHTML(rec.name)}</h3>
+          <span class="panel-subtitle">Frequency: ${rec.frequency.toUpperCase()} • Next Due: ${formatDate(rec.nextDate)}</span>
+        </div>
+        <span class="glass-tag ${rec.active !== false ? 'tag-emerald' : 'tag-muted'}">
+          ${rec.active !== false ? 'Active' : 'Paused'}
+        </span>
+      </div>
+      <div class="recurring-amount-stat">${formatCurrency(rec.amount)}</div>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+        <button type="button" class="btn-ghost-glass btn-sm" data-action="toggle-recurring" data-id="${rec.id}">
+          <span>${rec.active !== false ? 'Pause' : 'Activate'}</span>
+        </button>
+        <button type="button" class="btn-ghost-glass btn-sm btn-danger-glass" data-action="delete-recurring" data-id="${rec.id}">
+          <i data-lucide="trash-2" class="btn-icon-xs"></i>
+          <span>Delete</span>
+        </button>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function handleRecurringFormSubmit(e) {
+  e.preventDefault();
+  const name = DOM.recurringNameInput.value.trim();
+  const amount = parseFloat(DOM.recurringAmountInput.value);
+  const frequency = DOM.recurringFrequencySelect.value;
+  const nextDate = DOM.recurringNextDateInput.value;
+
+  if (!name || isNaN(amount) || amount <= 0 || !nextDate) {
+    showToast('Please fill out all recurring commitment fields.', 'danger');
+    return;
+  }
+
+  state.recurring.push({
+    id: 'rec-' + Date.now(),
+    name,
+    amount,
+    frequency,
+    nextDate,
+    active: true
+  });
+
+  saveRecurring(state.recurring);
+  closeModal(DOM.recurringModal);
+  showToast(`Recorded recurring commitment "${name}".`, 'success');
+  renderRecurringSubscriptions();
+  renderOverview();
+}
+
+/* ==============================================================================
+   11. FINANCIAL GOALS & SAVINGS PLANNER
+   ============================================================================== */
+
+function renderGoalsView() {
+  const grid = DOM.goalsGrid;
+  if (!grid) return;
+
+  grid.innerHTML = '';
+  if (state.goals.length === 0) {
+    grid.innerHTML = `
+      <div class="cosmic-empty-card" style="grid-column: 1 / -1;">
+        <div class="cosmic-empty-halo"><i data-lucide="target"></i></div>
+        <h3 class="cosmic-empty-heading">No financial goals yet</h3>
+        <p class="cosmic-empty-text">Create savings targets for an emergency fund, travel, or hardware.</p>
+      </div>
+    `;
+    return;
+  }
+
+  state.goals.forEach(goal => {
+    const percent = Math.min(100, Math.round((goal.currentAmount / goal.targetAmount) * 100));
+    const remaining = Math.max(0, goal.targetAmount - goal.currentAmount);
+
+    const card = document.createElement('article');
+    card.className = 'glass-card goal-card';
+    card.innerHTML = `
+      <div class="goal-head">
+        <div>
+          <h3 class="goal-title">${escapeHTML(goal.title)}</h3>
+          <span class="panel-subtitle">${goal.targetDate ? `Target: ${formatDate(goal.targetDate)}` : 'Open-ended Goal'}</span>
+        </div>
+        <span class="glass-tag ${percent >= 100 ? 'tag-emerald' : ''}">${percent}% Saved</span>
+      </div>
+      <div>
+        <div class="goal-amount-stat">${formatCurrency(goal.currentAmount)} <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: normal;">/ ${formatCurrency(goal.targetAmount)}</span></div>
+        <div class="goal-progress-track" style="margin-top: 10px;">
+          <div class="goal-progress-fill" style="width: ${percent}%;"></div>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.82rem; color: var(--text-secondary);">
+          <span>${formatCurrency(remaining)} to target</span>
+        </div>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px;">
+        <button type="button" class="btn-liquid-secondary btn-sm" data-action="contribute-goal" data-id="${goal.id}" data-title="${escapeHTML(goal.title)}">
+          <i data-lucide="plus" class="btn-icon-xs"></i>
+          <span>Add Funds</span>
+        </button>
+        <button type="button" class="btn-ghost-glass btn-sm btn-danger-glass" data-action="delete-goal" data-id="${goal.id}">
+          <i data-lucide="trash-2" class="btn-icon-xs"></i>
+          <span>Delete</span>
+        </button>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function handleGoalFormSubmit(e) {
+  e.preventDefault();
+  const title = DOM.goalTitleInput.value.trim();
+  const targetAmount = parseFloat(DOM.goalTargetInput.value);
+  const targetDate = DOM.goalDateInput.value;
+
+  if (!title || isNaN(targetAmount) || targetAmount <= 0) {
+    showToast('Please specify a valid title and target amount.', 'danger');
+    return;
+  }
+
+  state.goals.push({
+    id: 'goal-' + Date.now(),
+    title,
+    targetAmount,
+    currentAmount: 0,
+    targetDate
+  });
+
+  saveGoals(state.goals);
+  closeModal(DOM.goalModal);
+  showToast(`Created savings goal "${title}".`, 'success');
+  renderGoalsView();
+}
+
+function handleContributionFormSubmit(e) {
+  e.preventDefault();
+  const goalId = DOM.contribGoalId.value;
+  const amount = parseFloat(DOM.contribAmountInput.value);
+
+  if (isNaN(amount) || amount <= 0) {
+    showToast('Please enter a valid contribution amount.', 'danger');
+    return;
+  }
+
+  const goal = state.goals.find(g => g.id === goalId);
+  if (!goal) return;
+
+  goal.currentAmount += amount;
+  saveGoals(state.goals);
+  closeModal(DOM.contributionModal);
+  showToast(`Added ${formatCurrency(amount)} to "${goal.title}".`, 'success');
+  renderGoalsView();
+  renderOverview();
+}
+
+/* ==============================================================================
+   12. AI SPENDING ANALYZER & FORECASTING
+   ============================================================================== */
+
+function renderAnalyticsView() {
+  renderSpendingChart();
+  renderCategoryBreakdown();
+
+  const forecast = calculateSpendingForecast(state.transactions);
+  if (DOM.forecastEndAmount) {
+    DOM.forecastEndAmount.textContent = formatCurrency(forecast.projectedEnd);
+  }
+  if (DOM.forecastExplanation) {
+    DOM.forecastExplanation.textContent = `Spent ${formatCurrency(forecast.spentSoFar)} over ${forecast.currentDay} days (avg ${formatCurrency(forecast.avgDaily)}/day). At this pace, projected month-end spend is ${formatCurrency(forecast.projectedEnd)}.`;
+  }
+
+  if (DOM.monthlyReportContent) {
+    const totals = calculateTotals(state.transactions);
+    const topCat = calculateCategoryBreakdown(state.transactions)[0] || { category: 'None', total: 0 };
+    DOM.monthlyReportContent.innerHTML = `
+      <div style="display: flex; flex-direction: column; gap: 10px; font-size: 0.9rem;">
+        <p>• <strong>Total Cash Inflow:</strong> ${formatCurrency(totals.totalIncome)}</p>
+        <p>• <strong>Total Cash Outflow:</strong> ${formatCurrency(totals.totalExpenses)}</p>
+        <p>• <strong>Net Surplus:</strong> ${formatCurrency(totals.netBalance)}</p>
+        <p>• <strong>Primary Spending Area:</strong> ${escapeHTML(topCat.category)} (${formatCurrency(topCat.total)})</p>
+      </div>
+    `;
+  }
+}
+
+/* ==============================================================================
+   13. VAULTLY AI ASSISTANT & NATURAL LANGUAGE PARSER
+   ============================================================================== */
+
+function renderAiMessages() {
+  const thread = DOM.aiChatThread;
+  if (!thread) return;
+
+  thread.innerHTML = '';
+  state.aiMessages.forEach(msg => {
+    const div = document.createElement('div');
+    div.className = `ai-msg ${msg.sender}`;
+    div.innerHTML = `<div class="ai-msg-bubble">${msg.text}</div>`;
+    thread.appendChild(div);
+  });
+  thread.scrollTop = thread.scrollHeight;
+}
+
 /**
- * Initializes or updates the Chart.js doughnut chart based on expense data.
+ * Local Deterministic Financial AI Engine (Guaranteed zero-failure offline fallback).
+ * Answers user questions with verified arithmetic directly from application state.
  */
-function renderChart() {
+function localDeterministicFinancialAI(userQuery, context) {
+  const q = userQuery.toLowerCase();
+  const totals = context.totals;
+  const topCat = context.breakdown[0];
+
+  if (q.includes('spend') && (q.includes('this month') || q.includes('how much'))) {
+    return `According to your verified records, your total recorded expenses amount to **${formatCurrency(totals.totalExpenses)}** across ${totals.expenseCount} logged transactions.`;
+  }
+
+  if (q.includes('largest') || q.includes('top category') || q.includes('most')) {
+    if (topCat) {
+      return `Your largest expense category is **${topCat.category}**, accounting for **${formatCurrency(topCat.total)}** (${topCat.percentage}% of all your recorded spending).`;
+    }
+    return `You haven't recorded any expenses yet to determine a top category.`;
+  }
+
+  if (q.includes('balance') || q.includes('net') || q.includes('saved')) {
+    return `Your recorded net balance is **${formatCurrency(totals.netBalance)}** (Total Income: ${formatCurrency(totals.totalIncome)} − Total Expenses: ${formatCurrency(totals.totalExpenses)}).`;
+  }
+
+  if (q.includes('safe') || q.includes('daily')) {
+    const safe = calculateSafeToSpend(state.transactions, state.recurring);
+    return `Based on your remaining net balance and commitments, your daily Safe-to-Spend allowance is approximately **${formatCurrency(safe.dailyAllowance)}/day** for the remaining ${safe.daysRemaining} days of this month.`;
+  }
+
+  if (q.includes('budget') || q.includes('limits')) {
+    if (state.budgets.length === 0) {
+      return `You haven't created any category budgets yet. Navigate to the **Budgets** view to establish monthly caps!`;
+    }
+    const list = state.budgets.map(b => `${b.category}: ${formatCurrency(b.limit)}`).join(', ');
+    return `You have ${state.budgets.length} active budgets configured: ${list}.`;
+  }
+
+  if (q.includes('goal') || q.includes('savings')) {
+    if (state.goals.length === 0) {
+      return `No active savings goals found. Head over to the **Goals** tab to set a target for an emergency fund, laptop, or trip.`;
+    }
+    const g = state.goals[0];
+    return `Your primary goal is **${g.title}** (${formatCurrency(g.currentAmount)} saved toward ${formatCurrency(g.targetAmount)}, ${Math.round((g.currentAmount / g.targetAmount) * 100)}%).`;
+  }
+
+  return `Based on your recorded transactions: Total Income is **${formatCurrency(totals.totalIncome)}**, Total Expenses are **${formatCurrency(totals.totalExpenses)}**, leaving a Net Balance of **${formatCurrency(totals.netBalance)}**. Ask me to compare categories, inspect budgets, or estimate your safe daily spend!`;
+}
+
+/**
+ * Natural Language Transaction Parser
+ * Parses inputs like "Spent 250 on lunch today" into structured transaction fields.
+ */
+function parseNaturalLanguageTransaction(text) {
+  if (!text || typeof text !== 'string') return null;
+
+  const t = text.trim();
+  const lower = t.toLowerCase();
+
+  // 1. Amount Extraction (₹250, 250, 250.50, rs 250)
+  const amountMatch = t.match(/(?:(?:₹|rs\.?|inr)\s*)?([0-9]+(?:\.[0-9]{1,2})?)/i);
+  const amount = amountMatch ? parseFloat(amountMatch[1]) : 0;
+
+  // 2. Type Detection
+  let type = 'expense';
+  if (lower.includes('salary') || lower.includes('received') || lower.includes('earned') || lower.includes('deposit') || lower.includes('freelance') || lower.includes('allowance')) {
+    type = 'income';
+  }
+
+  // 3. Category Detection
+  let category = 'Other';
+  if (type === 'income') {
+    if (lower.includes('salary')) category = 'Salary';
+    else if (lower.includes('freelance') || lower.includes('consulting') || lower.includes('project')) category = 'Freelance';
+    else if (lower.includes('business')) category = 'Business';
+    else if (lower.includes('allowance') || lower.includes('gift')) category = 'Allowance';
+    else category = 'Other';
+  } else {
+    if (lower.includes('lunch') || lower.includes('dinner') || lower.includes('food') || lower.includes('burger') || lower.includes('pizza') || lower.includes('grocery') || lower.includes('coffee') || lower.includes('cafe')) {
+      category = 'Food & Dining';
+    } else if (lower.includes('cab') || lower.includes('uber') || lower.includes('ola') || lower.includes('metro') || lower.includes('bus') || lower.includes('fuel') || lower.includes('petrol') || lower.includes('transport')) {
+      category = 'Transport';
+    } else if (lower.includes('bill') || lower.includes('electricity') || lower.includes('water') || lower.includes('wifi') || lower.includes('internet') || lower.includes('recharge')) {
+      category = 'Bills & Utilities';
+    } else if (lower.includes('movie') || lower.includes('cinema') || lower.includes('game') || lower.includes('concert')) {
+      category = 'Entertainment';
+    } else if (lower.includes('medicine') || lower.includes('hospital') || lower.includes('doctor') || lower.includes('pharmacy')) {
+      category = 'Health';
+    } else if (lower.includes('book') || lower.includes('course') || lower.includes('tuition')) {
+      category = 'Education';
+    } else if (lower.includes('amazon') || lower.includes('shopping') || lower.includes('cloth') || lower.includes('shoes')) {
+      category = 'Shopping';
+    }
+  }
+
+  // 4. Date Detection
+  let date = getTodayDateString();
+  if (lower.includes('yesterday')) {
+    const y = new Date();
+    y.setDate(y.getDate() - 1);
+    date = `${y.getFullYear()}-${String(y.getMonth() + 1).padStart(2, '0')}-${String(y.getDate()).padStart(2, '0')}`;
+  }
+
+  // 5. Clean Title
+  let title = t.replace(/(?:spent|paid|received|earned|got|on|for|yesterday|today|rs\.?|inr|₹|[0-9]+(?:\.[0-9]{1,2})?)/gi, '').trim();
+  if (!title) {
+    title = category === 'Other' ? (type === 'income' ? 'Income Payment' : 'Expense Payment') : category;
+  } else {
+    // Capitalize first letter
+    title = title.charAt(0).toUpperCase() + title.slice(1);
+  }
+
+  return { amount, type, category, date, title };
+}
+
+async function handleAiChatSubmit(e) {
+  if (e) e.preventDefault();
+  const input = DOM.aiChatInput;
+  if (!input) return;
+
+  const userText = input.value.trim();
+  if (!userText) return;
+
+  input.value = '';
+
+  // Append user message
+  state.aiMessages.push({ sender: 'user', text: escapeHTML(userText) });
+  renderAiMessages();
+
+  // Add temporary typing indicator
+  state.aiMessages.push({ sender: 'assistant', text: '<em>Analyzing financial records...</em>' });
+  renderAiMessages();
+
+  // Prepare minimized grounded context
+  const totals = calculateTotals(state.transactions);
+  const breakdown = calculateCategoryBreakdown(state.transactions);
+  const context = {
+    totals,
+    breakdown,
+    transactionCount: state.transactions.length,
+    budgetCount: state.budgets.length,
+    goalCount: state.goals.length
+  };
+
+  let replyText = '';
+
+  try {
+    // Attempt secure Vercel API endpoint
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: userText, context })
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      if (data && data.reply) {
+        replyText = data.reply;
+      }
+    }
+  } catch (err) {
+    // Graceful offline fallback
+    console.info('[Vaultly AI] Offline / API fallback active:', err.message);
+  }
+
+  if (!replyText) {
+    // Use verified local deterministic rules
+    replyText = localDeterministicFinancialAI(userText, context);
+  }
+
+  // Replace typing indicator with real reply
+  state.aiMessages.pop();
+  state.aiMessages.push({ sender: 'assistant', text: replyText });
+  renderAiMessages();
+}
+
+function handleAiPromptChipClick(promptText) {
+  if (!DOM.aiChatInput) return;
+  DOM.aiChatInput.value = promptText;
+  handleAiChatSubmit();
+}
+
+function handleNaturalLanguageParseTrigger() {
+  const rawText = DOM.aiChatInput.value.trim();
+  if (!rawText) {
+    showToast('Type a transaction description first, e.g. "Spent 300 on groceries"', 'warning');
+    return;
+  }
+
+  const parsed = parseNaturalLanguageTransaction(rawText);
+  if (!parsed || parsed.amount <= 0) {
+    showToast('Could not detect an amount. Please specify a value like ₹250.', 'warning');
+    return;
+  }
+
+  DOM.aiChatInput.value = '';
+
+  // Pre-fill transaction modal for user confirmation
+  openAddTransactionModal();
+  DOM.txTitle.value = parsed.title;
+  DOM.txAmount.value = parsed.amount;
+  DOM.txDate.value = parsed.date;
+
+  if (parsed.type === 'income') {
+    DOM.typeIncome.checked = true;
+    updateFormCategoryOptions('income');
+  } else {
+    DOM.typeExpense.checked = true;
+    updateFormCategoryOptions('expense');
+  }
+
+  DOM.txCategory.value = parsed.category;
+  showToast(`Parsed: ${parsed.title} (${formatCurrency(parsed.amount)}). Confirm to save.`, 'info');
+}
+
+/* ==============================================================================
+   14. SETTINGS & DIAGNOSTICS
+   ============================================================================== */
+
+function renderSettingsView() {
+  if (DOM.storageMetricsText) {
+    const totalRecords = state.transactions.length;
+    DOM.storageMetricsText.textContent = `100% Client-Side Local Storage active. Storing ${totalRecords} transaction records, ${state.budgets.length} budgets, ${state.goals.length} goals. Zero external trackers.`;
+  }
+}
+
+function exportAllDataJSON() {
+  const fullBackup = {
+    exportDate: new Date().toISOString(),
+    version: '2.0.0',
+    transactions: state.transactions,
+    budgets: state.budgets,
+    goals: state.goals,
+    recurring: state.recurring,
+    customCategories: state.customCategories
+  };
+
+  const blob = new Blob([JSON.stringify(fullBackup, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `vaultly_complete_backup_${getTodayDateString()}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  showToast('Downloaded complete JSON data backup.', 'success');
+}
+
+/* ==============================================================================
+   15. DASHBOARD RENDERING & OVERVIEW
+   ============================================================================== */
+
+function renderDashboard() {
+  renderOverview();
+  renderTransactionsList();
+  renderAnalyticsView();
+  renderBudgetsView();
+  renderRecurringSubscriptions();
+  renderGoalsView();
+}
+
+function renderOverview() {
+  const totals = calculateTotals(state.transactions);
+  const safeSpend = calculateSafeToSpend(state.transactions, state.recurring);
   const breakdown = calculateCategoryBreakdown(state.transactions);
 
-  // If there are no expenses, show clean empty state
-  if (breakdown.length === 0) {
-    DOM.chartEmptyState.hidden = false;
-    DOM.chartEmptyState.style.display = 'flex';
-    DOM.spendingChartCanvas.hidden = true;
-    DOM.spendingChartCanvas.style.display = 'none';
+  // Update Net Balance
+  DOM.totalBalance.textContent = formatCurrency(totals.netBalance);
 
-    // Properly destroy existing chart to release canvas memory
+  if (totals.netBalance > 0) {
+    DOM.balanceStatusBadge.innerHTML = `<span class="tag-dot tag-dot-positive" aria-hidden="true"></span><span>Net Positive Cashflow</span>`;
+  } else if (totals.netBalance < 0) {
+    DOM.balanceStatusBadge.innerHTML = `<span class="tag-dot tag-dot-negative" aria-hidden="true"></span><span>Net Deficit (Expenses exceed income)</span>`;
+  } else {
+    DOM.balanceStatusBadge.innerHTML = `<span class="tag-dot" aria-hidden="true"></span><span>Net Neutral (₹0.00 balance)</span>`;
+  }
+
+  // Update Totals
+  DOM.totalIncome.textContent = formatCurrency(totals.totalIncome);
+  DOM.incomeCountLabel.textContent = `${totals.incomeCount} income source${totals.incomeCount === 1 ? '' : 's'}`;
+  DOM.totalExpense.textContent = formatCurrency(totals.totalExpenses);
+  DOM.expenseCountLabel.textContent = `${totals.expenseCount} expense${totals.expenseCount === 1 ? '' : 's'} logged`;
+
+  // Update Safe to Spend
+  DOM.safeDailySpend.textContent = formatCurrency(safeSpend.dailyAllowance);
+  DOM.monthDaysTag.textContent = `${safeSpend.daysRemaining} Day${safeSpend.daysRemaining === 1 ? '' : 's'} Left`;
+  DOM.monthProgressBar.style.width = `${safeSpend.monthProgress}%`;
+  DOM.monthProgressPercent.textContent = `${safeSpend.monthProgress}%`;
+
+  // Update Insights
+  if (breakdown.length > 0) {
+    const top = breakdown[0];
+    DOM.insightTopCategory.textContent = `${top.category} — ${formatCurrency(top.total)} (${top.percentage}% of all expenses)`;
+  } else {
+    DOM.insightTopCategory.textContent = 'No expense records yet to analyze.';
+  }
+
+  const allTx = state.transactions;
+  if (allTx.length > 0) {
+    const largest = [...allTx].sort((a, b) => b.amount - a.amount)[0];
+    DOM.insightLargestTx.textContent = `${largest.title} (${formatCurrency(largest.amount)}) • ${formatDate(largest.date)}`;
+  } else {
+    DOM.insightLargestTx.textContent = 'No transactions recorded yet.';
+  }
+
+  if (totals.totalIncome > 0) {
+    const retention = Math.max(0, Math.round((totals.netBalance / totals.totalIncome) * 100));
+    DOM.insightSavingsRate.textContent = `${retention}% of your earned income is currently retained as net savings.`;
+  } else {
+    DOM.insightSavingsRate.textContent = 'Log income and expenses to view retention rate.';
+  }
+
+  // Update Badges
+  if (DOM.sidebarTxCount) DOM.sidebarTxCount.textContent = totals.incomeCount + totals.expenseCount;
+  if (DOM.transactionCountBadge) DOM.transactionCountBadge.textContent = totals.incomeCount + totals.expenseCount;
+}
+
+function renderTransactionsList() {
+  const container = DOM.transactionsList;
+  if (!container) return;
+
+  const filtered = filterAndSortTransactions(
+    state.transactions,
+    state.activeTypeFilter,
+    state.searchQuery,
+    state.selectedCategory,
+    state.sortBy
+  );
+
+  container.innerHTML = '';
+
+  if (state.transactions.length === 0) {
+    DOM.emptyStateNoData.hidden = false;
+    DOM.emptyStateNoResults.hidden = true;
+    return;
+  }
+
+  if (filtered.length === 0) {
+    DOM.emptyStateNoData.hidden = true;
+    DOM.emptyStateNoResults.hidden = false;
+    return;
+  }
+
+  DOM.emptyStateNoData.hidden = true;
+  DOM.emptyStateNoResults.hidden = true;
+
+  filtered.forEach(tx => {
+    const row = document.createElement('article');
+    row.className = 'tx-row';
+    const isIncome = tx.type === 'income';
+
+    row.innerHTML = `
+      <div class="tx-left">
+        <div class="tx-icon-halo ${isIncome ? 'halo-income' : 'halo-expense'}" aria-hidden="true">
+          <i data-lucide="${isIncome ? 'arrow-down-left' : 'arrow-up-right'}"></i>
+        </div>
+        <div class="tx-details">
+          <div class="tx-title-row">
+            <h3 class="tx-title">${escapeHTML(tx.title)}</h3>
+            <span class="glass-tag tx-category-tag">${escapeHTML(tx.category)}</span>
+          </div>
+          <div class="tx-meta">
+            <span>${formatDate(tx.date)}</span>
+            ${tx.notes ? `<span class="tx-notes-preview">• ${escapeHTML(tx.notes)}</span>` : ''}
+          </div>
+        </div>
+      </div>
+      <div class="tx-right">
+        <span class="tx-amount ${isIncome ? 'text-income' : 'text-expense'}">
+          ${isIncome ? '+' : '−'}${formatCurrency(tx.amount)}
+        </span>
+        <div style="display: flex; gap: 6px;">
+          <button type="button" class="tx-edit-btn" data-action="edit" data-id="${tx.id}" aria-label="Edit transaction ${escapeHTML(tx.title)}">
+            <i data-lucide="edit-3"></i>
+          </button>
+          <button type="button" class="tx-delete-btn" data-action="delete" data-id="${tx.id}" aria-label="Delete transaction ${escapeHTML(tx.title)}">
+            <i data-lucide="trash-2"></i>
+          </button>
+        </div>
+      </div>
+    `;
+    container.appendChild(row);
+  });
+}
+
+function filterAndSortTransactions(list, typeFilter, query, categoryFilter, sortBy) {
+  let result = list.filter(tx => {
+    if (typeFilter !== 'all' && tx.type !== typeFilter) return false;
+    if (categoryFilter !== 'all' && tx.category !== categoryFilter) return false;
+    if (query.trim() !== '') {
+      const q = query.toLowerCase().trim();
+      const matchesTitle = tx.title.toLowerCase().includes(q);
+      const matchesCategory = tx.category.toLowerCase().includes(q);
+      const matchesNotes = tx.notes ? tx.notes.toLowerCase().includes(q) : false;
+      if (!matchesTitle && !matchesCategory && !matchesNotes) return false;
+    }
+    return true;
+  });
+
+  result.sort((a, b) => {
+    if (sortBy === 'date-desc') return new Date(b.date) - new Date(a.date);
+    if (sortBy === 'date-asc') return new Date(a.date) - new Date(b.date);
+    if (sortBy === 'amount-desc') return b.amount - a.amount;
+    if (sortBy === 'amount-asc') return a.amount - b.amount;
+    return 0;
+  });
+
+  return result;
+}
+
+function renderSpendingChart() {
+  const canvas = DOM.spendingChart;
+  if (!canvas) return;
+
+  const breakdown = calculateCategoryBreakdown(state.transactions);
+  const totalExpense = breakdown.reduce((sum, item) => sum + item.total, 0);
+
+  if (DOM.chartExpenseTotalBadge) {
+    DOM.chartExpenseTotalBadge.textContent = `${formatCurrency(totalExpense)} Total`;
+  }
+
+  if (breakdown.length === 0) {
     if (state.chartInstance) {
       state.chartInstance.destroy();
       state.chartInstance = null;
     }
+    canvas.style.display = 'none';
+    if (DOM.chartEmptyState) DOM.chartEmptyState.style.display = 'flex';
     return;
   }
 
-  DOM.chartEmptyState.hidden = true;
-  DOM.chartEmptyState.style.display = 'none';
-  DOM.spendingChartCanvas.hidden = false;
-  DOM.spendingChartCanvas.style.display = 'block';
+  canvas.style.display = 'block';
+  if (DOM.chartEmptyState) DOM.chartEmptyState.style.display = 'none';
 
-  // Defensive check: Verify Chart.js library is loaded
   if (typeof Chart === 'undefined') {
-    console.warn('[Vaultly] Chart.js library is not available. Using fallback breakdown chips.');
+    canvas.style.display = 'none';
     return;
   }
 
-  const labels = breakdown.map(item => item.category);
-  const dataValues = breakdown.map(item => item.total);
-  const backgroundColors = breakdown.map(item => item.color);
+  const labels = breakdown.map(b => b.category);
+  const dataValues = breakdown.map(b => b.total);
+  const colors = breakdown.map(b => b.color);
 
-  // If a chart instance exists, destroy it before creating a new one to prevent canvas overlap
   if (state.chartInstance) {
-    state.chartInstance.destroy();
-    state.chartInstance = null;
+    state.chartInstance.data.labels = labels;
+    state.chartInstance.data.datasets[0].data = dataValues;
+    state.chartInstance.data.datasets[0].backgroundColor = colors;
+    state.chartInstance.update();
+    return;
   }
 
-  const ctx = DOM.spendingChartCanvas.getContext('2d');
-
-  try {
-    state.chartInstance = new Chart(ctx, {
-      type: 'doughnut',
-      data: {
-        labels: labels,
-        datasets: [{
-          data: dataValues,
-          backgroundColor: backgroundColors,
-          borderColor: '#050505', // Deep space monochrome cutout
-          borderWidth: 2,
-          hoverOffset: 8
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        cutout: '72%',
-        plugins: {
-          legend: {
-            display: false // Bespoke accessible category breakdown chips provide the legend
-          },
-          tooltip: {
-            backgroundColor: '#0A0A0A',
-            titleColor: '#FFFFFF',
-            bodyColor: '#E2E2E2',
-            borderColor: 'rgba(255, 255, 255, 0.16)',
-            borderWidth: 1,
-            padding: 12,
-            boxPadding: 6,
-            cornerRadius: 10,
-            callbacks: {
-              label: function(context) {
-                const value = context.parsed;
-                const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                const percent = Math.round((value / total) * 100);
-                return ` ${formatCurrency(value)} (${percent}%)`;
-              }
-            }
+  const ctx = canvas.getContext('2d');
+  state.chartInstance = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels,
+      datasets: [{
+        data: dataValues,
+        backgroundColor: colors,
+        borderColor: '#08090B',
+        borderWidth: 2,
+        hoverOffset: 6
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '72%',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#111318',
+          borderColor: 'rgba(255, 255, 255, 0.15)',
+          borderWidth: 1,
+          titleColor: '#FFFFFF',
+          bodyColor: '#E2E2E2',
+          padding: 12,
+          callbacks: {
+            label: (ctx) => ` ${ctx.label}: ${formatCurrency(ctx.raw)}`
           }
-        },
-        animation: {
-          duration: 400
         }
       }
-    });
-  } catch (error) {
-    console.error('[Vaultly] Error creating Chart.js chart:', error);
-  }
-}
-
-/* ==============================================================================
-   9. FORM VALIDATION & TRANSACTION MANAGEMENT
-   Strict validation before mutating application state.
-   ============================================================================== */
-
-/**
- * Resets form errors and clears helper text.
- */
-function resetFormErrors() {
-  DOM.txTitleError.textContent = '';
-  DOM.txAmountError.textContent = '';
-  DOM.txCategoryError.textContent = '';
-  DOM.txDateError.textContent = '';
-
-  DOM.txTitleInput.classList.remove('has-error');
-  DOM.txAmountInput.classList.remove('has-error');
-  DOM.txCategorySelect.classList.remove('has-error');
-  DOM.txDateInput.classList.remove('has-error');
-}
-
-/**
- * Validates form inputs before submission.
- * @returns {boolean} True if all inputs pass validation
- */
-function validateForm() {
-  resetFormErrors();
-  let isValid = true;
-
-  // 1. Title Validation
-  const title = DOM.txTitleInput.value.trim();
-  if (!title) {
-    DOM.txTitleError.textContent = 'Please enter a transaction title.';
-    DOM.txTitleInput.classList.add('has-error');
-    isValid = false;
-  } else if (title.length > 80) {
-    DOM.txTitleError.textContent = 'Title must be 80 characters or fewer.';
-    DOM.txTitleInput.classList.add('has-error');
-    isValid = false;
-  }
-
-  // 2. Amount Validation
-  const rawAmount = DOM.txAmountInput.value.trim();
-  const parsedAmount = parseFloat(rawAmount);
-
-  if (!rawAmount || isNaN(parsedAmount) || parsedAmount <= 0) {
-    DOM.txAmountError.textContent = 'Enter a valid positive amount greater than 0.';
-    DOM.txAmountInput.classList.add('has-error');
-    isValid = false;
-  } else if (parsedAmount > 100000000) { // ₹10 Crore reasonable educational cap
-    DOM.txAmountError.textContent = 'Amount exceeds maximum allowable threshold.';
-    DOM.txAmountInput.classList.add('has-error');
-    isValid = false;
-  }
-
-  // 3. Category Validation
-  const category = DOM.txCategorySelect.value;
-  if (!category) {
-    DOM.txCategoryError.textContent = 'Please select a valid category.';
-    DOM.txCategorySelect.classList.add('has-error');
-    isValid = false;
-  }
-
-  // 4. Date Validation
-  const date = DOM.txDateInput.value;
-  if (!date) {
-    DOM.txDateError.textContent = 'Please select a valid date.';
-    DOM.txDateInput.classList.add('has-error');
-    isValid = false;
-  }
-
-  return isValid;
-}
-
-/**
- * Generates a unique transaction identifier.
- * Uses crypto.randomUUID when available, with timestamp fallback.
- * @returns {string} Unique identifier
- */
-function generateUniqueId() {
-  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-    return crypto.randomUUID();
-  }
-  return `tx_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-}
-
-/**
- * Handles submission of the Add Transaction form.
- * @param {Event} event
- */
-function handleFormSubmit(event) {
-  event.preventDefault();
-
-  if (!validateForm()) {
-    return;
-  }
-
-  const selectedType = DOM.typeIncomeRadio.checked ? 'income' : 'expense';
-  const amountNumber = parseFloat(parseFloat(DOM.txAmountInput.value).toFixed(2));
-
-  const newTransaction = {
-    id: generateUniqueId(),
-    title: DOM.txTitleInput.value.trim(),
-    amount: amountNumber,
-    type: selectedType,
-    category: DOM.txCategorySelect.value,
-    date: DOM.txDateInput.value,
-    notes: DOM.txNotesInput.value.trim()
-  };
-
-  // Add to beginning of array so newest transactions appear first
-  state.transactions.unshift(newTransaction);
-
-  // Persist updated state to Local Storage
-  saveTransactions(state.transactions);
-
-  // Re-render UI
-  renderDashboard();
-
-  // Close modal and reset form
-  closeAddModal();
-
-  showToast(`${selectedType === 'income' ? 'Income' : 'Expense'} of ${formatCurrency(amountNumber)} saved!`, 'success');
-}
-
-/**
- * Opens the Add Transaction modal and initializes default fields.
- * @param {string} [defaultType='expense']
- */
-function openAddModal(defaultType = 'expense') {
-  resetFormErrors();
-  DOM.transactionForm.reset();
-
-  if (defaultType === 'income') {
-    DOM.typeIncomeRadio.checked = true;
-    updateFormCategoryOptions('income');
-  } else {
-    DOM.typeExpenseRadio.checked = true;
-    updateFormCategoryOptions('expense');
-  }
-
-  // Default date to today's date
-  DOM.txDateInput.value = getTodayDateString();
-
-  DOM.transactionModal.setAttribute('aria-hidden', 'false');
-  document.body.style.overflow = 'hidden'; // Prevent background scrolling
-
-  // Focus title input for immediate keyboard accessibility
-  setTimeout(() => DOM.txTitleInput.focus(), 80);
-}
-
-/**
- * Closes the Add Transaction modal.
- */
-function closeAddModal() {
-  DOM.transactionModal.setAttribute('aria-hidden', 'true');
-  document.body.style.overflow = '';
-}
-
-/* ==============================================================================
-   10. DELETE CONFIRMATION FLOW
-   Protects users from accidental record deletion.
-   ============================================================================== */
-
-/**
- * Prompts user with the delete confirmation dialog.
- * @param {string} id - Transaction ID to delete
- */
-function requestDeleteTransaction(id) {
-  const target = state.transactions.find(tx => tx.id === id);
-  if (!target) return;
-
-  state.pendingDeleteId = id;
-  DOM.deleteTargetTitle.textContent = `"${target.title}" (${formatCurrency(target.amount)})`;
-  DOM.deleteConfirmModal.setAttribute('aria-hidden', 'false');
-  document.body.style.overflow = 'hidden';
-
-  // Set focus to cancel button to prevent accidental enter-key deletion
-  setTimeout(() => DOM.cancelDeleteBtn.focus(), 80);
-}
-
-/**
- * Cancels pending delete action and closes modal.
- */
-function cancelDeleteTransaction() {
-  state.pendingDeleteId = null;
-  DOM.deleteConfirmModal.setAttribute('aria-hidden', 'true');
-  document.body.style.overflow = '';
-}
-
-/**
- * Confirms deletion, removes item from state, persists, and updates view.
- */
-function confirmDeleteTransaction() {
-  if (!state.pendingDeleteId) return;
-
-  const targetIndex = state.transactions.findIndex(tx => tx.id === state.pendingDeleteId);
-  if (targetIndex !== -1) {
-    const deletedItem = state.transactions.splice(targetIndex, 1)[0];
-    saveTransactions(state.transactions);
-    renderDashboard();
-    showToast(`Deleted "${deletedItem.title}"`, 'info');
-  }
-
-  cancelDeleteTransaction();
-}
-
-/* ==============================================================================
-   11. SEARCH, FILTERING, AND SORTING PIPELINE
-   Instant client-side filtering without page reloads.
-   ============================================================================== */
-
-/**
- * Handles search query changes.
- * @param {string} query
- */
-function handleSearchInput(query) {
-  state.searchQuery = query;
-  DOM.clearSearchBtn.hidden = query.trim() === '';
-  renderTransactionsList();
-}
-
-/**
- * Handles Type Filter pills (All, Income, Expense).
- * @param {string} filterValue
- */
-function handleTypeFilterChange(filterValue) {
-  state.activeTypeFilter = filterValue;
-
-  DOM.filterPills.forEach(pill => {
-    const isSelected = pill.dataset.filter === filterValue;
-    pill.classList.toggle('active', isSelected);
-    pill.setAttribute('aria-checked', String(isSelected));
+    }
   });
-
-  renderTransactionsList();
 }
 
-/**
- * Resets all search and filter controls to default state.
- */
-function resetAllFilters() {
-  state.activeTypeFilter = 'all';
-  state.searchQuery = '';
-  state.selectedCategory = 'all';
-  state.sortBy = 'date-desc';
+function renderCategoryBreakdown() {
+  const container = DOM.categoryBreakdownList;
+  if (!container) return;
 
-  DOM.searchInput.value = '';
-  DOM.clearSearchBtn.hidden = true;
-  DOM.categoryFilterSelect.value = 'all';
-  DOM.sortSelect.value = 'date-desc';
+  const breakdown = calculateCategoryBreakdown(state.transactions);
+  container.innerHTML = '';
 
-  DOM.filterPills.forEach(pill => {
-    const isAll = pill.dataset.filter === 'all';
-    pill.classList.toggle('active', isAll);
-    pill.setAttribute('aria-checked', String(isAll));
+  if (breakdown.length === 0) return;
+
+  breakdown.forEach(item => {
+    const chip = document.createElement('div');
+    chip.className = 'cat-chip';
+    chip.innerHTML = `
+      <div class="cat-chip-left">
+        <span class="cat-chip-dot" style="background-color: ${item.color};"></span>
+        <span class="cat-chip-name">${escapeHTML(item.category)}</span>
+      </div>
+      <div class="cat-chip-right">
+        <span class="cat-chip-amount">${formatCurrency(item.total)}</span>
+        <span class="cat-chip-percent">${item.percentage}%</span>
+      </div>
+    `;
+    container.appendChild(chip);
   });
-
-  renderTransactionsList();
 }
 
 /* ==============================================================================
-   12. DEMO DATA & RESET SYSTEM
-   Allows users to experiment with realistic figures without risking real data.
+   16. UI HELPERS & TOAST NOTIFICATIONS
    ============================================================================== */
 
-/**
- * Populates sample transactions with realistic relative dates.
- */
-function loadSampleData() {
-  const baseTime = new Date();
+function showToast(message, type = 'info') {
+  const stage = DOM.toastContainer;
+  if (!stage) return;
 
-  const formattedSampleData = SAMPLE_TRANSACTIONS.map(sample => {
-    const txDate = new Date(baseTime);
-    txDate.setDate(txDate.getDate() - sample.dateOffsetDays);
-
-    const year = txDate.getFullYear();
-    const month = String(txDate.getMonth() + 1).padStart(2, '0');
-    const day = String(txDate.getDate()).padStart(2, '0');
-
-    return {
-      id: generateUniqueId(),
-      title: sample.title,
-      amount: sample.amount,
-      type: sample.type,
-      category: sample.category,
-      date: `${year}-${month}-${day}`,
-      notes: sample.notes
-    };
-  });
-
-  state.transactions = formattedSampleData;
-  saveTransactions(state.transactions);
-  resetAllFilters();
-  renderDashboard();
-
-  showToast('Sample demo transactions loaded successfully!', 'success');
-}
-
-/**
- * Completely resets transactions and clears Local Storage.
- */
-function clearAllData() {
-  if (state.transactions.length === 0) {
-    showToast('There are no transactions to clear.', 'info');
-    return;
-  }
-
-  const confirmed = window.confirm(
-    'Are you sure you want to delete all transactions? This will reset your balance to ₹0.00 and cannot be undone.'
-  );
-
-  if (!confirmed) return;
-
-  state.transactions = [];
-  saveTransactions([]);
-  resetAllFilters();
-  renderDashboard();
-
-  showToast('All transaction records have been reset.', 'info');
-}
-
-/* ==============================================================================
-   13. UI ENHANCEMENTS & NOTIFICATIONS
-   Toasts, greetings, live dates, mobile drawer.
-   ============================================================================== */
-
-/**
- * Displays a toast notification.
- * @param {string} message - Feedback message
- * @param {'success'|'danger'|'info'} [type='success']
- */
-function showToast(message, type = 'success') {
   const toast = document.createElement('div');
   toast.className = `toast toast-${type}`;
   toast.setAttribute('role', 'alert');
+  toast.innerHTML = `
+    <span>${escapeHTML(message)}</span>
+    <button type="button" class="toast-close" aria-label="Dismiss notification">&times;</button>
+  `;
 
-  const iconName = type === 'success' ? 'check-circle' : (type === 'danger' ? 'alert-circle' : 'info');
+  stage.appendChild(toast);
 
-  const icon = document.createElement('i');
-  icon.setAttribute('data-lucide', iconName);
-  icon.className = 'toast-icon';
-
-  const text = document.createElement('span');
-  text.className = 'toast-message';
-  text.textContent = message;
-
-  toast.appendChild(icon);
-  toast.appendChild(text);
-
-  DOM.toastContainer.appendChild(toast);
-  refreshIcons();
-
-  // Trigger smooth entrance animation
-  requestAnimationFrame(() => {
-    toast.classList.add('show');
-  });
-
-  // Auto-dismiss after 3.5 seconds
-  setTimeout(() => {
-    toast.classList.remove('show');
-    setTimeout(() => {
-      if (toast.parentElement) {
-        toast.parentElement.removeChild(toast);
-      }
-    }, 300);
-  }, 3500);
-}
-
-/**
- * Updates dynamic greeting based on client's local hour and live date.
- */
-function updateDynamicGreetingAndDate() {
-  const now = new Date();
-  const currentHour = now.getHours();
-  let greeting = 'Good day';
-
-  if (currentHour >= 5 && currentHour < 12) {
-    greeting = 'Good morning';
-  } else if (currentHour >= 12 && currentHour < 17) {
-    greeting = 'Good afternoon';
-  } else if (currentHour >= 17 && currentHour < 22) {
-    greeting = 'Good evening';
-  } else {
-    greeting = 'Welcome back';
-  }
-
-  DOM.dynamicGreeting.textContent = greeting;
-
-  // Real date display: e.g. "Saturday, 17 October 2026"
-  DOM.currentDateDisplay.textContent = now.toLocaleDateString('en-IN', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric'
-  });
-}
-
-/**
- * Re-runs Lucide icon generator if the library is available on the window.
- * If the Lucide CDN fails to load (offline development), this function
- * gracefully falls back to an embedded SVG dictionary so icons never disappear.
- */
-function refreshIcons() {
-  if (typeof lucide !== 'undefined' && lucide.createIcons) {
-    lucide.createIcons();
-    return;
-  }
-
-  // Graceful Offline Fallback: Inject clean inline SVGs for all data-lucide tags
-  const fallbackIcons = {
-    'layout-dashboard': '<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>',
-    'receipt': '<path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/>',
-    'pie-chart': '<path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/>',
-    'sparkles': '<path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>',
-    'trash-2': '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>',
-    'menu': '<line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/>',
-    'plus-circle': '<circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/>',
-    'plus': '<path d="M5 12h14"/><path d="M12 5v14"/>',
-    'wallet': '<path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/>',
-    'arrow-down-left': '<path d="M17 7 7 17"/><path d="M17 17H7V7"/>',
-    'arrow-up-right': '<path d="M7 17 17 7"/><path d="M7 7h10v10"/>',
-    'search': '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
-    'x': '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
-    'search-x': '<path d="m13.5 8.5-5 5"/><path d="m8.5 8.5 5 5"/><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
-    'check': '<path d="M20 6 9 17l-5-5"/>',
-    'alert-triangle': '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/>',
-    'shield-check': '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><path d="m9 12 2 2 4-4"/>',
-    'check-circle': '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>',
-    'alert-circle': '<circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>',
-    'info': '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
-    'utensils': '<path d="M18 2v6a3 3 0 0 1-3 3 3 3 0 0 1-3-3V2"/><path d="M15 2v19"/><path d="M6 2v7a3 3 0 0 0 3 3 3 3 0 0 0 3-3V2"/><path d="M9 2v19"/>',
-    'car': '<path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/>',
-    'shopping-bag': '<path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>',
-    'zap': '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
-    'book-open': '<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>',
-    'film': '<rect width="20" height="20" x="2" y="2" rx="2.18" ry="2.18"/><line x1="7" x2="7" y1="2" y2="22"/><line x1="17" x2="17" y1="2" y2="22"/><line x1="2" x2="22" y1="12" y2="12"/><line x1="2" x2="7" y1="7" y2="7"/><line x1="2" x2="7" y1="17" y2="17"/><line x1="17" x2="22" y1="17" y2="17"/><line x1="17" x2="22" y1="7" y2="7"/>',
-    'heart-pulse': '<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/><path d="M3.22 12H9.5l.5-1 2 4.5 2-7 1.5 3.5h5.27"/>',
-    'more-horizontal': '<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>',
-    'briefcase': '<rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>',
-    'laptop': '<path d="M20 16V7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v9m16 0H4m16 0 1.28 2.55a1 1 0 0 1-.9 1.45H3.62a1 1 0 0 1-.9-1.45L4 16"/>',
-    'gift': '<polyline points="20 12 20 22 4 22 4 12"/><rect width="20" height="5" x="2" y="7"/><line x1="12" x2="12" y1="22" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>',
-    'trending-up': '<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>',
-    'dollar-sign': '<line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>'
+  const dismiss = () => {
+    toast.style.animation = 'toastExit 0.3s forwards ease';
+    setTimeout(() => toast.remove(), 300);
   };
 
-  document.querySelectorAll('[data-lucide]').forEach(el => {
-    const iconName = el.getAttribute('data-lucide');
-    const svgInner = fallbackIcons[iconName];
-    if (svgInner) {
-      el.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="${el.className}">${svgInner}</svg>`;
-    }
-  });
+  toast.querySelector('.toast-close').addEventListener('click', dismiss);
+  setTimeout(dismiss, 4000);
 }
 
-/**
- * Toggles mobile drawer navigation.
- * @param {boolean} isOpen
- */
-function toggleMobileMenu(isOpen) {
-  if (DOM.mobileDrawer) {
-    DOM.mobileDrawer.classList.toggle('open', isOpen);
-    DOM.mobileDrawer.setAttribute('aria-hidden', String(!isOpen));
-  }
-  if (DOM.mobileDrawerBackdrop) {
-    DOM.mobileDrawerBackdrop.classList.toggle('active', isOpen);
-  }
-  if (DOM.mobileMenuToggle) {
-    DOM.mobileMenuToggle.setAttribute('aria-expanded', String(isOpen));
-  }
-  document.body.classList.toggle('drawer-open', isOpen);
+function openModal(modal) {
+  if (!modal) return;
+  modal.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('modal-open');
 }
 
-/* ==============================================================================
-   14. EVENT LISTENERS SETUP
-   Centralized event bindings for predictable behavior.
-   ============================================================================== */
+function closeModal(modal) {
+  if (!modal) return;
+  modal.setAttribute('aria-hidden', 'true');
+  document.body.classList.remove('modal-open');
+}
 
-function setupEventListeners() {
-  // --- Mobile Drawer ---
-  if (DOM.mobileMenuToggle) {
-    DOM.mobileMenuToggle.addEventListener('click', () => {
-      const isCurrentlyOpen = DOM.mobileDrawer && DOM.mobileDrawer.classList.contains('open');
-      toggleMobileMenu(!isCurrentlyOpen);
+function updateDynamicGreetingAndDate() {
+  const now = new Date();
+  const hour = now.getHours();
+  let greeting = 'Good evening';
+  if (hour < 12) greeting = 'Good morning';
+  else if (hour < 17) greeting = 'Good afternoon';
+
+  if (DOM.dynamicGreeting) DOM.dynamicGreeting.textContent = greeting;
+  if (DOM.currentDateDisplay) {
+    DOM.currentDateDisplay.textContent = now.toLocaleDateString('en-IN', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+  }
+}
+
+function updateFormCategoryOptions(type) {
+  const select = DOM.txCategory;
+  if (!select) return;
+
+  select.innerHTML = '';
+  const categories = type === 'income' ? INCOME_CATEGORIES : [...EXPENSE_CATEGORIES, ...state.customCategories];
+
+  categories.forEach(cat => {
+    const opt = document.createElement('option');
+    opt.value = cat.name;
+    opt.textContent = cat.name;
+    select.appendChild(opt);
+  });
+
+  const filterSelect = DOM.categoryFilterSelect;
+  if (filterSelect) {
+    filterSelect.innerHTML = '<option value="all">All Categories</option>';
+    const allUnique = Array.from(new Set([...EXPENSE_CATEGORIES, ...INCOME_CATEGORIES, ...state.customCategories].map(c => c.name)));
+    allUnique.forEach(name => {
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      filterSelect.appendChild(opt);
     });
   }
 
-  if (DOM.closeDrawerBtn) {
-    DOM.closeDrawerBtn.addEventListener('click', () => toggleMobileMenu(false));
-  }
-
-  if (DOM.mobileDrawerBackdrop) {
-    DOM.mobileDrawerBackdrop.addEventListener('click', () => toggleMobileMenu(false));
-  }
-
-  // Close drawer on mobile drawer link click
-  if (DOM.drawerLinks) {
-    DOM.drawerLinks.forEach(link => {
-      link.addEventListener('click', () => {
-        toggleMobileMenu(false);
-        DOM.drawerLinks.forEach(l => l.classList.remove('active'));
-        link.classList.add('active');
-      });
+  const budgetCatSelect = DOM.budgetCategorySelect;
+  if (budgetCatSelect) {
+    budgetCatSelect.innerHTML = '';
+    EXPENSE_CATEGORIES.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.name;
+      opt.textContent = c.name;
+      budgetCatSelect.appendChild(opt);
     });
   }
+}
 
-  // Desktop Navigation active pill state
-  if (DOM.desktopNavItems) {
-    DOM.desktopNavItems.forEach(item => {
-      item.addEventListener('click', () => {
-        DOM.desktopNavItems.forEach(i => i.classList.remove('active'));
-        item.classList.add('active');
-      });
-    });
-  }
+function showFieldError(errorEl, message) {
+  if (errorEl) errorEl.textContent = message;
+}
 
-  // Mobile Drawer Quick Actions
-  if (DOM.loadDemoBtnMobile) {
-    DOM.loadDemoBtnMobile.addEventListener('click', () => {
-      toggleMobileMenu(false);
-      loadSampleData();
-    });
-  }
+function clearFormValidationErrors() {
+  if (DOM.txTitleError) DOM.txTitleError.textContent = '';
+  if (DOM.txAmountError) DOM.txAmountError.textContent = '';
+  if (DOM.txCategoryError) DOM.txCategoryError.textContent = '';
+  if (DOM.txDateError) DOM.txDateError.textContent = '';
+}
 
-  if (DOM.clearAllBtnMobile) {
-    DOM.clearAllBtnMobile.addEventListener('click', () => {
-      toggleMobileMenu(false);
-      clearAllData();
-    });
-  }
-
-  // --- Add Transaction Modal ---
-  DOM.openAddModalBtn.addEventListener('click', () => openAddModal('expense'));
-  DOM.emptyAddFirstBtn.addEventListener('click', () => openAddModal('expense'));
-  DOM.chartAddExpenseBtn.addEventListener('click', () => openAddModal('expense'));
-
-  DOM.closeModalBtn.addEventListener('click', closeAddModal);
-  DOM.cancelModalBtn.addEventListener('click', closeAddModal);
-
-  // Type Toggle inside Form
-  DOM.typeExpenseRadio.addEventListener('change', () => updateFormCategoryOptions('expense'));
-  DOM.typeIncomeRadio.addEventListener('change', () => updateFormCategoryOptions('income'));
-
-  // Form Submission
-  DOM.transactionForm.addEventListener('submit', handleFormSubmit);
-
-  // --- Delete Modal Controls ---
-  DOM.cancelDeleteBtn.addEventListener('click', cancelDeleteTransaction);
-  DOM.confirmDeleteBtn.addEventListener('click', confirmDeleteTransaction);
-
-  // Event Delegation for Transaction Row Delete Buttons
-  DOM.transactionsList.addEventListener('click', event => {
-    const deleteButton = event.target.closest('button[data-action="delete"]');
-    if (deleteButton) {
-      const transactionId = deleteButton.dataset.id;
-      if (transactionId) {
-        requestDeleteTransaction(transactionId);
-      }
-    }
-  });
-
-  // --- Search & Filters ---
-  DOM.searchInput.addEventListener('input', e => handleSearchInput(e.target.value));
-
-  DOM.clearSearchBtn.addEventListener('click', () => {
-    DOM.searchInput.value = '';
-    handleSearchInput('');
-    DOM.searchInput.focus();
-  });
-
-  DOM.filterPills.forEach(pill => {
-    pill.addEventListener('click', () => {
-      const filterValue = pill.dataset.filter;
-      handleTypeFilterChange(filterValue);
-    });
-  });
-
-  DOM.categoryFilterSelect.addEventListener('change', e => {
-    state.selectedCategory = e.target.value;
-    renderTransactionsList();
-  });
-
-  DOM.sortSelect.addEventListener('change', e => {
-    state.sortBy = e.target.value;
-    renderTransactionsList();
-  });
-
-  DOM.resetFiltersBtn.addEventListener('click', resetAllFilters);
-
-  // --- Demo & Reset ---
-  DOM.loadDemoBtn.addEventListener('click', loadSampleData);
-  DOM.emptyLoadDemoBtn.addEventListener('click', loadSampleData);
-  DOM.clearAllBtn.addEventListener('click', clearAllData);
-
-  // --- Keyboard & Accessibility Shortcuts ---
-  document.addEventListener('keydown', event => {
-    // Escape key closes open modals or drawer
-    if (event.key === 'Escape') {
-      if (DOM.mobileDrawer && DOM.mobileDrawer.classList.contains('open')) {
-        toggleMobileMenu(false);
-      }
-      if (DOM.transactionModal.getAttribute('aria-hidden') === 'false') {
-        closeAddModal();
-      }
-      if (DOM.deleteConfirmModal.getAttribute('aria-hidden') === 'false') {
-        cancelDeleteTransaction();
-      }
-    }
-  });
-
-  // Close modals when clicking outside dialog window (backdrop)
-  DOM.transactionModal.addEventListener('click', event => {
-    if (event.target === DOM.transactionModal) {
-      closeAddModal();
-    }
-  });
-
-  DOM.deleteConfirmModal.addEventListener('click', event => {
-    if (event.target === DOM.deleteConfirmModal) {
-      cancelDeleteTransaction();
-    }
-  });
+function escapeHTML(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 /* ==============================================================================
-   15. 3D CARD TILT & WATER-WHITE SPOTLIGHT INTERACTION
-   Magic UI style interactive cursor tracker & 3D card tilt.
+   17. CINEMATIC OPENING LOADER (<= 1.0s)
    ============================================================================== */
 
-/**
- * Initializes interactive 3D Mouse Tilt and water-white spotlight tracker for glass cards.
- * Automatically skipped on touch devices and if user prefers reduced motion.
- */
-function init3DCardTilt() {
-  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    return;
-  }
-
-  // Detect touch devices
-  if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
-    return;
-  }
-
-  const cards = document.querySelectorAll('.glass-card');
-
-  cards.forEach(card => {
-    let bounds;
-
-    function onMouseEnter() {
-      bounds = card.getBoundingClientRect();
-      card.classList.add('is-tilting');
-    }
-
-    function onMouseMove(event) {
-      if (!bounds) bounds = card.getBoundingClientRect();
-      const mouseX = event.clientX - bounds.left;
-      const mouseY = event.clientY - bounds.top;
-
-      const percentX = (mouseX / bounds.width) * 100;
-      const percentY = (mouseY / bounds.height) * 100;
-
-      // Restrained 3D tilt: max ~5 degrees for elegant feel
-      const tiltX = ((mouseY / bounds.height) - 0.5) * -6;
-      const tiltY = ((mouseX / bounds.width) - 0.5) * 6;
-
-      card.style.setProperty('--mouse-x', `${percentX.toFixed(1)}%`);
-      card.style.setProperty('--mouse-y', `${percentY.toFixed(1)}%`);
-      card.style.setProperty('--tilt-x', `${tiltX.toFixed(2)}deg`);
-      card.style.setProperty('--tilt-y', `${tiltY.toFixed(2)}deg`);
-    }
-
-    function onMouseLeave() {
-      card.classList.remove('is-tilting');
-      card.style.setProperty('--tilt-x', '0deg');
-      card.style.setProperty('--tilt-y', '0deg');
-      bounds = null;
-    }
-
-    card.addEventListener('mouseenter', onMouseEnter);
-    card.addEventListener('mousemove', onMouseMove);
-    card.addEventListener('mouseleave', onMouseLeave);
-  });
-}
-
-/**
- * Attaches liquid water ripple feedback on clicks for interactive buttons.
- */
-function initWaterRipple() {
-  const interactiveSelectors = [
-    '.btn-liquid-primary',
-    '.btn-liquid-secondary',
-    '.btn-liquid-danger',
-    '.btn-ghost-glass',
-    '.filter-glass-pill',
-    '.tx-row'
-  ];
-
-  document.addEventListener('click', event => {
-    const target = event.target.closest(interactiveSelectors.join(','));
-    if (!target) return;
-
-    const rect = target.getBoundingClientRect();
-    const ripple = document.createElement('span');
-    ripple.className = 'water-ripple-wave';
-
-    const size = Math.max(rect.width, rect.height) * 1.5;
-    ripple.style.width = `${size}px`;
-    ripple.style.height = `${size}px`;
-    ripple.style.left = `${event.clientX - rect.left - size / 2}px`;
-    ripple.style.top = `${event.clientY - rect.top - size / 2}px`;
-
-    // Clean up any existing ripple inside this element
-    const existing = target.querySelector('.water-ripple-wave');
-    if (existing) existing.remove();
-
-    target.appendChild(ripple);
-
-    setTimeout(() => {
-      if (ripple.parentElement) {
-        ripple.parentElement.removeChild(ripple);
-      }
-    }, 600);
-  });
-}
-
-/* ==============================================================================
-   16. CINEMATIC OPENING LOADER CONTROLLER
-   Smoothly introduces Vaultly, prevents body scroll during load, and dismisses safely.
-   ============================================================================== */
-
-/**
- * Dismisses the cinematic loader with a smooth fade-out and removes it from DOM.
- */
 function dismissCinematicLoader() {
   const loader = document.getElementById('cinematicLoader');
   if (!loader || loader.classList.contains('loader-dismissed')) return;
@@ -1747,20 +1799,11 @@ function dismissCinematicLoader() {
   loader.setAttribute('aria-hidden', 'true');
   document.body.classList.remove('is-loading');
 
-  // Remove element after CSS transition completes (350ms) to release memory
   setTimeout(() => {
-    if (loader && loader.parentElement) {
-      loader.remove();
-    }
+    if (loader && loader.parentElement) loader.remove();
   }, 380);
 }
 
-/**
- * Initializes the cinematic loading screen lifecycle with strictly enforced <= 1.0s max duration.
- * 0–650ms: Wordmark presentation & silver reflection sweep.
- * 650–1000ms: Smooth 0.35s fade-out revealing the dashboard.
- * Total time: <= 1000ms. Immediate dismissal if prefers-reduced-motion is active.
- */
 function initCinematicLoader() {
   const prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (prefersReduced) {
@@ -1768,84 +1811,345 @@ function initCinematicLoader() {
     return;
   }
 
-  const displayTime = 650;
-  const hardSafetyLimit = 1000;
-
   const startTime = Date.now();
-
   const handleDismiss = () => {
     const elapsed = Date.now() - startTime;
-    const remaining = Math.max(0, displayTime - elapsed);
+    const remaining = Math.max(0, 650 - elapsed);
     setTimeout(dismissCinematicLoader, remaining);
   };
 
-  if (document.readyState === 'complete') {
-    handleDismiss();
-  } else {
-    window.addEventListener('load', handleDismiss, { once: true });
-  }
+  if (document.readyState === 'complete') handleDismiss();
+  else window.addEventListener('load', handleDismiss, { once: true });
 
-  // Guaranteed hard safety fallback: dismisses at 1.0s under any circumstances
-  setTimeout(dismissCinematicLoader, hardSafetyLimit);
+  setTimeout(dismissCinematicLoader, 1000);
 }
 
-/**
- * Responsive viewport resize & orientation listener.
- * Dynamically resizes Chart.js instance on device rotation or browser resizing.
- */
-function setupResponsiveWatchers() {
-  let resizeTimer;
-  window.addEventListener('resize', () => {
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(() => {
-      if (state.chartInstance) {
-        state.chartInstance.resize();
-      }
-    }, 150);
+/* ==============================================================================
+   18. CENTRALIZED EVENT LISTENERS
+   ============================================================================== */
+
+function setupEventListeners() {
+  // Navigation / Router triggers
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('[data-view-target]');
+    if (btn) {
+      const targetView = btn.getAttribute('data-view-target');
+      switchView(targetView);
+    }
   });
 
-  window.addEventListener('orientationchange', () => {
-    setTimeout(() => {
-      if (state.chartInstance) {
-        state.chartInstance.resize();
+  // Mobile drawer controls
+  if (DOM.mobileMenuToggle) {
+    DOM.mobileMenuToggle.addEventListener('click', () => {
+      DOM.mobileDrawer.classList.toggle('open');
+      DOM.mobileDrawerBackdrop.classList.toggle('open');
+      const isOpen = DOM.mobileDrawer.classList.contains('open');
+      DOM.mobileMenuToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+      document.body.classList.toggle('drawer-open', isOpen);
+      document.body.classList.toggle('drawer-locked', isOpen);
+    });
+  }
+
+  if (DOM.closeDrawerBtn) DOM.closeDrawerBtn.addEventListener('click', closeMobileDrawer);
+  if (DOM.mobileDrawerBackdrop) DOM.mobileDrawerBackdrop.addEventListener('click', closeMobileDrawer);
+
+  // Add Transaction triggers
+  const addButtons = [DOM.openAddModalBtn, DOM.sidebarAddTxBtn, DOM.txViewAddBtn, document.getElementById('emptyAddFirstBtn'), DOM.chartAddExpenseBtn];
+  addButtons.forEach(btn => {
+    if (btn) btn.addEventListener('click', openAddTransactionModal);
+  });
+
+  if (DOM.closeModalBtn) DOM.closeModalBtn.addEventListener('click', () => closeModal(DOM.transactionModal));
+  if (DOM.cancelModalBtn) DOM.cancelModalBtn.addEventListener('click', () => closeModal(DOM.transactionModal));
+
+  // Type toggle in form
+  if (DOM.typeExpense) DOM.typeExpense.addEventListener('change', () => updateFormCategoryOptions('expense'));
+  if (DOM.typeIncome) DOM.typeIncome.addEventListener('change', () => updateFormCategoryOptions('income'));
+
+  // Transaction form submit
+  if (DOM.transactionForm) DOM.transactionForm.addEventListener('submit', handleTransactionFormSubmit);
+
+  // Transaction list delegation: Edit and Delete
+  if (DOM.transactionsList) {
+    DOM.transactionsList.addEventListener('click', e => {
+      const editBtn = e.target.closest('[data-action="edit"]');
+      if (editBtn) {
+        const id = editBtn.getAttribute('data-id');
+        openEditTransactionModal(id);
+        return;
       }
-    }, 200);
+
+      const delBtn = e.target.closest('[data-action="delete"]');
+      if (delBtn) {
+        const id = delBtn.getAttribute('data-id');
+        const tx = state.transactions.find(t => t.id === id);
+        if (tx) {
+          state.pendingDeleteId = id;
+          if (DOM.deleteTargetTitle) DOM.deleteTargetTitle.textContent = `"${tx.title}"`;
+          openModal(DOM.deleteConfirmModal);
+        }
+      }
+    });
+  }
+
+  if (DOM.cancelDeleteBtn) DOM.cancelDeleteBtn.addEventListener('click', () => closeModal(DOM.deleteConfirmModal));
+  if (DOM.confirmDeleteBtn) {
+    DOM.confirmDeleteBtn.addEventListener('click', () => {
+      if (state.pendingDeleteId) deleteTransaction(state.pendingDeleteId);
+    });
+  }
+
+  // Search & Filter
+  if (DOM.searchInput) {
+    DOM.searchInput.addEventListener('input', e => {
+      state.searchQuery = e.target.value;
+      if (DOM.clearSearchBtn) DOM.clearSearchBtn.hidden = !state.searchQuery;
+      renderTransactionsList();
+    });
+  }
+
+  if (DOM.clearSearchBtn) {
+    DOM.clearSearchBtn.addEventListener('click', () => {
+      DOM.searchInput.value = '';
+      state.searchQuery = '';
+      DOM.clearSearchBtn.hidden = true;
+      renderTransactionsList();
+    });
+  }
+
+  document.querySelectorAll('.filter-glass-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      document.querySelectorAll('.filter-glass-pill').forEach(p => {
+        p.classList.remove('active');
+        p.setAttribute('aria-checked', 'false');
+      });
+      pill.classList.add('active');
+      pill.setAttribute('aria-checked', 'true');
+      state.activeTypeFilter = pill.getAttribute('data-filter');
+      renderTransactionsList();
+    });
+  });
+
+  if (DOM.categoryFilterSelect) {
+    DOM.categoryFilterSelect.addEventListener('change', e => {
+      state.selectedCategory = e.target.value;
+      renderTransactionsList();
+    });
+  }
+
+  if (DOM.sortSelect) {
+    DOM.sortSelect.addEventListener('change', e => {
+      state.sortBy = e.target.value;
+      renderTransactionsList();
+    });
+  }
+
+  if (DOM.exportCsvBtn) DOM.exportCsvBtn.addEventListener('click', exportTransactionsCSV);
+
+  // Budgets & Subscriptions Events
+  if (DOM.openAddBudgetBtn) DOM.openAddBudgetBtn.addEventListener('click', () => openModal(DOM.budgetModal));
+  if (DOM.closeBudgetModalBtn) DOM.closeBudgetModalBtn.addEventListener('click', () => closeModal(DOM.budgetModal));
+  if (DOM.cancelBudgetBtn) DOM.cancelBudgetBtn.addEventListener('click', () => closeModal(DOM.budgetModal));
+  if (DOM.budgetForm) DOM.budgetForm.addEventListener('submit', handleBudgetFormSubmit);
+
+  if (DOM.budgetsGrid) {
+    DOM.budgetsGrid.addEventListener('click', e => {
+      const delBtn = e.target.closest('[data-action="delete-budget"]');
+      if (delBtn) {
+        const category = delBtn.getAttribute('data-category');
+        state.budgets = state.budgets.filter(b => b.category !== category);
+        saveBudgets(state.budgets);
+        showToast(`Removed budget for ${category}.`, 'info');
+        renderBudgetsView();
+      }
+    });
+  }
+
+  if (DOM.openAddRecurringBtn) DOM.openAddRecurringBtn.addEventListener('click', () => openModal(DOM.recurringModal));
+  if (DOM.closeRecurringModalBtn) DOM.closeRecurringModalBtn.addEventListener('click', () => closeModal(DOM.recurringModal));
+  if (DOM.cancelRecurringBtn) DOM.cancelRecurringBtn.addEventListener('click', () => closeModal(DOM.recurringModal));
+  if (DOM.recurringForm) DOM.recurringForm.addEventListener('submit', handleRecurringFormSubmit);
+
+  if (DOM.recurringGrid) {
+    DOM.recurringGrid.addEventListener('click', e => {
+      const toggleBtn = e.target.closest('[data-action="toggle-recurring"]');
+      if (toggleBtn) {
+        const id = toggleBtn.getAttribute('data-id');
+        const rec = state.recurring.find(r => r.id === id);
+        if (rec) {
+          rec.active = rec.active === false ? true : false;
+          saveRecurring(state.recurring);
+          renderRecurringSubscriptions();
+          renderOverview();
+        }
+        return;
+      }
+
+      const delBtn = e.target.closest('[data-action="delete-recurring"]');
+      if (delBtn) {
+        const id = delBtn.getAttribute('data-id');
+        state.recurring = state.recurring.filter(r => r.id !== id);
+        saveRecurring(state.recurring);
+        showToast('Removed recurring subscription.', 'info');
+        renderRecurringSubscriptions();
+        renderOverview();
+      }
+    });
+  }
+
+  // Goals & Contribution Events
+  if (DOM.openAddGoalBtn) DOM.openAddGoalBtn.addEventListener('click', () => openModal(DOM.goalModal));
+  if (DOM.closeGoalModalBtn) DOM.closeGoalModalBtn.addEventListener('click', () => closeModal(DOM.goalModal));
+  if (DOM.cancelGoalBtn) DOM.cancelGoalBtn.addEventListener('click', () => closeModal(DOM.goalModal));
+  if (DOM.goalForm) DOM.goalForm.addEventListener('submit', handleGoalFormSubmit);
+
+  if (DOM.goalsGrid) {
+    DOM.goalsGrid.addEventListener('click', e => {
+      const contribBtn = e.target.closest('[data-action="contribute-goal"]');
+      if (contribBtn) {
+        const id = contribBtn.getAttribute('data-id');
+        const title = contribBtn.getAttribute('data-title');
+        DOM.contribGoalId.value = id;
+        DOM.contribGoalSubtitle.textContent = `Contribute to ${title}`;
+        DOM.contribAmountInput.value = '';
+        openModal(DOM.contributionModal);
+        return;
+      }
+
+      const delBtn = e.target.closest('[data-action="delete-goal"]');
+      if (delBtn) {
+        const id = delBtn.getAttribute('data-id');
+        state.goals = state.goals.filter(g => g.id !== id);
+        saveGoals(state.goals);
+        showToast('Removed savings goal.', 'info');
+        renderGoalsView();
+      }
+    });
+  }
+
+  if (DOM.closeContribModalBtn) DOM.closeContribModalBtn.addEventListener('click', () => closeModal(DOM.contributionModal));
+  if (DOM.cancelContribBtn) DOM.cancelContribBtn.addEventListener('click', () => closeModal(DOM.contributionModal));
+  if (DOM.contributionForm) DOM.contributionForm.addEventListener('submit', handleContributionFormSubmit);
+
+  // AI Chat Events
+  if (DOM.aiChatForm) DOM.aiChatForm.addEventListener('submit', handleAiChatSubmit);
+  if (DOM.aiParseBtn) DOM.aiParseBtn.addEventListener('click', handleNaturalLanguageParseTrigger);
+  if (DOM.aiResetChatBtn) {
+    DOM.aiResetChatBtn.addEventListener('click', () => {
+      state.aiMessages = [
+        {
+          sender: 'assistant',
+          text: 'Conversation reset. What questions do you have about your personal finances or budgets?'
+        }
+      ];
+      renderAiMessages();
+    });
+  }
+
+  if (DOM.aiPromptChips) {
+    DOM.aiPromptChips.addEventListener('click', e => {
+      const chip = e.target.closest('.ai-prompt-chip');
+      if (chip) {
+        const prompt = chip.getAttribute('data-prompt');
+        handleAiPromptChipClick(prompt);
+      }
+    });
+  }
+
+  // Demo Data & Clear Tools
+  const loadDemoHandler = () => {
+    state.transactions = SAMPLE_TRANSACTIONS.map(tx => {
+      const d = new Date();
+      d.setDate(d.getDate() - tx.dateOffsetDays);
+      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      return { id: 'demo-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4), title: tx.title, amount: tx.amount, type: tx.type, category: tx.category, date: dateStr, notes: tx.notes };
+    });
+    state.budgets = [...SAMPLE_BUDGETS];
+    state.goals = [...SAMPLE_GOALS];
+    state.recurring = [...SAMPLE_RECURRING];
+
+    saveTransactions(state.transactions);
+    saveBudgets(state.budgets);
+    saveGoals(state.goals);
+    saveRecurring(state.recurring);
+
+    showToast('Loaded sample personal finance data.', 'success');
+    renderDashboard();
+    closeMobileDrawer();
+  };
+
+  const clearAllHandler = () => {
+    if (confirm('Are you sure you want to reset all stored records? This will clear all transactions, budgets, and goals.')) {
+      state.transactions = [];
+      state.budgets = [];
+      state.goals = [];
+      state.recurring = [];
+      localStorage.clear();
+      showToast('All local storage records have been cleared.', 'info');
+      renderDashboard();
+      closeMobileDrawer();
+    }
+  };
+
+  if (document.getElementById('loadDemoBtn')) document.getElementById('loadDemoBtn').addEventListener('click', loadDemoHandler);
+  if (document.getElementById('loadDemoBtnMobile')) document.getElementById('loadDemoBtnMobile').addEventListener('click', loadDemoHandler);
+  if (DOM.loadDemoBtnSettings) DOM.loadDemoBtnSettings.addEventListener('click', loadDemoHandler);
+  if (document.getElementById('emptyLoadDemoBtn')) document.getElementById('emptyLoadDemoBtn').addEventListener('click', loadDemoHandler);
+
+  if (document.getElementById('clearAllBtn')) document.getElementById('clearAllBtn').addEventListener('click', clearAllHandler);
+  if (document.getElementById('clearAllBtnMobile')) document.getElementById('clearAllBtnMobile').addEventListener('click', clearAllHandler);
+  if (DOM.clearAllBtnSettings) DOM.clearAllBtnSettings.addEventListener('click', clearAllHandler);
+  if (DOM.exportJsonBtn) DOM.exportJsonBtn.addEventListener('click', exportAllDataJSON);
+
+  // Global Keyboard shortcuts
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      closeModal(DOM.transactionModal);
+      closeModal(DOM.deleteConfirmModal);
+      closeModal(DOM.budgetModal);
+      closeModal(DOM.goalModal);
+      closeModal(DOM.contributionModal);
+      closeModal(DOM.recurringModal);
+      closeMobileDrawer();
+    }
   });
 }
 
 /* ==============================================================================
-   17. APPLICATION BOOTSTRAP
-   Loads persisted state, prepares UI, and attaches listeners.
+   19. APPLICATION INITIALIZATION
    ============================================================================== */
 
 function initApp() {
-  // 1. Initialize cinematic opening loading screen
   initCinematicLoader();
-
-  // 2. Establish greeting & live formatted date
   updateDynamicGreetingAndDate();
 
-  // 3. Set default category options in form
-  updateFormCategoryOptions('expense');
-
-  // 4. Load transactions from Local Storage
+  // Load all persisted data
   state.transactions = loadTransactions();
+  state.budgets = loadBudgets();
+  state.goals = loadGoals();
+  state.recurring = loadRecurring();
+  state.customCategories = loadCustomCategories();
 
-  // 5. Attach centralized event listeners & responsive watchers
+  // Setup options and views
+  updateFormCategoryOptions('expense');
   setupEventListeners();
-  setupResponsiveWatchers();
-
-  // 6. Initialize 3D Mouse Tilt & Water Ripple effects
+  initSpatialBalanceOrb();
   init3DCardTilt();
-  initWaterRipple();
 
-  // 7. Initial render of entire application
+  // Initial render
   renderDashboard();
 
-  console.info('[Vaultly] Application initialized successfully with', state.transactions.length, 'records.');
+  // Check URL hash for direct view routing
+  const hash = window.location.hash.replace('#', '');
+  if (hash) {
+    switchView(hash);
+  } else {
+    switchView('overview');
+  }
+
+  console.info('[Vaultly] Initialized with Obsidian Spatial Architecture.');
 }
 
-// Start application when DOM is fully parsed
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initApp);
 } else {

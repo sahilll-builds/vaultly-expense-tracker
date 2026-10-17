@@ -653,12 +653,14 @@ body {
 
 .nav-container {
   max-width: 1380px;
+  width: 100%;
   margin: 0 auto;
   padding: 14px 28px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 20px;
+  min-width: 0;
 }
 
 .nav-brand {
@@ -692,16 +694,9 @@ body {
   letter-spacing: 0.04em;
 }
 
-/* Desktop Links */
+/* Desktop Links - Sidebar provides dedicated 7-view navigation */
 .nav-links-desktop {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--glass-secondary);
-  border: 1px solid var(--glass-border);
-  padding: 4px;
-  border-radius: var(--radius-pill);
-  backdrop-filter: var(--blur-sm);
+  display: none;
 }
 
 .nav-item {
@@ -2534,6 +2529,8 @@ body {
   display: flex;
   min-height: 100vh;
   width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
 }
 
 .desktop-sidebar {
@@ -2647,8 +2644,10 @@ body {
 .main-content-area {
   flex: 1;
   min-width: 0;
+  max-width: 100%;
   display: flex;
   flex-direction: column;
+  overflow-x: hidden;
 }
 
 /* 7 VIEW PANELS */

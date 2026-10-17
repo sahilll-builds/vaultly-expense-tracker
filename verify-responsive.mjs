@@ -131,9 +131,9 @@ async function main() {
         const cards = Array.from(document.querySelectorAll('.glass-card'));
         const overflowingCards = cards.filter(c => c.getBoundingClientRect().right > innerWidth + 1);
 
-        // Check nav toggle or nav links
-        const navDesktop = document.querySelector('.nav-links-desktop');
-        const navDesktopVisible = navDesktop && getComputedStyle(navDesktop).display !== 'none';
+        // Check nav toggle or sidebar
+        const sidebar = document.querySelector('.desktop-sidebar');
+        const sidebarVisible = sidebar && getComputedStyle(sidebar).display !== 'none';
         const mobileToggle = document.getElementById('mobileMenuToggle');
         const mobileToggleVisible = mobileToggle && getComputedStyle(mobileToggle).display !== 'none';
 
@@ -145,15 +145,32 @@ async function main() {
         const modalDialog = document.querySelector('.glass-modal-dialog');
         const modalWidth = modalDialog ? modalDialog.getBoundingClientRect().width : 0;
 
+        const overflowingElements = [];
+        if (hasHorizontalOverflow) {
+          document.querySelectorAll('*').forEach(el => {
+            const r = el.getBoundingClientRect();
+            if (r.right > innerWidth + 1) {
+              overflowingElements.push({
+                tag: el.tagName,
+                className: el.className,
+                id: el.id,
+                right: Math.round(r.right),
+                width: Math.round(r.width)
+              });
+            }
+          });
+        }
+
         return {
           innerWidth,
           scrollWidth,
           hasHorizontalOverflow,
           overflowDelta: scrollWidth - innerWidth,
           overflowingCardCount: overflowingCards.length,
-          navDesktopVisible,
+          sidebarVisible,
           mobileToggleVisible,
-          balanceWidth: balanceRect ? Math.round(balanceRect.width) : 0
+          balanceWidth: balanceRect ? Math.round(balanceRect.width) : 0,
+          offendingElements: overflowingElements.slice(0, 5)
         };
       })()`,
       returnByValue: true
@@ -169,8 +186,11 @@ async function main() {
     const statusBadge = passed ? '✔ PASS' : '✖ FAIL';
     console.log(`${statusBadge} [${vp.width}x${vp.height}] ${vp.name}`);
     console.log(`   - Window Width: ${data.innerWidth}px | Page ScrollWidth: ${data.scrollWidth}px (Overflow: ${data.overflowDelta <= 0 ? '0px (None)' : data.overflowDelta + 'px'})`);
-    console.log(`   - Nav Mode: ${data.navDesktopVisible ? 'Desktop Horizontal Links' : 'Mobile Hamburger Drawer Toggle (Active)'}`);
+    console.log(`   - Nav Mode: ${data.sidebarVisible ? 'Desktop 7-View Sidebar' : 'Mobile Hamburger Drawer Toggle (Active)'}`);
     console.log(`   - Balance Card Width: ${data.balanceWidth}px | Overflowing Cards: ${data.overflowingCardCount}`);
+    if (data.offendingElements && data.offendingElements.length > 0) {
+      console.log(`   - Offending Elements: ${JSON.stringify(data.offendingElements)}`);
+    }
     console.log('----------------------------------------------------------------');
   }
 
