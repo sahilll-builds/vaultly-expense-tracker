@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Vaultly — Personal Finance and Expense Tracker. Cosmic Glassmorphism Dashboard: Track income, manage expenses, calculate safe daily spending, and visualize spending habits with clarity.">
-  <title>Vaultly — Personal Finance Tracker</title>
+  <meta name="description" content="Vaultly — AI-Powered Personal Finance Platform. Obsidian Glass Spatial Interface: Expense tracking, conversational AI financial assistant, smart budgets, savings goals, and real-time safe-to-spend analytics.">
+  <title>Vaultly — AI-Powered Personal Finance Platform</title>
 
-  <!-- Google Fonts: Space Grotesk (Wordmark) + Manrope (UI Hierarchy) -->
+  <!-- Google Fonts: Space Grotesk (Brand & Display) + Manrope (UI & Numbers) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
@@ -17,17 +17,12 @@
   <!-- Chart.js (CDN with graceful fallback) -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
-  <!-- Cosmic Glassmorphism Stylesheet -->
+  <!-- Obsidian Glassmorphism Stylesheet -->
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="is-loading">
   <!-- =========================================================================
-       PREMIUM MONOCHROME INTRODUCTORY LOADING SCREEN
-       - Strictly <= 1.0s maximum duration
-       - Pure typography VAULTLY wordmark (no logo icon)
-       - Subtle ambient light and silver refraction sweep
-       - Auto-dismiss on window load with safety timeout
-       - Respects prefers-reduced-motion
+       PREMIUM MONOCHROME INTRODUCTORY LOADING SCREEN (<= 1.0s)
        ========================================================================= -->
   <div id="cinematicLoader" class="cinematic-loader" role="status" aria-live="polite" aria-label="Loading Vaultly">
     <div class="loader-ambient-glow" aria-hidden="true"></div>
@@ -41,11 +36,7 @@
   </div>
 
   <!-- =========================================================================
-       COSMIC GALAXY & FLUID BACKGROUND SYSTEM
-       Pure CSS multi-layered celestial environment:
-       - Layer 1: Nebula clouds (emerald, violet, electric blue, soft pink)
-       - Layer 2: Starfield & twinkling distant stars
-       - Layer 3: Ambient liquid orbs mimicking light refracted through water
+       ATMOSPHERIC GALAXY & FLUID BACKGROUND SYSTEM
        ========================================================================= -->
   <div class="galaxy-background" aria-hidden="true">
     <div class="nebula-cloud nebula-silver-1"></div>
@@ -58,495 +49,860 @@
     <div class="liquid-orb liquid-orb-2"></div>
   </div>
 
-  <!-- APPLICATION WRAPPER -->
-  <div class="app-layout">
-    <!-- SLEEK TOP GLASS NAVIGATION -->
-    <header class="glass-navbar" id="topNavbar">
-      <div class="nav-container">
-        <!-- Brand Identity: Pure Typography Wordmark (No Logo Icon) -->
-        <div class="nav-brand">
-          <span class="brand-title">VAULTLY</span>
-        </div>
-
-        <!-- Desktop Navigation Links -->
-        <nav class="nav-links-desktop" aria-label="Main Navigation">
-          <a href="#dashboard" class="nav-item active" data-section="dashboard">
-            <i data-lucide="layout-dashboard" class="nav-icon" aria-hidden="true"></i>
-            <span>Dashboard</span>
-          </a>
-          <a href="#safe-spend-section" class="nav-item" data-section="safe-spend">
-            <i data-lucide="shield-check" class="nav-icon" aria-hidden="true"></i>
-            <span>Safe to Spend</span>
-          </a>
-          <a href="#spending-section" class="nav-item" data-section="spending">
-            <i data-lucide="pie-chart" class="nav-icon" aria-hidden="true"></i>
-            <span>Spending Analysis</span>
-          </a>
-          <a href="#transactions-section" class="nav-item" data-section="transactions">
-            <i data-lucide="receipt" class="nav-icon" aria-hidden="true"></i>
-            <span>Transactions</span>
-          </a>
-        </nav>
-
-        <!-- Navbar Actions -->
-        <div class="nav-actions">
-          <!-- Demo Data & Reset Quick Actions -->
-          <div class="quick-storage-tools">
-            <button type="button" id="loadDemoBtn" class="btn-ghost-glass" title="Load sample transactions for demonstration">
-              <i data-lucide="sparkles" class="btn-icon-xs" aria-hidden="true"></i>
-              <span class="btn-text-desktop">Demo Data</span>
-            </button>
-            <button type="button" id="clearAllBtn" class="btn-ghost-glass btn-danger-glass" title="Reset all stored transactions">
-              <i data-lucide="trash-2" class="btn-icon-xs" aria-hidden="true"></i>
-              <span class="btn-text-desktop">Reset</span>
-            </button>
-          </div>
-
-          <!-- Primary CTA Button -->
-          <button type="button" class="btn-liquid-primary" id="openAddModalBtn">
-            <i data-lucide="plus-circle" class="btn-icon-sm" aria-hidden="true"></i>
-            <span>Add Transaction</span>
-          </button>
-
-          <!-- Mobile Hamburger Toggle -->
-          <button type="button" class="mobile-toggle-btn" id="mobileMenuToggle" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="mobileDrawer">
-            <i data-lucide="menu" class="menu-icon" aria-hidden="true"></i>
-          </button>
-        </div>
+  <!-- =========================================================================
+       OBSIDIAN SPATIAL 7-VIEW APP SHELL
+       ========================================================================= -->
+  <div class="app-shell">
+    <!-- 1. DESKTOP COMPACT SIDEBAR NAVIGATION -->
+    <aside class="desktop-sidebar" aria-label="Main Navigation">
+      <div class="sidebar-header">
+        <span class="sidebar-brand-title">VAULTLY</span>
+        <span class="sidebar-brand-sub">SPATIAL FINANCE</span>
       </div>
-    </header>
 
-    <!-- MOBILE NAVIGATION DRAWER -->
-    <div class="mobile-drawer-backdrop" id="mobileDrawerBackdrop" aria-hidden="true"></div>
-    <aside class="mobile-drawer" id="mobileDrawer" aria-label="Mobile Navigation Drawer">
-      <div class="drawer-header">
-        <span class="brand-title">VAULTLY</span>
-        <button type="button" class="drawer-close-btn" id="closeDrawerBtn" aria-label="Close navigation menu">
-          <i data-lucide="x" aria-hidden="true"></i>
+      <nav class="sidebar-nav" aria-label="Primary Navigation">
+        <button type="button" class="sidebar-nav-item active" data-view-target="overview">
+          <i data-lucide="layout-dashboard" class="nav-icon" aria-hidden="true"></i>
+          <span>Overview</span>
         </button>
-      </div>
-
-      <nav class="drawer-links">
-        <a href="#dashboard" class="drawer-link active" data-section="dashboard">
-          <i data-lucide="layout-dashboard" aria-hidden="true"></i>
-          <span>Dashboard</span>
-        </a>
-        <a href="#safe-spend-section" class="drawer-link" data-section="safe-spend">
-          <i data-lucide="shield-check" aria-hidden="true"></i>
-          <span>Safe to Spend</span>
-        </a>
-        <a href="#spending-section" class="drawer-link" data-section="spending">
-          <i data-lucide="pie-chart" aria-hidden="true"></i>
-          <span>Spending Analysis</span>
-        </a>
-        <a href="#transactions-section" class="drawer-link" data-section="transactions">
-          <i data-lucide="receipt" aria-hidden="true"></i>
+        <button type="button" class="sidebar-nav-item" data-view-target="transactions">
+          <i data-lucide="receipt" class="nav-icon" aria-hidden="true"></i>
           <span>Transactions</span>
-        </a>
+          <span class="nav-badge" id="sidebarTxCount">0</span>
+        </button>
+        <button type="button" class="sidebar-nav-item" data-view-target="analytics">
+          <i data-lucide="pie-chart" class="nav-icon" aria-hidden="true"></i>
+          <span>Analytics</span>
+        </button>
+        <button type="button" class="sidebar-nav-item" data-view-target="budgets">
+          <i data-lucide="wallet" class="nav-icon" aria-hidden="true"></i>
+          <span>Budgets</span>
+        </button>
+        <button type="button" class="sidebar-nav-item" data-view-target="goals">
+          <i data-lucide="target" class="nav-icon" aria-hidden="true"></i>
+          <span>Goals</span>
+        </button>
+        <button type="button" class="sidebar-nav-item" data-view-target="ai">
+          <i data-lucide="sparkles" class="nav-icon" aria-hidden="true"></i>
+          <span>Vaultly AI</span>
+        </button>
+        <button type="button" class="sidebar-nav-item" data-view-target="settings">
+          <i data-lucide="settings" class="nav-icon" aria-hidden="true"></i>
+          <span>Settings</span>
+        </button>
       </nav>
 
-      <div class="drawer-footer">
-        <div class="storage-status-pill">
-          <span class="pulse-dot" aria-hidden="true"></span>
-          <span>Local Storage Active</span>
+      <div class="sidebar-footer">
+        <div class="sidebar-privacy-badge">
+          <span class="status-pulse-mono" aria-hidden="true"></span>
+          <span>Client-Side Privacy</span>
         </div>
-        <div class="drawer-actions">
-          <button type="button" id="loadDemoBtnMobile" class="btn-ghost-glass w-full">
-            <i data-lucide="sparkles" class="btn-icon-xs" aria-hidden="true"></i>
-            <span>Load Demo Data</span>
-          </button>
-          <button type="button" id="clearAllBtnMobile" class="btn-ghost-glass btn-danger-glass w-full">
-            <i data-lucide="trash-2" class="btn-icon-xs" aria-hidden="true"></i>
-            <span>Reset All Records</span>
-          </button>
-        </div>
+        <button type="button" id="sidebarAddTxBtn" class="btn-liquid-primary w-full">
+          <i data-lucide="plus-circle" class="btn-icon-sm" aria-hidden="true"></i>
+          <span>Add Transaction</span>
+        </button>
       </div>
     </aside>
 
-    <!-- MAIN DASHBOARD CONTENT -->
-    <main class="dashboard-viewport" id="dashboard">
-      <div class="content-bound">
+    <!-- 2. MAIN CONTENT AREA -->
+    <div class="main-content-area">
+      <!-- TOP GLASS NAVBAR (Header & Mobile Quick Actions) -->
+      <header class="glass-navbar" id="topNavbar">
+        <div class="nav-container">
+          <div class="nav-brand">
+            <span class="brand-title">VAULTLY</span>
+          </div>
 
-        <!-- 1. HERO FOCUS BANNER -->
-        <section class="cosmic-hero" aria-label="Dashboard Overview">
-          <div class="hero-content">
-            <div class="hero-badge-wrap">
-              <span class="cosmic-pill">
-                <span class="pill-sparkle" aria-hidden="true">✦</span>
-                <span id="dynamicGreeting">Good evening</span>
-                <span class="pill-divider" aria-hidden="true">•</span>
-                <span id="currentDateDisplay">Saturday, 17 October 2026</span>
-              </span>
+          <!-- Desktop Quick Navigation Tabs -->
+          <nav class="nav-links-desktop" aria-label="Header Navigation">
+            <button type="button" class="nav-item active" data-view-target="overview">
+              <i data-lucide="layout-dashboard" class="nav-icon" aria-hidden="true"></i>
+              <span>Overview</span>
+            </button>
+            <button type="button" class="nav-item" data-view-target="transactions">
+              <i data-lucide="receipt" class="nav-icon" aria-hidden="true"></i>
+              <span>Transactions</span>
+            </button>
+            <button type="button" class="nav-item" data-view-target="analytics">
+              <i data-lucide="pie-chart" class="nav-icon" aria-hidden="true"></i>
+              <span>Analytics</span>
+            </button>
+            <button type="button" class="nav-item" data-view-target="budgets">
+              <i data-lucide="wallet" class="nav-icon" aria-hidden="true"></i>
+              <span>Budgets</span>
+            </button>
+            <button type="button" class="nav-item" data-view-target="goals">
+              <i data-lucide="target" class="nav-icon" aria-hidden="true"></i>
+              <span>Goals</span>
+            </button>
+            <button type="button" class="nav-item" data-view-target="ai">
+              <i data-lucide="sparkles" class="nav-icon" aria-hidden="true"></i>
+              <span>Vaultly AI</span>
+            </button>
+          </nav>
+
+          <!-- Navbar Actions -->
+          <div class="nav-actions">
+            <div class="quick-storage-tools">
+              <button type="button" id="loadDemoBtn" class="btn-ghost-glass" title="Load sample transactions for demonstration">
+                <i data-lucide="sparkles" class="btn-icon-xs" aria-hidden="true"></i>
+                <span class="btn-text-desktop">Demo Data</span>
+              </button>
+              <button type="button" id="clearAllBtn" class="btn-ghost-glass btn-danger-glass" title="Reset all stored transactions">
+                <i data-lucide="trash-2" class="btn-icon-xs" aria-hidden="true"></i>
+                <span class="btn-text-desktop">Reset</span>
+              </button>
             </div>
-            <h1 class="hero-headline">
-              Your money, <span class="gradient-text-mono">in focus.</span>
-            </h1>
-            <p class="hero-subline">
-              Understand your spending. Make every decision count with real-time cosmic financial clarity.
+
+            <!-- Primary Add Transaction Trigger -->
+            <button type="button" class="btn-liquid-primary" id="openAddModalBtn">
+              <i data-lucide="plus-circle" class="btn-icon-sm" aria-hidden="true"></i>
+              <span>Add Transaction</span>
+            </button>
+
+            <!-- Mobile Hamburger Toggle -->
+            <button type="button" class="mobile-toggle-btn" id="mobileMenuToggle" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="mobileDrawer">
+              <i data-lucide="menu" class="menu-icon" aria-hidden="true"></i>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- MOBILE NAVIGATION DRAWER -->
+      <div class="mobile-drawer-backdrop" id="mobileDrawerBackdrop" aria-hidden="true"></div>
+      <aside class="mobile-drawer" id="mobileDrawer" aria-label="Mobile Navigation Drawer">
+        <div class="drawer-header">
+          <span class="brand-title">VAULTLY</span>
+          <button type="button" class="drawer-close-btn" id="closeDrawerBtn" aria-label="Close navigation menu">
+            <i data-lucide="x" aria-hidden="true"></i>
+          </button>
+        </div>
+
+        <nav class="drawer-links">
+          <button type="button" class="drawer-link active" data-view-target="overview">
+            <i data-lucide="layout-dashboard" aria-hidden="true"></i>
+            <span>Overview</span>
+          </button>
+          <button type="button" class="drawer-link" data-view-target="transactions">
+            <i data-lucide="receipt" aria-hidden="true"></i>
+            <span>Transactions</span>
+          </button>
+          <button type="button" class="drawer-link" data-view-target="analytics">
+            <i data-lucide="pie-chart" aria-hidden="true"></i>
+            <span>Analytics</span>
+          </button>
+          <button type="button" class="drawer-link" data-view-target="budgets">
+            <i data-lucide="wallet" aria-hidden="true"></i>
+            <span>Budgets</span>
+          </button>
+          <button type="button" class="drawer-link" data-view-target="goals">
+            <i data-lucide="target" aria-hidden="true"></i>
+            <span>Goals</span>
+          </button>
+          <button type="button" class="drawer-link" data-view-target="ai">
+            <i data-lucide="sparkles" aria-hidden="true"></i>
+            <span>Vaultly AI</span>
+          </button>
+          <button type="button" class="drawer-link" data-view-target="settings">
+            <i data-lucide="settings" aria-hidden="true"></i>
+            <span>Settings</span>
+          </button>
+        </nav>
+
+        <div class="drawer-footer">
+          <div class="storage-status-pill">
+            <span class="pulse-dot" aria-hidden="true"></span>
+            <span>Local Storage Active</span>
+          </div>
+          <div class="drawer-actions">
+            <button type="button" id="loadDemoBtnMobile" class="btn-ghost-glass w-full">
+              <i data-lucide="sparkles" class="btn-icon-xs" aria-hidden="true"></i>
+              <span>Load Demo Data</span>
+            </button>
+            <button type="button" id="clearAllBtnMobile" class="btn-ghost-glass btn-danger-glass w-full">
+              <i data-lucide="trash-2" class="btn-icon-xs" aria-hidden="true"></i>
+              <span>Reset All Records</span>
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      <!-- VIEWPORT PANELS CONTAINER -->
+      <main class="dashboard-viewport" id="dashboard">
+        <div class="content-bound">
+
+          <!-- =================================================================
+               VIEW 1: OVERVIEW (HERO, 3D BALANCE, ESSENTIALS, RECENT)
+               ================================================================= -->
+          <div class="view-panel active" id="viewOverview" data-view="overview">
+            <!-- Hero Focus Banner -->
+            <section class="cosmic-hero" aria-label="Dashboard Overview">
+              <div class="hero-content">
+                <div class="hero-badge-wrap">
+                  <span class="cosmic-pill">
+                    <span class="pill-sparkle" aria-hidden="true">✦</span>
+                    <span id="dynamicGreeting">Good evening</span>
+                    <span class="pill-divider" aria-hidden="true">•</span>
+                    <span id="currentDateDisplay">Saturday, 17 October 2026</span>
+                  </span>
+                </div>
+                <h1 class="hero-headline">
+                  Your money, <span class="gradient-text-mono">in focus.</span>
+                </h1>
+                <p class="hero-subline">
+                  Understand your spending. Make every decision count with real-time spatial financial clarity.
+                </p>
+              </div>
+              <div class="hero-stats-badge" id="storageSummaryBadge">
+                <span class="stat-pill-label">System Status</span>
+                <span class="stat-pill-value"><span class="status-pulse-mono"></span> 100% Client-Side Privacy</span>
+              </div>
+            </section>
+
+            <!-- Financial Summary Cards Row -->
+            <section class="summary-grid" aria-label="Financial Summary Cards">
+              <!-- Total Net Balance Card with Interactive 3D Balance Orb -->
+              <article class="glass-card balance-card">
+                <div class="border-beam-wrap" aria-hidden="true"><div class="border-beam"></div></div>
+                <div class="card-spotlight" aria-hidden="true"></div>
+                <div class="card-refraction-shine" aria-hidden="true"></div>
+                <div class="card-head">
+                  <div class="card-label-group">
+                    <span class="card-label">Total Net Balance</span>
+                    <span class="card-caption">All recorded income minus expenses</span>
+                  </div>
+                  <div class="card-icon-halo halo-mono" aria-hidden="true">
+                    <i data-lucide="wallet"></i>
+                  </div>
+                </div>
+
+                <div class="spatial-balance-stage">
+                  <div>
+                    <div class="balance-display-wrap">
+                      <span class="balance-number" id="totalBalance">₹0.00</span>
+                    </div>
+                    <div class="card-foot">
+                      <span class="glass-tag" id="balanceStatusBadge">
+                        <span class="tag-dot" aria-hidden="true"></span>
+                        <span>Net position (Income − Expenses)</span>
+                      </span>
+                    </div>
+                  </div>
+                  <!-- Interactive 3D-inspired Balance Orb -->
+                  <div class="balance-visual-orb" id="spatialBalanceOrb" title="Interactive Spatial Balance Sphere" aria-hidden="true"></div>
+                </div>
+              </article>
+
+              <!-- Total Income Card -->
+              <article class="glass-card metric-card income-card">
+                <div class="card-spotlight" aria-hidden="true"></div>
+                <div class="card-refraction-shine" aria-hidden="true"></div>
+                <div class="card-head">
+                  <div class="card-label-group">
+                    <span class="card-label">Total Income</span>
+                    <span class="card-caption">Total inward cashflow</span>
+                  </div>
+                  <div class="card-icon-halo halo-income" aria-hidden="true">
+                    <i data-lucide="arrow-down-left"></i>
+                  </div>
+                </div>
+                <div class="metric-display-wrap">
+                  <span class="metric-number text-income" id="totalIncome">₹0.00</span>
+                </div>
+                <div class="card-foot">
+                  <span class="metric-footnote" id="incomeCountLabel">0 income sources</span>
+                </div>
+              </article>
+
+              <!-- Total Expenses Card -->
+              <article class="glass-card metric-card expense-card">
+                <div class="card-spotlight" aria-hidden="true"></div>
+                <div class="card-refraction-shine" aria-hidden="true"></div>
+                <div class="card-head">
+                  <div class="card-label-group">
+                    <span class="card-label">Total Expenses</span>
+                    <span class="card-caption">Total outward spending</span>
+                  </div>
+                  <div class="card-icon-halo halo-expense" aria-hidden="true">
+                    <i data-lucide="arrow-up-right"></i>
+                  </div>
+                </div>
+                <div class="metric-display-wrap">
+                  <span class="metric-number text-expense" id="totalExpense">₹0.00</span>
+                </div>
+                <div class="card-foot">
+                  <span class="metric-footnote" id="expenseCountLabel">0 expenses logged</span>
+                </div>
+              </article>
+            </section>
+
+            <!-- Safe to Spend & Insights Row -->
+            <section class="insights-grid" id="safe-spend-section" aria-label="Smart Financial Insights">
+              <!-- Safe to Spend Card -->
+              <article class="glass-card safe-spend-card">
+                <div class="border-beam-wrap" aria-hidden="true"><div class="border-beam"></div></div>
+                <div class="card-spotlight" aria-hidden="true"></div>
+                <div class="card-refraction-shine" aria-hidden="true"></div>
+                <div class="panel-header">
+                  <div class="panel-title-wrap">
+                    <div class="panel-icon-shield" aria-hidden="true"><i data-lucide="shield-check"></i></div>
+                    <div>
+                      <h2 class="panel-title">Safe to Spend</h2>
+                      <p class="panel-subtitle">Estimated daily spending allowance based on your remaining net balance</p>
+                    </div>
+                  </div>
+                  <span class="glass-tag tag-emerald" id="monthDaysTag">30 Days Left</span>
+                </div>
+                <div class="safe-spend-body">
+                  <div class="safe-spend-metric">
+                    <span class="safe-daily-amount" id="safeDailySpend">₹0.00</span>
+                    <span class="safe-daily-unit">/ day</span>
+                  </div>
+                  <p class="safe-spend-description" id="safeSpendDesc">
+                    Calculated from your current net savings distributed evenly across the remaining days of this month.
+                  </p>
+                  <div class="month-progress-container">
+                    <div class="month-progress-header">
+                      <span class="progress-label" id="monthProgressLabel">Current Month Progression</span>
+                      <span class="progress-val" id="monthProgressPercent">0%</span>
+                    </div>
+                    <div class="liquid-progress-track" role="progressbar" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100">
+                      <div class="liquid-progress-bar" id="monthProgressBar" style="width: 50%;"></div>
+                    </div>
+                  </div>
+                </div>
+              </article>
+
+              <!-- Live Spending Insights Card -->
+              <article class="glass-card insights-card">
+                <div class="card-spotlight" aria-hidden="true"></div>
+                <div class="card-refraction-shine" aria-hidden="true"></div>
+                <div class="panel-header">
+                  <div class="panel-title-wrap">
+                    <div class="panel-icon-sparkle" aria-hidden="true"><i data-lucide="sparkles"></i></div>
+                    <div>
+                      <h2 class="panel-title">Spending Insights</h2>
+                      <p class="panel-subtitle">Key trends calculated strictly from your actual financial records</p>
+                    </div>
+                  </div>
+                  <span class="glass-tag tag-violet">Live Analysis</span>
+                </div>
+                <div class="insights-body" id="insightsBody">
+                  <div class="insight-row">
+                    <div class="insight-icon-box" aria-hidden="true"><i data-lucide="pie-chart"></i></div>
+                    <div class="insight-text-group">
+                      <span class="insight-heading">Largest Spending Category</span>
+                      <p class="insight-content" id="insightTopCategory">No expense records yet to analyze.</p>
+                    </div>
+                  </div>
+                  <div class="insight-row">
+                    <div class="insight-icon-box" aria-hidden="true"><i data-lucide="activity"></i></div>
+                    <div class="insight-text-group">
+                      <span class="insight-heading">Largest Single Transaction</span>
+                      <p class="insight-content" id="insightLargestTx">No transactions recorded yet.</p>
+                    </div>
+                  </div>
+                  <div class="insight-row">
+                    <div class="insight-icon-box" aria-hidden="true"><i data-lucide="trending-up"></i></div>
+                    <div class="insight-text-group">
+                      <span class="insight-heading">Savings Retention Ratio</span>
+                      <p class="insight-content" id="insightSavingsRate">Log income and expenses to view retention rate.</p>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            </section>
+
+            <!-- Quick Overview Jump Bar to Other Views -->
+            <section class="section-container" aria-label="Feature Quick Cards">
+              <div class="summary-grid">
+                <article class="glass-card" style="cursor: pointer;" data-view-target="budgets">
+                  <div class="card-head">
+                    <span class="card-label">Monthly Budgets</span>
+                    <i data-lucide="wallet" class="nav-icon" aria-hidden="true"></i>
+                  </div>
+                  <p class="panel-subtitle" style="margin-top: 8px;">Track limits across categories and avoid overspending.</p>
+                  <div class="card-foot" style="margin-top: 14px;">
+                    <span class="glass-tag">View Budgets &rarr;</span>
+                  </div>
+                </article>
+
+                <article class="glass-card" style="cursor: pointer;" data-view-target="goals">
+                  <div class="card-head">
+                    <span class="card-label">Savings Goals</span>
+                    <i data-lucide="target" class="nav-icon" aria-hidden="true"></i>
+                  </div>
+                  <p class="panel-subtitle" style="margin-top: 8px;">Plan for emergency funds, travel, or hardware purchases.</p>
+                  <div class="card-foot" style="margin-top: 14px;">
+                    <span class="glass-tag">View Goals &rarr;</span>
+                  </div>
+                </article>
+
+                <article class="glass-card" style="cursor: pointer;" data-view-target="ai">
+                  <div class="card-head">
+                    <span class="card-label">Vaultly AI</span>
+                    <i data-lucide="sparkles" class="nav-icon" aria-hidden="true"></i>
+                  </div>
+                  <p class="panel-subtitle" style="margin-top: 8px;">Ask natural language questions about your actual cashflow.</p>
+                  <div class="card-foot" style="margin-top: 14px;">
+                    <span class="glass-tag">Open Assistant &rarr;</span>
+                  </div>
+                </article>
+              </div>
+            </section>
+          </div>
+
+          <!-- =================================================================
+               VIEW 2: TRANSACTIONS (CRUD, SEARCH, FILTERS, EXPORT CSV)
+               ================================================================= -->
+          <div class="view-panel" id="viewTransactions" data-view="transactions">
+            <section class="section-container" aria-label="Transactions Records">
+              <div class="glass-card transactions-glass-card">
+                <div class="card-spotlight" aria-hidden="true"></div>
+                <div class="card-refraction-shine" aria-hidden="true"></div>
+                
+                <!-- Header & Toolbar -->
+                <div class="transactions-panel-header">
+                  <div class="tx-title-cluster">
+                    <div class="tx-title-row">
+                      <h2 class="panel-title">Transactions</h2>
+                      <span class="cosmic-count-badge" id="transactionCountBadge">0</span>
+                    </div>
+                    <p class="panel-subtitle">Search, filter, edit, and export your personal financial records</p>
+                  </div>
+
+                  <!-- Quick Actions: Export CSV & Add Transaction -->
+                  <div style="display: flex; gap: 10px; align-items: center;">
+                    <button type="button" id="exportCsvBtn" class="btn-ghost-glass" title="Download all transactions as CSV">
+                      <i data-lucide="download" class="btn-icon-xs" aria-hidden="true"></i>
+                      <span>Export CSV</span>
+                    </button>
+                    <button type="button" class="btn-liquid-primary" id="txViewAddBtn">
+                      <i data-lucide="plus-circle" class="btn-icon-sm" aria-hidden="true"></i>
+                      <span>Add Transaction</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Controls Toolbar -->
+                <div class="transactions-toolbar" style="margin-top: 16px;">
+                  <div class="glass-search-box">
+                    <i data-lucide="search" class="search-glass-icon" aria-hidden="true"></i>
+                    <input 
+                      type="search" 
+                      id="searchInput" 
+                      class="glass-search-input" 
+                      placeholder="Search by title, category, or notes..."
+                      aria-label="Search transactions"
+                      autocomplete="off"
+                    >
+                    <button type="button" id="clearSearchBtn" class="search-clear-glass-btn" aria-label="Clear search input" hidden>
+                      <i data-lucide="x" class="btn-icon-xs" aria-hidden="true"></i>
+                    </button>
+                  </div>
+
+                  <div class="glass-filter-group" role="radiogroup" aria-label="Filter transactions by type">
+                    <button type="button" class="filter-glass-pill active" data-filter="all" role="radio" aria-checked="true">All</button>
+                    <button type="button" class="filter-glass-pill" data-filter="income" role="radio" aria-checked="false">Income</button>
+                    <button type="button" class="filter-glass-pill" data-filter="expense" role="radio" aria-checked="false">Expenses</button>
+                  </div>
+
+                  <div class="glass-select-cluster">
+                    <div class="select-glass-wrap">
+                      <label for="categoryFilterSelect" class="visually-hidden">Filter by category</label>
+                      <select id="categoryFilterSelect" class="glass-select">
+                        <option value="all">All Categories</option>
+                      </select>
+                    </div>
+
+                    <div class="select-glass-wrap">
+                      <label for="sortSelect" class="visually-hidden">Sort transactions</label>
+                      <select id="sortSelect" class="glass-select">
+                        <option value="date-desc">Newest First</option>
+                        <option value="date-asc">Oldest First</option>
+                        <option value="amount-desc">Highest Amount</option>
+                        <option value="amount-asc">Lowest Amount</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Transaction Rows Container -->
+                <div class="tx-list-viewport" style="margin-top: 20px;">
+                  <div class="transactions-list" id="transactionsList" role="feed" aria-busy="false" aria-label="List of transactions">
+                    <!-- Dynamically populated via script.js -->
+                  </div>
+
+                  <!-- Empty State: No Transactions at all -->
+                  <div class="cosmic-empty-card" id="emptyStateNoData">
+                    <div class="cosmic-empty-halo" aria-hidden="true"><i data-lucide="receipt"></i></div>
+                    <h3 class="cosmic-empty-heading">Your money journey starts here.</h3>
+                    <p class="cosmic-empty-text">Take control of your personal finances. Add your first transaction or try sample demo data.</p>
+                    <div class="cosmic-empty-buttons">
+                      <button type="button" class="btn-liquid-primary" id="emptyAddFirstBtn">
+                        <i data-lucide="plus-circle" class="btn-icon-sm" aria-hidden="true"></i>
+                        <span>Add First Transaction</span>
+                      </button>
+                      <button type="button" class="btn-liquid-secondary" id="emptyLoadDemoBtn">
+                        <i data-lucide="sparkles" class="btn-icon-sm" aria-hidden="true"></i>
+                        <span>Try Sample Data</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Empty State: No Search/Filter Results -->
+                  <div class="cosmic-empty-card" id="emptyStateNoResults" hidden>
+                    <div class="cosmic-empty-halo" aria-hidden="true"><i data-lucide="search-x"></i></div>
+                    <h3 class="cosmic-empty-heading">No matching transactions found</h3>
+                    <p class="cosmic-empty-text">We couldn't find any transactions matching your current search query or filter settings.</p>
+                    <button type="button" class="btn-liquid-secondary btn-sm" id="resetFiltersBtn">
+                      <span>Reset All Filters</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <!-- =================================================================
+               VIEW 3: ANALYTICS (CHARTS, FORECAST, PATTERNS, REPORT)
+               ================================================================= -->
+          <div class="view-panel" id="viewAnalytics" data-view="analytics">
+            <!-- Primary Spending Chart & Breakdown -->
+            <section class="section-container" id="spending-section" aria-label="Spending Analysis">
+              <article class="glass-card chart-glass-card">
+                <div class="card-spotlight" aria-hidden="true"></div>
+                <div class="card-refraction-shine" aria-hidden="true"></div>
+                <div class="panel-header">
+                  <div>
+                    <h2 class="panel-title">Spending by Category</h2>
+                    <p class="panel-subtitle">Visual distribution of all recorded expenditures</p>
+                  </div>
+                  <div class="chart-header-badge">
+                    <span class="glass-tag tag-cyan" id="chartExpenseTotalBadge">₹0.00 Total</span>
+                  </div>
+                </div>
+
+                <div class="chart-stage" id="chartContainer">
+                  <canvas id="spendingChart" aria-label="Doughnut chart showing expenses by category" role="img"></canvas>
+                  <div class="chart-empty-state" id="chartEmptyState">
+                    <div class="empty-icon-halo" aria-hidden="true"><i data-lucide="pie-chart"></i></div>
+                    <h3 class="empty-title">No expense data to display</h3>
+                    <p class="empty-desc">Chart insights will appear here once you record at least one expense transaction.</p>
+                    <button type="button" class="btn-liquid-secondary btn-sm" id="chartAddExpenseBtn">
+                      <i data-lucide="plus" class="btn-icon-xs" aria-hidden="true"></i>
+                      <span>Add an Expense</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="category-breakdown-list" id="categoryBreakdownList" aria-label="Category expenditure breakdown"></div>
+              </article>
+            </section>
+
+            <!-- Spending Forecast & Pattern Detector Row -->
+            <section class="insights-grid" style="margin-top: 24px;" aria-label="Forecasting and Patterns">
+              <!-- Spending Forecast Panel -->
+              <article class="glass-card" id="spendingForecastCard">
+                <div class="panel-header">
+                  <div class="panel-title-wrap">
+                    <div class="panel-icon-shield" aria-hidden="true"><i data-lucide="trending-up"></i></div>
+                    <div>
+                      <h3 class="panel-title">End-of-Month Forecast</h3>
+                      <p class="panel-subtitle">Estimated month-end spending based on current daily run rate</p>
+                    </div>
+                  </div>
+                  <span class="glass-tag">Statistical Estimate</span>
+                </div>
+                <div style="margin-top: 16px;">
+                  <div class="safe-spend-metric">
+                    <span class="safe-daily-amount" id="forecastEndAmount">₹0.00</span>
+                    <span class="safe-daily-unit">est. total</span>
+                  </div>
+                  <p class="safe-spend-description" id="forecastExplanation" style="margin-top: 8px;">
+                    Projected from your average daily spend so far this month.
+                  </p>
+                </div>
+              </article>
+
+              <!-- Monthly Financial Report Summary Box -->
+              <article class="glass-card" id="monthlyReportCard">
+                <div class="panel-header">
+                  <div class="panel-title-wrap">
+                    <div class="panel-icon-sparkle" aria-hidden="true"><i data-lucide="file-text"></i></div>
+                    <div>
+                      <h3 class="panel-title">Monthly Financial Report</h3>
+                      <p class="panel-subtitle">Executive summary of current calendar month activity</p>
+                    </div>
+                  </div>
+                  <button type="button" id="exportReportBtn" class="btn-ghost-glass btn-sm">
+                    <i data-lucide="download" class="btn-icon-xs" aria-hidden="true"></i>
+                    <span>Export Report</span>
+                  </button>
+                </div>
+                <div style="margin-top: 14px;" id="monthlyReportContent">
+                  <!-- Dynamically populated via JS -->
+                </div>
+              </article>
+            </section>
+          </div>
+
+          <!-- =================================================================
+               VIEW 4: BUDGETS & RECURRING SUBSCRIPTIONS
+               ================================================================= -->
+          <div class="view-panel" id="viewBudgets" data-view="budgets">
+            <section class="section-container" aria-label="Monthly Category Budgets">
+              <div class="glass-card">
+                <div class="panel-header" style="margin-bottom: 20px;">
+                  <div>
+                    <h2 class="panel-title">Smart Budgets</h2>
+                    <p class="panel-subtitle">Set monthly category spending caps to keep expenses within control</p>
+                  </div>
+                  <button type="button" class="btn-liquid-primary" id="openAddBudgetBtn">
+                    <i data-lucide="plus" class="btn-icon-xs" aria-hidden="true"></i>
+                    <span>Create Budget</span>
+                  </button>
+                </div>
+
+                <div class="budgets-grid" id="budgetsGrid">
+                  <!-- Dynamically populated via JS -->
+                </div>
+              </div>
+            </section>
+
+            <!-- Recurring Subscriptions & Fixed Bills -->
+            <section class="section-container" style="margin-top: 24px;" aria-label="Recurring Subscriptions">
+              <div class="glass-card">
+                <div class="panel-header" style="margin-bottom: 20px;">
+                  <div>
+                    <h2 class="panel-title">Recurring Subscriptions &amp; Bills</h2>
+                    <p class="panel-subtitle">Track recurring commitments to accurately calculate Safe-to-Spend allowances</p>
+                  </div>
+                  <button type="button" class="btn-ghost-glass" id="openAddRecurringBtn">
+                    <i data-lucide="plus" class="btn-icon-xs" aria-hidden="true"></i>
+                    <span>Add Recurring Bill</span>
+                  </button>
+                </div>
+
+                <div class="recurring-grid" id="recurringGrid">
+                  <!-- Dynamically populated via JS -->
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <!-- =================================================================
+               VIEW 5: FINANCIAL GOALS & SAVINGS PLANNER
+               ================================================================= -->
+          <div class="view-panel" id="viewGoals" data-view="goals">
+            <section class="section-container" aria-label="Savings Goals">
+              <div class="glass-card">
+                <div class="panel-header" style="margin-bottom: 20px;">
+                  <div>
+                    <h2 class="panel-title">Financial Goals</h2>
+                    <p class="panel-subtitle">Define target milestones and record contributions toward your savings targets</p>
+                  </div>
+                  <button type="button" class="btn-liquid-primary" id="openAddGoalBtn">
+                    <i data-lucide="plus" class="btn-icon-xs" aria-hidden="true"></i>
+                    <span>New Goal</span>
+                  </button>
+                </div>
+
+                <div class="goals-grid" id="goalsGrid">
+                  <!-- Dynamically populated via JS -->
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <!-- =================================================================
+               VIEW 6: VAULTLY AI ASSISTANT & NATURAL LANGUAGE ENTRY
+               ================================================================= -->
+          <div class="view-panel" id="viewAi" data-view="ai">
+            <div class="ai-view-container">
+              <div class="glass-card ai-chat-card">
+                <div class="ai-chat-header">
+                  <div>
+                    <h2 class="panel-title">VAULTLY AI</h2>
+                    <p class="panel-subtitle">Grounded conversational intelligence for your personal finances</p>
+                  </div>
+                  <div style="display: flex; gap: 8px; align-items: center;">
+                    <span class="glass-tag tag-emerald" id="aiStatusPill">
+                      <span class="status-pulse-mono" aria-hidden="true"></span>
+                      <span>AI Intelligence Ready</span>
+                    </span>
+                    <button type="button" id="aiResetChatBtn" class="btn-ghost-glass btn-sm" title="Start a fresh conversation">
+                      <i data-lucide="rotate-ccw" class="btn-icon-xs" aria-hidden="true"></i>
+                      <span>New Chat</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Messages Thread -->
+                <div class="ai-messages-thread" id="aiChatThread" role="log" aria-live="polite">
+                  <div class="ai-msg assistant">
+                    <div class="ai-msg-bubble">
+                      <p><strong>Welcome to Vaultly AI.</strong> I analyze your verified transaction records to give you clear, accurate answers about your cashflow, budgets, and savings goals.</p>
+                      <p style="margin-top: 8px; font-size: 0.84rem; color: var(--text-secondary);">You can ask me questions like <em>"How much did I spend this month?"</em> or enter natural language transactions like <em>"Spent ₹350 on lunch today"</em>.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Quick Suggested Prompts -->
+                <div class="ai-quick-prompts" id="aiPromptChips">
+                  <button type="button" class="ai-prompt-chip" data-prompt="How much did I spend this month?">How much did I spend this month?</button>
+                  <button type="button" class="ai-prompt-chip" data-prompt="What is my largest expense category?">What is my largest expense?</button>
+                  <button type="button" class="ai-prompt-chip" data-prompt="Calculate my safe daily spend allowance">Daily Safe-to-Spend</button>
+                  <button type="button" class="ai-prompt-chip" data-prompt="Summarize my financial health this month">Financial Health Summary</button>
+                </div>
+
+                <!-- Chat & Natural Language Entry Bar -->
+                <form class="ai-input-bar" id="aiChatForm">
+                  <input 
+                    type="text" 
+                    id="aiChatInput" 
+                    class="ai-text-input" 
+                    placeholder="Ask a financial question, or type: Spent ₹250 on lunch today..." 
+                    autocomplete="off"
+                    required
+                  >
+                  <button type="button" id="aiParseBtn" class="btn-ghost-glass" title="Quickly convert natural language into a transaction">
+                    <i data-lucide="plus-circle" class="btn-icon-xs" aria-hidden="true"></i>
+                    <span>Log Transaction</span>
+                  </button>
+                  <button type="submit" class="btn-liquid-primary" id="aiSendBtn">
+                    <i data-lucide="send" class="btn-icon-xs" aria-hidden="true"></i>
+                    <span>Send</span>
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <!-- =================================================================
+               VIEW 7: SETTINGS & DATA PRIVACY
+               ================================================================= -->
+          <div class="view-panel" id="viewSettings" data-view="settings">
+            <section class="section-container" aria-label="Settings and System Management">
+              <div class="glass-card">
+                <div class="panel-header" style="margin-bottom: 24px;">
+                  <div>
+                    <h2 class="panel-title">Settings &amp; Data Control</h2>
+                    <p class="panel-subtitle">Manage your local storage records, export backups, and view privacy settings</p>
+                  </div>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 24px;">
+                  <!-- Currency Setting Display -->
+                  <div class="insight-row">
+                    <div class="insight-icon-box" aria-hidden="true"><i data-lucide="coins"></i></div>
+                    <div class="insight-text-group">
+                      <span class="insight-heading">Active Currency &amp; Locale</span>
+                      <p class="insight-content">Indian Rupee (INR — ₹). Standardized with <code>Intl.NumberFormat('en-IN')</code>.</p>
+                    </div>
+                  </div>
+
+                  <!-- Backup & Export -->
+                  <div class="insight-row">
+                    <div class="insight-icon-box" aria-hidden="true"><i data-lucide="hard-drive"></i></div>
+                    <div class="insight-text-group">
+                      <span class="insight-heading">Local Data Export &amp; Backup</span>
+                      <p class="insight-content">Export a full JSON backup of all your transactions, budgets, goals, and recurring commitments.</p>
+                      <div style="margin-top: 10px;">
+                        <button type="button" id="exportJsonBtn" class="btn-ghost-glass btn-sm">
+                          <i data-lucide="download" class="btn-icon-xs" aria-hidden="true"></i>
+                          <span>Download JSON Backup</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Storage Diagnostics -->
+                  <div class="insight-row">
+                    <div class="insight-icon-box" aria-hidden="true"><i data-lucide="shield-check"></i></div>
+                    <div class="insight-text-group">
+                      <span class="insight-heading">Privacy &amp; Security Guarantee</span>
+                      <p class="insight-content" id="storageMetricsText">100% Client-Side Local Storage active. Zero third-party trackers or external databases.</p>
+                    </div>
+                  </div>
+
+                  <!-- Reset & Demo Data Controls -->
+                  <div class="insight-row" style="border-top: 1px solid var(--glass-border); padding-top: 20px;">
+                    <div class="insight-icon-box" aria-hidden="true"><i data-lucide="refresh-cw"></i></div>
+                    <div class="insight-text-group">
+                      <span class="insight-heading">Sample Data &amp; Reset</span>
+                      <p class="insight-content">Load realistic sample data to test all features, or clear all records cleanly.</p>
+                      <div style="display: flex; gap: 10px; margin-top: 12px;">
+                        <button type="button" id="loadDemoBtnSettings" class="btn-ghost-glass btn-sm">
+                          <i data-lucide="sparkles" class="btn-icon-xs" aria-hidden="true"></i>
+                          <span>Load Sample Data</span>
+                        </button>
+                        <button type="button" id="clearAllBtnSettings" class="btn-ghost-glass btn-danger-glass btn-sm">
+                          <i data-lucide="trash-2" class="btn-icon-xs" aria-hidden="true"></i>
+                          <span>Reset All Records</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+
+        </div>
+      </main>
+
+      <!-- FOOTER -->
+      <footer class="glass-footer">
+        <div class="footer-container">
+          <div class="footer-left">
+            <div class="footer-brand">
+              <span class="brand-title">VAULTLY</span>
+              <span class="footer-dot">•</span>
+              <span>Obsidian Spatial Financial Intelligence</span>
+            </div>
+            <p class="footer-copy">
+              Deterministic calculations, zero trackers, 100% private.
             </p>
           </div>
-          <div class="hero-stats-badge" id="storageSummaryBadge">
-            <span class="stat-pill-label">System Status</span>
-            <span class="stat-pill-value"><span class="status-pulse-mono"></span> 100% Client-Side Privacy</span>
+          <div class="footer-privacy-box">
+            <i data-lucide="shield-check" class="footer-shield" aria-hidden="true"></i>
+            <span>Privacy Guaranteed: All financial data remains purely in your local browser storage.</span>
           </div>
-        </section>
-
-        <!-- 2. FINANCIAL SUMMARY CARDS ROW -->
-        <section class="summary-grid" aria-label="Financial Summary Cards">
-          <!-- Total Net Balance Card (Primary Hero Card) -->
-          <article class="glass-card balance-card">
-            <!-- Magic UI Border Beam (Traveling Light Ray) -->
-            <div class="border-beam-wrap" aria-hidden="true">
-              <div class="border-beam"></div>
-            </div>
-            <!-- Interactive Water-White Spotlight -->
-            <div class="card-spotlight" aria-hidden="true"></div>
-            <div class="card-refraction-shine" aria-hidden="true"></div>
-            <div class="card-head">
-              <div class="card-label-group">
-                <span class="card-label">Total Net Balance</span>
-                <span class="card-caption">All recorded income minus expenses</span>
-              </div>
-              <div class="card-icon-halo halo-mono" aria-hidden="true">
-                <i data-lucide="wallet"></i>
-              </div>
-            </div>
-            <div class="balance-display-wrap">
-              <span class="balance-number" id="totalBalance">₹0.00</span>
-            </div>
-            <div class="card-foot">
-              <span class="glass-tag" id="balanceStatusBadge">
-                <span class="tag-dot" aria-hidden="true"></span>
-                <span>Net position (Income − Expenses)</span>
-              </span>
-            </div>
-          </article>
-
-          <!-- Total Income Card -->
-          <article class="glass-card metric-card income-card">
-            <div class="card-spotlight" aria-hidden="true"></div>
-            <div class="card-refraction-shine" aria-hidden="true"></div>
-            <div class="card-head">
-              <div class="card-label-group">
-                <span class="card-label">Total Income</span>
-                <span class="card-caption">Total inward cashflow</span>
-              </div>
-              <div class="card-icon-halo halo-income" aria-hidden="true">
-                <i data-lucide="arrow-down-left"></i>
-              </div>
-            </div>
-            <div class="metric-display-wrap">
-              <span class="metric-number text-income" id="totalIncome">₹0.00</span>
-            </div>
-            <div class="card-foot">
-              <span class="metric-footnote" id="incomeCountLabel">0 income sources</span>
-            </div>
-          </article>
-
-          <!-- Total Expenses Card -->
-          <article class="glass-card metric-card expense-card">
-            <div class="card-spotlight" aria-hidden="true"></div>
-            <div class="card-refraction-shine" aria-hidden="true"></div>
-            <div class="card-head">
-              <div class="card-label-group">
-                <span class="card-label">Total Expenses</span>
-                <span class="card-caption">Total outward spending</span>
-              </div>
-              <div class="card-icon-halo halo-expense" aria-hidden="true">
-                <i data-lucide="arrow-up-right"></i>
-              </div>
-            </div>
-            <div class="metric-display-wrap">
-              <span class="metric-number text-expense" id="totalExpense">₹0.00</span>
-            </div>
-            <div class="card-foot">
-              <span class="metric-footnote" id="expenseCountLabel">0 expenses logged</span>
-            </div>
-          </article>
-        </section>
-
-        <!-- 3. SAFE TO SPEND & SPENDING INSIGHTS (NEW DEDICATED CARDS) -->
-        <section class="insights-grid" id="safe-spend-section" aria-label="Smart Financial Insights">
-          <!-- Safe to Spend Glass Panel -->
-          <article class="glass-card safe-spend-card">
-            <!-- Magic UI Border Beam -->
-            <div class="border-beam-wrap" aria-hidden="true">
-              <div class="border-beam"></div>
-            </div>
-            <!-- Interactive Water-White Spotlight -->
-            <div class="card-spotlight" aria-hidden="true"></div>
-            <div class="card-refraction-shine" aria-hidden="true"></div>
-            <div class="panel-header">
-              <div class="panel-title-wrap">
-                <div class="panel-icon-shield" aria-hidden="true">
-                  <i data-lucide="shield-check"></i>
-                </div>
-                <div>
-                  <h2 class="panel-title">Safe to Spend</h2>
-                  <p class="panel-subtitle">Estimated daily spending allowance based on your remaining net balance</p>
-                </div>
-              </div>
-              <span class="glass-tag tag-emerald" id="monthDaysTag">30 Days Left</span>
-            </div>
-
-            <div class="safe-spend-body">
-              <div class="safe-spend-metric">
-                <span class="safe-daily-amount" id="safeDailySpend">₹0.00</span>
-                <span class="safe-daily-unit">/ day</span>
-              </div>
-              <p class="safe-spend-description" id="safeSpendDesc">
-                Calculated from your current net savings distributed evenly across the remaining days of this month.
-              </p>
-
-              <!-- Month Progress Bar -->
-              <div class="month-progress-container">
-                <div class="month-progress-header">
-                  <span class="progress-label" id="monthProgressLabel">Current Month Progression</span>
-                  <span class="progress-val" id="monthProgressPercent">0%</span>
-                </div>
-                <div class="liquid-progress-track" role="progressbar" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100">
-                  <div class="liquid-progress-bar" id="monthProgressBar" style="width: 50%;"></div>
-                </div>
-              </div>
-            </div>
-          </article>
-
-          <!-- Spending Insights Glass Panel -->
-          <article class="glass-card insights-card">
-            <div class="card-spotlight" aria-hidden="true"></div>
-            <div class="card-refraction-shine" aria-hidden="true"></div>
-            <div class="panel-header">
-              <div class="panel-title-wrap">
-                <div class="panel-icon-sparkle" aria-hidden="true">
-                  <i data-lucide="sparkles"></i>
-                </div>
-                <div>
-                  <h2 class="panel-title">Spending Insights</h2>
-                  <p class="panel-subtitle">Key trends calculated strictly from your actual financial records</p>
-                </div>
-              </div>
-              <span class="glass-tag tag-violet">Live Analysis</span>
-            </div>
-
-            <div class="insights-body" id="insightsBody">
-              <!-- Insight Item 1: Top Category -->
-              <div class="insight-row">
-                <div class="insight-icon-box" aria-hidden="true">
-                  <i data-lucide="pie-chart"></i>
-                </div>
-                <div class="insight-text-group">
-                  <span class="insight-heading">Largest Spending Category</span>
-                  <p class="insight-content" id="insightTopCategory">No expense records yet to analyze.</p>
-                </div>
-              </div>
-
-              <!-- Insight Item 2: Largest Single Transaction -->
-              <div class="insight-row">
-                <div class="insight-icon-box" aria-hidden="true">
-                  <i data-lucide="activity"></i>
-                </div>
-                <div class="insight-text-group">
-                  <span class="insight-heading">Largest Single Transaction</span>
-                  <p class="insight-content" id="insightLargestTx">No transactions recorded yet.</p>
-                </div>
-              </div>
-
-              <!-- Insight Item 3: Savings Retention Rate -->
-              <div class="insight-row">
-                <div class="insight-icon-box" aria-hidden="true">
-                  <i data-lucide="trending-up"></i>
-                </div>
-                <div class="insight-text-group">
-                  <span class="insight-heading">Savings Retention Ratio</span>
-                  <p class="insight-content" id="insightSavingsRate">Log income and expenses to view retention rate.</p>
-                </div>
-              </div>
-            </div>
-          </article>
-        </section>
-
-        <!-- 4. SPENDING ANALYSIS (CHART.JS DOUGHNUT & BREAKDOWN) -->
-        <section class="section-container" id="spending-section" aria-label="Spending Analysis">
-          <article class="glass-card chart-glass-card">
-            <div class="card-spotlight" aria-hidden="true"></div>
-            <div class="card-refraction-shine" aria-hidden="true"></div>
-            <div class="panel-header">
-              <div>
-                <h2 class="panel-title">Spending by Category</h2>
-                <p class="panel-subtitle">Visual distribution of all recorded expenditures</p>
-              </div>
-              <div class="chart-header-badge">
-                <span class="glass-tag tag-cyan" id="chartExpenseTotalBadge">₹0.00 Total</span>
-              </div>
-            </div>
-
-            <!-- Chart Display Area -->
-            <div class="chart-stage" id="chartContainer">
-              <canvas id="spendingChart" aria-label="Doughnut chart showing expenses by category" role="img"></canvas>
-              
-              <!-- Empty State for Chart -->
-              <div class="chart-empty-state" id="chartEmptyState">
-                <div class="empty-icon-halo" aria-hidden="true">
-                  <i data-lucide="pie-chart"></i>
-                </div>
-                <h3 class="empty-title">No expense data to display</h3>
-                <p class="empty-desc">Chart insights will appear here once you record at least one expense transaction.</p>
-                <button type="button" class="btn-liquid-secondary btn-sm" id="chartAddExpenseBtn">
-                  <i data-lucide="plus" class="btn-icon-xs" aria-hidden="true"></i>
-                  <span>Add an Expense</span>
-                </button>
-              </div>
-            </div>
-
-            <!-- Category Breakdown Chips -->
-            <div class="category-breakdown-list" id="categoryBreakdownList" aria-label="Category expenditure breakdown">
-              <!-- Dynamically populated via JS -->
-            </div>
-          </article>
-        </section>
-
-        <!-- 5. TRANSACTIONS SECTION & CONTROLS -->
-        <section class="section-container" id="transactions-section" aria-label="Transactions Records">
-          <div class="glass-card transactions-glass-card">
-            <div class="card-spotlight" aria-hidden="true"></div>
-            <div class="card-refraction-shine" aria-hidden="true"></div>
-            
-            <!-- Header & Toolbar -->
-            <div class="transactions-panel-header">
-              <div class="tx-title-cluster">
-                <div class="tx-title-row">
-                  <h2 class="panel-title">Transactions</h2>
-                  <span class="cosmic-count-badge" id="transactionCountBadge">0</span>
-                </div>
-                <p class="panel-subtitle">Search, filter, and inspect your recorded transactions</p>
-              </div>
-
-              <!-- Controls Toolbar -->
-              <div class="transactions-toolbar">
-                <!-- Search Box -->
-                <div class="glass-search-box">
-                  <i data-lucide="search" class="search-glass-icon" aria-hidden="true"></i>
-                  <input 
-                    type="search" 
-                    id="searchInput" 
-                    class="glass-search-input" 
-                    placeholder="Search by title, category, or notes..."
-                    aria-label="Search transactions"
-                    autocomplete="off"
-                  >
-                  <button type="button" id="clearSearchBtn" class="search-clear-glass-btn" aria-label="Clear search input" hidden>
-                    <i data-lucide="x" class="btn-icon-xs" aria-hidden="true"></i>
-                  </button>
-                </div>
-
-                <!-- Type Filter Pills -->
-                <div class="glass-filter-group" role="radiogroup" aria-label="Filter transactions by type">
-                  <button type="button" class="filter-glass-pill active" data-filter="all" role="radio" aria-checked="true">
-                    All
-                  </button>
-                  <button type="button" class="filter-glass-pill" data-filter="income" role="radio" aria-checked="false">
-                    Income
-                  </button>
-                  <button type="button" class="filter-glass-pill" data-filter="expense" role="radio" aria-checked="false">
-                    Expenses
-                  </button>
-                </div>
-
-                <!-- Dropdowns: Category & Sort -->
-                <div class="glass-select-cluster">
-                  <div class="select-glass-wrap">
-                    <label for="categoryFilterSelect" class="visually-hidden">Filter by category</label>
-                    <select id="categoryFilterSelect" class="glass-select">
-                      <option value="all">All Categories</option>
-                    </select>
-                  </div>
-
-                  <div class="select-glass-wrap">
-                    <label for="sortSelect" class="visually-hidden">Sort transactions</label>
-                    <select id="sortSelect" class="glass-select">
-                      <option value="date-desc">Newest First</option>
-                      <option value="date-asc">Oldest First</option>
-                      <option value="amount-desc">Highest Amount</option>
-                      <option value="amount-asc">Lowest Amount</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Transaction Rows Container -->
-            <div class="tx-list-viewport">
-              <div class="transactions-list" id="transactionsList" role="feed" aria-busy="false" aria-label="List of transactions">
-                <!-- Dynamically populated via script.js -->
-              </div>
-
-              <!-- Empty State: No Transactions at all -->
-              <div class="cosmic-empty-card" id="emptyStateNoData">
-                <div class="cosmic-empty-halo" aria-hidden="true">
-                  <i data-lucide="receipt"></i>
-                </div>
-                <h3 class="cosmic-empty-heading">Your money journey starts here.</h3>
-                <p class="cosmic-empty-text">
-                  Take control of your personal finances. Add your first transaction or try realistic demo data to see your dashboard come to life.
-                </p>
-                <div class="cosmic-empty-buttons">
-                  <button type="button" class="btn-liquid-primary" id="emptyAddFirstBtn">
-                    <i data-lucide="plus-circle" class="btn-icon-sm" aria-hidden="true"></i>
-                    <span>Add First Transaction</span>
-                  </button>
-                  <button type="button" class="btn-liquid-secondary" id="emptyLoadDemoBtn">
-                    <i data-lucide="sparkles" class="btn-icon-sm" aria-hidden="true"></i>
-                    <span>Try Sample Data</span>
-                  </button>
-                </div>
-              </div>
-
-              <!-- Empty State: No Search/Filter Results -->
-              <div class="cosmic-empty-card" id="emptyStateNoResults" hidden>
-                <div class="cosmic-empty-halo" aria-hidden="true">
-                  <i data-lucide="search-x"></i>
-                </div>
-                <h3 class="cosmic-empty-heading">No matching transactions found</h3>
-                <p class="cosmic-empty-text">
-                  We couldn't find any transactions matching your current search query or filter settings.
-                </p>
-                <button type="button" class="btn-liquid-secondary btn-sm" id="resetFiltersBtn">
-                  <span>Reset All Filters</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </section>
-
-      </div>
-    </main>
-
-    <!-- FOOTER -->
-    <footer class="glass-footer">
-      <div class="footer-container">
-        <div class="footer-left">
-          <div class="footer-brand">
-            <span class="brand-title">VAULTLY</span>
-            <span class="footer-dot">•</span>
-            <span>Minimalist Monochrome Financial Intelligence</span>
-          </div>
-          <p class="footer-copy">
-            Built with HTML5, CSS3 &amp; Vanilla JavaScript. Zero external trackers.
-          </p>
         </div>
-        <div class="footer-privacy-box">
-          <i data-lucide="shield-check" class="footer-shield" aria-hidden="true"></i>
-          <span>Privacy Guaranteed: All financial data remains purely in your local browser storage.</span>
-        </div>
-      </div>
-    </footer>
+      </footer>
+    </div>
   </div>
+
+  <!-- MOBILE BOTTOM TOUCH NAVIGATION BAR -->
+  <nav class="mobile-bottom-nav" id="mobileBottomNav" aria-label="Mobile Bottom Navigation">
+    <button type="button" class="bottom-nav-item active" data-view-target="overview" aria-label="Overview">
+      <i data-lucide="layout-dashboard" aria-hidden="true"></i>
+      <span>Overview</span>
+    </button>
+    <button type="button" class="bottom-nav-item" data-view-target="transactions" aria-label="Transactions">
+      <i data-lucide="receipt" aria-hidden="true"></i>
+      <span>Records</span>
+    </button>
+    <button type="button" class="bottom-nav-item" data-view-target="budgets" aria-label="Budgets">
+      <i data-lucide="wallet" aria-hidden="true"></i>
+      <span>Budgets</span>
+    </button>
+    <button type="button" class="bottom-nav-item" data-view-target="goals" aria-label="Goals">
+      <i data-lucide="target" aria-hidden="true"></i>
+      <span>Goals</span>
+    </button>
+    <button type="button" class="bottom-nav-item" data-view-target="ai" aria-label="Vaultly AI">
+      <i data-lucide="sparkles" aria-hidden="true"></i>
+      <span>AI</span>
+    </button>
+  </nav>
 
   <!-- =========================================================================
        MODAL DIALOGS
        ========================================================================= -->
 
-  <!-- ADD / EDIT TRANSACTION MODAL -->
+  <!-- 1. ADD / EDIT TRANSACTION MODAL -->
   <div class="modal-overlay" id="transactionModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" aria-hidden="true">
     <div class="glass-modal-dialog">
       <div class="sheet-handle-bar" aria-hidden="true"></div>
@@ -558,7 +914,7 @@
           </div>
           <div>
             <h2 class="modal-title" id="modalTitle">Add Transaction</h2>
-            <p class="modal-subtitle">Record a new income or expense entry</p>
+            <p class="modal-subtitle" id="modalSubtitle">Record a new income or expense entry</p>
           </div>
         </div>
         <button type="button" class="modal-close-glass-btn" id="closeModalBtn" aria-label="Close transaction modal">
@@ -567,6 +923,8 @@
       </div>
 
       <form id="transactionForm" class="modal-form" novalidate>
+        <input type="hidden" id="txEditId" name="txEditId" value="">
+
         <!-- Transaction Type Switcher -->
         <div class="form-group">
           <label class="form-label" id="typeGroupLabel">Transaction Type <span class="required-star" aria-hidden="true">*</span></label>
@@ -590,9 +948,7 @@
 
         <!-- Title -->
         <div class="form-group">
-          <label for="txTitle" class="form-label">
-            Title <span class="required-star" aria-hidden="true">*</span>
-          </label>
+          <label for="txTitle" class="form-label">Title <span class="required-star" aria-hidden="true">*</span></label>
           <input 
             type="text" 
             id="txTitle" 
@@ -608,9 +964,7 @@
 
         <!-- Amount (INR) -->
         <div class="form-group">
-          <label for="txAmount" class="form-label">
-            Amount (₹ INR) <span class="required-star" aria-hidden="true">*</span>
-          </label>
+          <label for="txAmount" class="form-label">Amount (₹ INR) <span class="required-star" aria-hidden="true">*</span></label>
           <div class="glass-input-prefix-box">
             <span class="currency-glyph" aria-hidden="true">₹</span>
             <input 
@@ -631,9 +985,7 @@
         <!-- Category & Date Row -->
         <div class="form-dual-row">
           <div class="form-group">
-            <label for="txCategory" class="form-label">
-              Category <span class="required-star" aria-hidden="true">*</span>
-            </label>
+            <label for="txCategory" class="form-label">Category <span class="required-star" aria-hidden="true">*</span></label>
             <select id="txCategory" name="txCategory" class="glass-form-select" required aria-describedby="txCategoryError">
               <!-- Dynamically populated based on selected type -->
             </select>
@@ -641,9 +993,7 @@
           </div>
 
           <div class="form-group">
-            <label for="txDate" class="form-label">
-              Date <span class="required-star" aria-hidden="true">*</span>
-            </label>
+            <label for="txDate" class="form-label">Date <span class="required-star" aria-hidden="true">*</span></label>
             <input 
               type="date" 
               id="txDate" 
@@ -684,14 +1034,12 @@
     </div>
   </div>
 
-  <!-- DELETE CONFIRMATION MODAL -->
+  <!-- 2. DELETE CONFIRMATION MODAL -->
   <div class="modal-overlay" id="deleteConfirmModal" role="alertdialog" aria-modal="true" aria-labelledby="deleteModalTitle" aria-describedby="deleteModalDesc" aria-hidden="true">
     <div class="glass-modal-dialog modal-dialog-compact">
       <div class="sheet-handle-bar" aria-hidden="true"></div>
       <div class="card-refraction-shine" aria-hidden="true"></div>
-      <div class="delete-halo" aria-hidden="true">
-        <i data-lucide="alert-triangle"></i>
-      </div>
+      <div class="delete-halo" aria-hidden="true"><i data-lucide="alert-triangle"></i></div>
       <h3 class="modal-title text-center" id="deleteModalTitle">Delete Transaction?</h3>
       <p class="modal-desc text-center" id="deleteModalDesc">
         Are you sure you want to remove <strong id="deleteTargetTitle">this transaction</strong>? Your net balance will update automatically.
@@ -703,6 +1051,172 @@
           <span>Delete</span>
         </button>
       </div>
+    </div>
+  </div>
+
+  <!-- 3. CREATE / EDIT BUDGET MODAL -->
+  <div class="modal-overlay" id="budgetModal" role="dialog" aria-modal="true" aria-labelledby="budgetModalTitle" aria-hidden="true">
+    <div class="glass-modal-dialog">
+      <div class="sheet-handle-bar" aria-hidden="true"></div>
+      <div class="modal-head">
+        <div class="modal-title-group">
+          <div class="modal-halo" aria-hidden="true"><i data-lucide="wallet"></i></div>
+          <div>
+            <h2 class="modal-title" id="budgetModalTitle">Create Category Budget</h2>
+            <p class="modal-subtitle">Set monthly limit to monitor spending</p>
+          </div>
+        </div>
+        <button type="button" class="modal-close-glass-btn" id="closeBudgetModalBtn" aria-label="Close budget modal">
+          <i data-lucide="x" aria-hidden="true"></i>
+        </button>
+      </div>
+
+      <form id="budgetForm" class="modal-form" novalidate>
+        <div class="form-group">
+          <label for="budgetCategorySelect" class="form-label">Expense Category <span class="required-star">*</span></label>
+          <select id="budgetCategorySelect" class="glass-form-select" required></select>
+        </div>
+        <div class="form-group">
+          <label for="budgetLimitInput" class="form-label">Monthly Limit (₹ INR) <span class="required-star">*</span></label>
+          <div class="glass-input-prefix-box">
+            <span class="currency-glyph" aria-hidden="true">₹</span>
+            <input type="number" id="budgetLimitInput" class="glass-form-input input-prefixed" placeholder="5000" min="1" step="1" required>
+          </div>
+        </div>
+        <div class="modal-foot">
+          <button type="button" class="btn-liquid-secondary" id="cancelBudgetBtn">Cancel</button>
+          <button type="submit" class="btn-liquid-primary" id="saveBudgetBtn">
+            <i data-lucide="check" class="btn-icon-xs" aria-hidden="true"></i>
+            <span>Save Budget</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 4. CREATE / EDIT GOAL MODAL -->
+  <div class="modal-overlay" id="goalModal" role="dialog" aria-modal="true" aria-labelledby="goalModalTitle" aria-hidden="true">
+    <div class="glass-modal-dialog">
+      <div class="sheet-handle-bar" aria-hidden="true"></div>
+      <div class="modal-head">
+        <div class="modal-title-group">
+          <div class="modal-halo" aria-hidden="true"><i data-lucide="target"></i></div>
+          <div>
+            <h2 class="modal-title" id="goalModalTitle">New Savings Goal</h2>
+            <p class="modal-subtitle">Target financial milestone</p>
+          </div>
+        </div>
+        <button type="button" class="modal-close-glass-btn" id="closeGoalModalBtn" aria-label="Close goal modal">
+          <i data-lucide="x" aria-hidden="true"></i>
+        </button>
+      </div>
+
+      <form id="goalForm" class="modal-form" novalidate>
+        <div class="form-group">
+          <label for="goalTitleInput" class="form-label">Goal Title <span class="required-star">*</span></label>
+          <input type="text" id="goalTitleInput" class="glass-form-input" placeholder="e.g. Emergency Fund, Laptop Upgrade" required maxlength="60">
+        </div>
+        <div class="form-group">
+          <label for="goalTargetInput" class="form-label">Target Amount (₹ INR) <span class="required-star">*</span></label>
+          <div class="glass-input-prefix-box">
+            <span class="currency-glyph" aria-hidden="true">₹</span>
+            <input type="number" id="goalTargetInput" class="glass-form-input input-prefixed" placeholder="50000" min="100" step="1" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="goalDateInput" class="form-label">Target Date (Optional)</label>
+          <input type="date" id="goalDateInput" class="glass-form-input">
+        </div>
+        <div class="modal-foot">
+          <button type="button" class="btn-liquid-secondary" id="cancelGoalBtn">Cancel</button>
+          <button type="submit" class="btn-liquid-primary" id="saveGoalBtn">
+            <i data-lucide="check" class="btn-icon-xs" aria-hidden="true"></i>
+            <span>Create Goal</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 5. ADD GOAL CONTRIBUTION MODAL -->
+  <div class="modal-overlay" id="contributionModal" role="dialog" aria-modal="true" aria-labelledby="contribModalTitle" aria-hidden="true">
+    <div class="glass-modal-dialog modal-dialog-compact">
+      <div class="sheet-handle-bar" aria-hidden="true"></div>
+      <div class="modal-head">
+        <div class="modal-title-group">
+          <div class="modal-halo" aria-hidden="true"><i data-lucide="plus-circle"></i></div>
+          <div>
+            <h2 class="modal-title" id="contribModalTitle">Add Funds to Goal</h2>
+            <p class="modal-subtitle" id="contribGoalSubtitle">Contribute towards goal target</p>
+          </div>
+        </div>
+        <button type="button" class="modal-close-glass-btn" id="closeContribModalBtn" aria-label="Close contribution modal">
+          <i data-lucide="x" aria-hidden="true"></i>
+        </button>
+      </div>
+
+      <form id="contributionForm" class="modal-form" novalidate>
+        <input type="hidden" id="contribGoalId" value="">
+        <div class="form-group">
+          <label for="contribAmountInput" class="form-label">Contribution Amount (₹ INR) <span class="required-star">*</span></label>
+          <div class="glass-input-prefix-box">
+            <span class="currency-glyph" aria-hidden="true">₹</span>
+            <input type="number" id="contribAmountInput" class="glass-form-input input-prefixed" placeholder="1000" min="1" step="1" required>
+          </div>
+        </div>
+        <div class="modal-foot">
+          <button type="button" class="btn-liquid-secondary" id="cancelContribBtn">Cancel</button>
+          <button type="submit" class="btn-liquid-primary" id="saveContribBtn">Add Funds</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 6. ADD RECURRING BILL MODAL -->
+  <div class="modal-overlay" id="recurringModal" role="dialog" aria-modal="true" aria-labelledby="recurringModalTitle" aria-hidden="true">
+    <div class="glass-modal-dialog">
+      <div class="sheet-handle-bar" aria-hidden="true"></div>
+      <div class="modal-head">
+        <div class="modal-title-group">
+          <div class="modal-halo" aria-hidden="true"><i data-lucide="repeat"></i></div>
+          <div>
+            <h2 class="modal-title" id="recurringModalTitle">Add Recurring Commitment</h2>
+            <p class="modal-subtitle">Subscriptions, utility bills, and fixed charges</p>
+          </div>
+        </div>
+        <button type="button" class="modal-close-glass-btn" id="closeRecurringModalBtn" aria-label="Close recurring modal">
+          <i data-lucide="x" aria-hidden="true"></i>
+        </button>
+      </div>
+
+      <form id="recurringForm" class="modal-form" novalidate>
+        <div class="form-group">
+          <label for="recurringNameInput" class="form-label">Service / Bill Name <span class="required-star">*</span></label>
+          <input type="text" id="recurringNameInput" class="glass-form-input" placeholder="e.g. Fiber Internet, Cloud Storage, Rent" required maxlength="60">
+        </div>
+        <div class="form-dual-row">
+          <div class="form-group">
+            <label for="recurringAmountInput" class="form-label">Amount (₹ INR) <span class="required-star">*</span></label>
+            <input type="number" id="recurringAmountInput" class="glass-form-input" placeholder="999" min="1" step="1" required>
+          </div>
+          <div class="form-group">
+            <label for="recurringFrequencySelect" class="form-label">Frequency <span class="required-star">*</span></label>
+            <select id="recurringFrequencySelect" class="glass-form-select">
+              <option value="monthly">Monthly</option>
+              <option value="weekly">Weekly</option>
+              <option value="yearly">Yearly</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="recurringNextDateInput" class="form-label">Next Due Date <span class="required-star">*</span></label>
+          <input type="date" id="recurringNextDateInput" class="glass-form-input" required>
+        </div>
+        <div class="modal-foot">
+          <button type="button" class="btn-liquid-secondary" id="cancelRecurringBtn">Cancel</button>
+          <button type="submit" class="btn-liquid-primary" id="saveRecurringBtn">Save Bill</button>
+        </div>
+      </form>
     </div>
   </div>
 

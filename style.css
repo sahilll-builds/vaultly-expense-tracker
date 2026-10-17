@@ -9,49 +9,50 @@
    Single source of truth for colors, glass opacities, typography, and motion.
    -------------------------------------------------------------------------- */
 :root {
-  /* Deep Space Monochrome Palette */
-  --bg-primary: #050505;             /* Ultra-deep space canvas */
-  --bg-secondary: #0A0A0A;           /* Secondary dark surface */
-  --bg-surface-raised: #111111;      /* Elevated panels & cards */
-  --bg-surface-elevated: #151515;    /* Popovers, menus & tooltips */
-  --bg-deep-blue: #0A0A0A;           /* Backward compatibility fallback */
-  --bg-dark-violet: #0D0D0D;
+  /* Obsidian Glass Monochrome Palette (Spec Aligned) */
+  --bg-primary: #08090B;             /* Main canvas background */
+  --bg-secondary: #111318;           /* Secondary background */
+  --bg-surface-raised: #17191F;      /* Elevated surfaces & cards */
+  --bg-surface-elevated: #1F222A;    /* Popovers, dropdowns & tooltips */
+  --bg-sidebar: #0C0E12;             /* Sidebar navigation background */
+  --bg-deep-blue: #08090B;           /* Backward compatibility fallback */
+  --bg-dark-violet: #111318;
 
-  /* Luxury Monochrome Lighting & Silver Accents */
+  /* Luxury Restrained Silver & White Highlights */
   --accent-primary: #FFFFFF;         /* Pure crisp white */
-  --accent-silver: #E2E2E2;          /* Pale silver */
-  --accent-muted: #858585;           /* Refined neutral gray */
-  --accent-white-glow: rgba(255, 255, 255, 0.16);
+  --accent-silver: #E2E2E2;          /* Restrained silver highlight */
+  --accent-muted: #9297A1;           /* Neutral secondary gray */
+  --accent-white-glow: rgba(255, 255, 255, 0.12);
 
-  /* Compatibility aliases mapping to elegant grayscale */
+  /* Compatibility aliases mapping to Obsidian grayscale */
   --accent-emerald: #FFFFFF;
   --accent-emerald-rgb: 255, 255, 255;
-  --accent-emerald-glow: rgba(255, 255, 255, 0.16);
+  --accent-emerald-glow: rgba(255, 255, 255, 0.12);
   --accent-teal: #E2E2E2;
   --accent-teal-rgb: 226, 226, 226;
   --accent-blue: #D4D4D4;
   --accent-violet: #B8B8B8;
   --accent-pink: #A0A0A0;
 
-  /* ── WATER-WHITE GLASSMORPHISM SURFACES ── */
-  --glass-primary: rgba(255, 255, 255, 0.055);
-  --glass-secondary: rgba(255, 255, 255, 0.035);
-  --glass-strong: rgba(255, 255, 255, 0.085);
-  --glass-highlight: rgba(255, 255, 255, 0.14);
-  --glass-input: rgba(18, 18, 18, 0.85);
-  --glass-border: rgba(255, 255, 255, 0.10);
-  --glass-border-hover: rgba(255, 255, 255, 0.22);
+  /* ── OBSIDIAN GLASS SURFACES ── */
+  --glass-primary: rgba(23, 25, 31, 0.65);
+  --glass-secondary: rgba(17, 19, 24, 0.75);
+  --glass-strong: rgba(29, 32, 40, 0.85);
+  --glass-highlight: rgba(255, 255, 255, 0.10);
+  --glass-input: rgba(13, 15, 19, 0.85);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-border-hover: rgba(255, 255, 255, 0.18);
   --glass-border-highlight: rgba(255, 255, 255, 0.28);
-  --glass-border-emerald: rgba(255, 255, 255, 0.25);
+  --glass-border-emerald: rgba(255, 255, 255, 0.20);
 
   /* Water-White Inner Glow (used for ::after pseudo-elements) */
-  --glass-inner-glow: rgba(255, 255, 255, 0.03);
+  --glass-inner-glow: rgba(255, 255, 255, 0.025);
   --glass-water-sheen: linear-gradient(
     135deg,
-    rgba(255, 255, 255, 0.12) 0%,
-    rgba(255, 255, 255, 0.03) 40%,
+    rgba(255, 255, 255, 0.10) 0%,
+    rgba(255, 255, 255, 0.02) 40%,
     rgba(255, 255, 255, 0.0) 60%,
-    rgba(255, 255, 255, 0.05) 100%
+    rgba(255, 255, 255, 0.04) 100%
   );
 
   /* Glass Blur Levels */
@@ -60,19 +61,21 @@
   --blur-lg: blur(30px);
   --blur-xl: blur(44px);
 
-  /* Typography Colors */
-  --text-primary: #FFFFFF;          /* Pure white for headings/values/wordmark */
-  --text-secondary: #B8B8B8;        /* Calm silver secondary copy */
-  --text-muted: #858585;            /* Subdued metadata and hints */
-  --text-subtle: #606060;           /* Subtle captions and hints */
+  /* Typography Colors (Spec Aligned) */
+  --text-primary: #F5F5F5;          /* Crisp high-contrast primary text */
+  --text-secondary: #9297A1;        /* Calm secondary body and labels */
+  --text-muted: #6C727F;            /* Subdued metadata and hints */
+  --text-subtle: #4D525E;           /* Subtle captions and dividers */
 
-  /* Monochrome Financial Indicators */
-  --color-income: #FFFFFF;          /* Pure white for cash inflows with + sign */
-  --color-income-bg: rgba(255, 255, 255, 0.08);
-  --color-expense: #B8B8B8;         /* Silver / Light Gray for spending with − sign */
-  --color-expense-bg: rgba(255, 255, 255, 0.05);
+  /* Semantic Financial Indicators */
+  --color-income: #F5F5F5;          /* High-contrast white for income (+ sign) */
+  --color-income-bg: rgba(255, 255, 255, 0.07);
+  --color-expense: #B8B8B8;         /* Silver for spending (− sign) */
+  --color-expense-bg: rgba(255, 255, 255, 0.04);
   --color-info: #E2E2E2;            /* Neutral silver */
-  --color-warning: #D4D4D4;         /* Soft light gray */
+  --color-warning: #EAB308;         /* Restrained amber for budget warnings */
+  --color-danger: #EF4444;          /* Restrained red for budget overruns/danger */
+  --color-positive: #22C55E;        /* Restrained emerald for completed goals */
 
   /* Typography Hierarchy */
   --font-brand: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -2524,6 +2527,434 @@ body {
 .w-full { width: 100%; justify-content: center; }
 
 /* --------------------------------------------------------------------------
+   16B. OBSIDIAN SPATIAL 7-VIEW ARCHITECTURE
+   Sidebar, view switching, budgets, goals, AI chat, and bottom navigation.
+   -------------------------------------------------------------------------- */
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+}
+
+.desktop-sidebar {
+  display: flex;
+  flex-direction: column;
+  width: 250px;
+  min-width: 250px;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  z-index: 110;
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--glass-border);
+  padding: 24px 16px;
+  gap: 20px;
+  backdrop-filter: var(--blur-xl);
+  -webkit-backdrop-filter: var(--blur-xl);
+}
+
+.sidebar-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 8px 16px;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.sidebar-brand-title {
+  font-family: var(--font-brand);
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  color: var(--text-primary);
+  text-transform: uppercase;
+}
+
+.sidebar-brand-sub {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.sidebar-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 0.88rem;
+  font-weight: 500;
+  border: 1px solid transparent;
+  transition: all var(--transition-fast);
+  cursor: pointer;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+}
+
+.sidebar-nav-item:hover {
+  color: var(--text-primary);
+  background: var(--glass-primary);
+  border-color: var(--glass-border-hover);
+}
+
+.sidebar-nav-item.active {
+  color: #FFFFFF;
+  background: rgba(255, 255, 255, 0.10);
+  border-color: rgba(255, 255, 255, 0.22);
+  font-weight: 600;
+  box-shadow: 0 0 16px rgba(255, 255, 255, 0.05);
+}
+
+.sidebar-nav-item .nav-badge {
+  margin-left: auto;
+  font-size: 0.72rem;
+  padding: 2px 7px;
+  border-radius: var(--radius-pill);
+  background: var(--glass-strong);
+  color: var(--text-muted);
+  border: 1px solid var(--glass-border);
+}
+
+.sidebar-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--glass-border);
+}
+
+.sidebar-privacy-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+.main-content-area {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 7 VIEW PANELS */
+.view-panel {
+  display: none;
+  width: 100%;
+}
+
+.view-panel.active {
+  display: block;
+  animation: viewFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes viewFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 3D BALANCE STAGE & ORB */
+.spatial-balance-stage {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.balance-visual-orb {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  position: relative;
+  background: radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.35) 0%, rgba(200, 205, 215, 0.15) 45%, rgba(15, 17, 22, 0.8) 85%);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.5),
+    inset 0 2px 6px rgba(255, 255, 255, 0.4),
+    inset 0 -6px 12px rgba(0, 0, 0, 0.6);
+  flex-shrink: 0;
+  transition: transform 0.2s cubic-bezier(0.1, 0.5, 0.3, 1);
+  will-change: transform;
+}
+
+.balance-visual-orb::after {
+  content: '';
+  position: absolute;
+  top: 15%;
+  left: 20%;
+  width: 30%;
+  height: 20%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(255, 255, 255, 0.75) 0%, transparent 80%);
+  transform: rotate(-30deg);
+  pointer-events: none;
+}
+
+/* BUDGETS, GOALS & RECURRING */
+.budgets-grid,
+.goals-grid,
+.recurring-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+}
+
+.budget-card,
+.goal-card,
+.recurring-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.budget-head,
+.goal-head,
+.recurring-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.budget-cat-name,
+.goal-title,
+.recurring-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.budget-limit-stat,
+.goal-amount-stat,
+.recurring-amount-stat {
+  font-family: var(--font-mono);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.budget-progress-track,
+.goal-progress-track {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  position: relative;
+}
+
+.budget-progress-fill,
+.goal-progress-fill {
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: #FFFFFF;
+  transition: width 0.4s ease;
+}
+
+.budget-progress-fill.warn {
+  background: var(--color-warning);
+}
+
+.budget-progress-fill.danger {
+  background: var(--color-danger);
+}
+
+/* VAULTLY AI VIEW */
+.ai-view-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  height: calc(100vh - 160px);
+  min-height: 560px;
+}
+
+.ai-chat-card {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.ai-chat-header {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--glass-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(12, 14, 18, 0.6);
+}
+
+.ai-messages-thread {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ai-msg {
+  display: flex;
+  gap: 12px;
+  max-width: 82%;
+  animation: msgSlideUp 0.25s ease-out;
+}
+
+@keyframes msgSlideUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.ai-msg.user {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+
+.ai-msg.assistant {
+  align-self: flex-start;
+}
+
+.ai-msg-bubble {
+  padding: 14px 18px;
+  border-radius: 18px;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--text-primary);
+  border: 1px solid var(--glass-border);
+}
+
+.ai-msg.user .ai-msg-bubble {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.22);
+  border-bottom-right-radius: 4px;
+}
+
+.ai-msg.assistant .ai-msg-bubble {
+  background: var(--bg-surface-raised);
+  border-color: var(--glass-border);
+  border-bottom-left-radius: 4px;
+}
+
+.ai-quick-prompts {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 8px 24px;
+  border-top: 1px solid var(--glass-border);
+  scrollbar-width: none;
+}
+
+.ai-prompt-chip {
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  font-size: 0.78rem;
+  background: var(--glass-secondary);
+  border: 1px solid var(--glass-border);
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--transition-fast);
+}
+
+.ai-prompt-chip:hover {
+  color: #FFFFFF;
+  background: var(--glass-strong);
+  border-color: var(--glass-border-hover);
+}
+
+.ai-input-bar {
+  padding: 16px 24px;
+  border-top: 1px solid var(--glass-border);
+  display: flex;
+  gap: 12px;
+  background: rgba(12, 14, 18, 0.6);
+}
+
+.ai-text-input {
+  flex: 1;
+  background: var(--glass-input);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  font-size: 0.92rem;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+}
+
+.ai-text-input:focus {
+  outline: none;
+  border-color: var(--glass-border-highlight);
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.1);
+}
+
+/* MOBILE BOTTOM NAVIGATION */
+.mobile-bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: rgba(12, 14, 18, 0.92);
+  border-top: 1px solid var(--glass-border);
+  backdrop-filter: var(--blur-xl);
+  -webkit-backdrop-filter: var(--blur-xl);
+  z-index: 100;
+  justify-content: space-around;
+  align-items: center;
+  padding: 0 8px;
+}
+
+.bottom-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 0.68rem;
+  font-weight: 500;
+  flex: 1;
+  height: 100%;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  transition: color var(--transition-fast);
+}
+
+.bottom-nav-item.active {
+  color: #FFFFFF;
+}
+
+.bottom-nav-item i {
+  width: 18px;
+  height: 18px;
+}
+
+/* --------------------------------------------------------------------------
    17. COMPREHENSIVE RESPONSIVE BREAKPOINT SYSTEM
    Strict support across:
    • 4K & Ultra-wide displays (>= 1600px, 1920px+)
@@ -2555,6 +2986,10 @@ body {
 
 /* ── 2. TABLETS & SMALL DESKTOPS (<= 1024px) ── */
 @media (max-width: 1024px) {
+  .desktop-sidebar {
+    display: none !important;
+  }
+
   .nav-links-desktop {
     display: none;
   }
@@ -2592,13 +3027,17 @@ body {
 
 /* ── 3. SMALL TABLETS & LARGE MOBILE (<= 768px) ── */
 @media (max-width: 768px) {
+  .mobile-bottom-nav {
+    display: flex;
+  }
+
   .nav-container {
     padding: 10px 16px;
     gap: 12px;
   }
 
   .dashboard-viewport {
-    padding: 20px 16px 44px;
+    padding: 20px 16px 84px;
   }
 
   .content-bound {

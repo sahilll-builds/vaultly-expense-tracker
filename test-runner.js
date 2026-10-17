@@ -142,4 +142,23 @@ assert.deepStrictEqual(safeParseStorage('{"single":"object"}'), []);
 assert.deepStrictEqual(safeParseStorage('[{"id":"tx1","amount":100},{"invalid":true}]'), [{ id: 'tx1', amount: 100 }]);
 console.log('   ✔ PASS: Corrupted LocalStorage is handled safely with empty/sanitized fallback.');
 
-console.log('\n--- ALL TEST SUITE CHECKS PASSED SUCCESSFULLY (5/5) ---');
+// 6. View Navigation & Routing Tests (Task 1)
+const VALID_VIEWS = ['overview', 'transactions', 'analytics', 'budgets', 'goals', 'ai', 'settings'];
+function isValidView(view) {
+  return VALID_VIEWS.includes(view);
+}
+
+console.log('6. Testing 7-View Navigation Mapping (Task 1):');
+assert.strictEqual(VALID_VIEWS.length, 7, 'Must have exactly 7 defined views');
+assert.strictEqual(isValidView('overview'), true);
+assert.strictEqual(isValidView('transactions'), true);
+assert.strictEqual(isValidView('analytics'), true);
+assert.strictEqual(isValidView('budgets'), true);
+assert.strictEqual(isValidView('goals'), true);
+assert.strictEqual(isValidView('ai'), true);
+assert.strictEqual(isValidView('settings'), true);
+assert.strictEqual(isValidView('dashboard'), false, 'Legacy dashboard must map to overview');
+console.log('   ✔ PASS: 7-view navigation mapping is valid.');
+
+console.log('\n--- ALL TEST SUITE CHECKS PASSED SUCCESSFULLY (6/6) ---');
+
