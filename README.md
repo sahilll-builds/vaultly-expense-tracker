@@ -4,7 +4,7 @@
 > 🌐 **Live Demo:** [https://sahilll-builds.github.io/vaultly-expense-tracker/](https://sahilll-builds.github.io/vaultly-expense-tracker/)  
 > 📦 **GitHub Repository:** [https://github.com/sahilll-builds/vaultly-expense-tracker](https://github.com/sahilll-builds/vaultly-expense-tracker)
 
-Vaultly is a modern, responsive client-side personal finance and expense-tracking web application built with pure HTML5, CSS3, and Vanilla JavaScript. Designed around the futuristic **Cosmic Glassmorphism ("Cosmic Glass — Fluid Finance")** visual aesthetic, Vaultly empowers users to gain crystal-clear insights into their cash flow, track income and expenses, monitor spending distribution across categories, compute daily safe-to-spend allowances, and maintain full privacy by keeping all financial data locally in their own browser.
+Vaultly is a modern, responsive client-side personal finance and expense-tracking web application built with pure HTML5, CSS3, and Vanilla JavaScript. Designed around a luxury **Minimalist Monochrome Glassmorphism** aesthetic, Vaultly empowers users to gain crystal-clear insights into their cash flow, track income and expenses, monitor spending distribution across categories, compute daily safe-to-spend allowances, and maintain full privacy by keeping all financial data locally in their own browser.
 
 ---
 
@@ -14,8 +14,8 @@ Vaultly serves as an intuitive personal finance dashboard where users can:
 - Instantly view their **Total Net Balance** calculated strictly from logged cash flow ($$\text{Net Balance} = \text{Total Income} - \text{Total Expenses}$$).
 - Monitor a dynamic **Safe to Spend** daily allowance engine that calculates how much you can spend per day based on your current net savings and days remaining in the month.
 - Gain actionable **Spending Insights** derived directly from actual recorded transactions (top spending category, largest single expenditure, and savings retention percentage).
-- Track incoming cash with glowing emerald halos and outgoing expenditures with restrained pink/coral indicators.
-- Analyze spending habits visually through an interactive **Chart.js Doughnut Chart** and detailed category percentage breakdown chips.
+- Track incoming cash with high-contrast pure white (`+₹...`) and outgoing expenditures with elegant silver (`−₹...`).
+- Analyze spending habits visually through an interactive **Chart.js Monochrome Doughnut Chart** and detailed category percentage breakdown chips.
 - Perform real-time instant searches across transaction titles, categories, and personal notes.
 - Filter transactions by type (**All**, **Income**, **Expenses**) and category, or sort chronologically and by transaction value.
 - Rest assured with full **Local Storage** persistence, robust input validation, and an accidental-deletion safety confirmation dialog.
@@ -24,9 +24,10 @@ Vaultly serves as an intuitive personal finance dashboard where users can:
 
 ## 🚀 Key Features
 
-1. **Cosmic Glassmorphism Design System**
-   - Built on a celestial foundation: layered deep-space canvas (`#050711`), drifting nebula clouds (emerald, teal, violet, electric blue), multi-depth twinkling star layers, and ambient liquid orbs.
-   - High-contrast glass surfaces with `backdrop-filter: blur()`, ultra-fine translucent luminous borders (`rgba(255, 255, 255, 0.12)`), top-edge refraction highlights (`::before`), and emerald glow effects (`#70F0B2`).
+1. **Luxury Monochrome Glassmorphism Design System**
+   - Built on a celestial foundation: layered deep-space canvas (`#050505`), silver nebula clouds, multi-depth twinkling star layers, and ambient water-white liquid orbs.
+   - High-contrast glass surfaces with `backdrop-filter: blur()`, ultra-fine translucent luminous borders (`rgba(255, 255, 255, 0.10)`), top-edge refraction highlights (`::before`), and water-white reflection sweeps.
+   - Typography pairing: **Space Grotesk** (700) for the bold **VAULTLY** wordmark and **Manrope** for clean hierarchy across headings, metrics, navigation, body, and forms.
    - 70% clarity / 30% visual atmosphere balance: data and numbers always remain the primary hero focus with WCAG AA compliance.
 
 2. **Safe to Spend Daily Allowance Engine**
@@ -48,7 +49,7 @@ Vaultly serves as an intuitive personal finance dashboard where users can:
    - Context-aware categories that switch dynamically when toggling between **Expense** (*Food & Dining, Transport, Shopping, Bills & Utilities, Education, Entertainment, Health, Other*) and **Income** (*Salary, Freelance, Allowance, Business, Other*).
 
 6. **Visual Analytics & Chart Fallback**
-   - Chart.js doughnut chart with cosmic glass cutouts, emerald data series, and dark glass tooltips.
+   - Chart.js doughnut chart with cosmic glass cutouts, luxury grayscale data series, and dark glass tooltips.
    - Proper lifecycle management: existing chart instances are cleanly destroyed before re-instantiating to prevent canvas memory leaks.
    - **Graceful CDN Fallback:** If internet access is lost or Chart.js fails to load, the UI seamlessly displays the category breakdown cards and percentage indicators.
 
@@ -69,7 +70,7 @@ Vaultly serves as an intuitive personal finance dashboard where users can:
 10. **Fully Responsive & Accessible**
     - Mobile-first responsive layout with breakpoints tested across 320px, 480px, 768px, 1024px, and 1440px.
     - Slide-out glass navigation drawer with backdrop on small screens.
-    - Accessible keyboard navigation (`Escape` closes modals, `Enter` submits forms, visible `:focus-visible` emerald rings, and `@media (prefers-reduced-motion)` support).
+    - Accessible keyboard navigation (`Escape` closes modals, `Enter` submits forms, visible `:focus-visible` white/silver rings, and `@media (prefers-reduced-motion)` support).
 
 ---
 
@@ -91,9 +92,9 @@ Vaultly serves as an intuitive personal finance dashboard where users can:
 ```text
 vaultly-expense-tracker/
 │
-├── index.html            # Semantic HTML5 markup, cinematic loading screen, bottom sheet dialogs
-├── style.css             # Cosmic Glassmorphism, fluid clamp typography, comprehensive responsive breakpoints
-├── script.js             # Modular application logic, calculation engine, event handlers, loader lifecycle
+├── index.html            # Semantic HTML5 markup, 1s cinematic loading screen, bottom sheet dialogs
+├── style.css             # Monochrome Glassmorphism, Space Grotesk & Manrope typography, responsive breakpoints
+├── script.js             # Modular application logic, calculation engine, event handlers, 1s loader lifecycle
 ├── test-runner.js        # Automated unit tests for math, validation, and filter pipelines
 ├── verify-responsive.mjs # Headless browser CDP test suite validating 14 viewports (320px to 1920px)
 └── README.md             # Comprehensive project documentation
@@ -116,11 +117,11 @@ Vaultly was architected from the ground up for seamless usability across all dev
 | **Landscape Mobile** | <= 520px height | Compact sticky header, scrollable bottom-sheet modal with max 94vh height. |
 | **Touch Devices** | `pointer: coarse` | Enforced `>= 44px` tap target hitboxes on all interactive buttons, selects, and toggles. |
 
-### 🎬 Cinematic Opening Loading Screen
-- **Centred Typography Wordmark:** Prominently introduces Vaultly on initial page load.
-- **Orbital Ring & Liquid Bar:** Smooth orbital ring animation and shimmering liquid beam reflect the celestial water-white aesthetic.
-- **Scroll Lock & Dismissal Safety:** Prevents underlying page scroll while active (`body.is-loading`), dismisses automatically with smooth fade-out upon asset load, and includes an 1800ms safety timeout so the UI never hangs.
-- **Reduced Motion Support:** Respects `prefers-reduced-motion` with instant fade-out and disabled orbital rotations.
+### 🎬 Fast Cinematic Loading Screen (1.0s Max)
+- **Pure Typographic Wordmark:** Centered **VAULTLY** in bold Space Grotesk (700) with a refined monochrome light sweep reflection. No icons, emblems, or badges.
+- **Precision Silver Line Indicator:** Minimalist horizontal line indicating asset readiness without jarring spinners or orbital rings.
+- **Strict 1-Second Budget:** 650ms presentation phase followed by a 350ms smooth CSS fade-out (`opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1)`), completely revealing the interactive dashboard at or under 1000ms.
+- **Defensive Timeouts & Accessibility:** Enforced 1000ms hard safety timeout so the UI never hangs, with instantaneous (0ms) dismissal when `prefers-reduced-motion: reduce` is detected.
 
 ## 💻 Running the Application Locally
 

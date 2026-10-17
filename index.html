@@ -6,10 +6,10 @@
   <meta name="description" content="Vaultly — Personal Finance and Expense Tracker. Cosmic Glassmorphism Dashboard: Track income, manage expenses, calculate safe daily spending, and visualize spending habits with clarity.">
   <title>Vaultly — Personal Finance Tracker</title>
 
-  <!-- Google Fonts: Space Grotesk (Headings) + Inter (Body/UI) -->
+  <!-- Google Fonts: Space Grotesk (Wordmark) + Manrope (UI Hierarchy) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
 
   <!-- Lucide Icons (CDN with graceful offline fallback) -->
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
@@ -22,33 +22,21 @@
 </head>
 <body class="is-loading">
   <!-- =========================================================================
-       CINEMATIC OPENING LOADING SCREEN
-       - Centered VAULTLY typographic wordmark
-       - Luminous orbital liquid ring & progress bar
+       PREMIUM MONOCHROME INTRODUCTORY LOADING SCREEN
+       - Strictly <= 1.0s maximum duration
+       - Pure typography VAULTLY wordmark (no logo icon)
+       - Subtle ambient light and silver refraction sweep
        - Auto-dismiss on window load with safety timeout
        - Respects prefers-reduced-motion
        ========================================================================= -->
   <div id="cinematicLoader" class="cinematic-loader" role="status" aria-live="polite" aria-label="Loading Vaultly">
-    <div class="loader-backdrop-glow" aria-hidden="true"></div>
+    <div class="loader-ambient-glow" aria-hidden="true"></div>
     <div class="loader-content">
-      <div class="loader-logo-cluster">
-        <div class="loader-orbital-ring" aria-hidden="true">
-          <div class="orbital-dot dot-1"></div>
-          <div class="orbital-dot dot-2"></div>
-        </div>
-        <div class="loader-badge" aria-hidden="true">
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z"/>
-            <circle cx="12" cy="12" r="3"/>
-          </svg>
-        </div>
-      </div>
       <div class="loader-brand-title">VAULTLY</div>
-      <div class="loader-brand-tagline">YOUR MONEY • YOUR CONTROL</div>
+      <div class="loader-brand-tagline">YOUR MONEY. YOUR CONTROL.</div>
       <div class="loader-track-wrap" aria-hidden="true">
         <div class="loader-liquid-bar"></div>
       </div>
-      <span class="loader-status-text" id="loaderStatusText">INITIALIZING SECURE VAULT...</span>
     </div>
   </div>
 
@@ -60,10 +48,9 @@
        - Layer 3: Ambient liquid orbs mimicking light refracted through water
        ========================================================================= -->
   <div class="galaxy-background" aria-hidden="true">
-    <div class="nebula-cloud nebula-emerald"></div>
-    <div class="nebula-cloud nebula-violet"></div>
-    <div class="nebula-cloud nebula-blue"></div>
-    <div class="nebula-cloud nebula-teal"></div>
+    <div class="nebula-cloud nebula-silver-1"></div>
+    <div class="nebula-cloud nebula-silver-2"></div>
+    <div class="nebula-cloud nebula-grey"></div>
     <div class="stars-layer stars-1"></div>
     <div class="stars-layer stars-2"></div>
     <div class="stars-layer stars-3"></div>
@@ -76,18 +63,9 @@
     <!-- SLEEK TOP GLASS NAVIGATION -->
     <header class="glass-navbar" id="topNavbar">
       <div class="nav-container">
-        <!-- Brand Identity -->
+        <!-- Brand Identity: Pure Typography Wordmark (No Logo Icon) -->
         <div class="nav-brand">
-          <div class="brand-badge-liquid" aria-hidden="true">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z"/>
-              <circle cx="12" cy="12" r="3"/>
-            </svg>
-          </div>
-          <div class="brand-info">
-            <span class="brand-title">Vaultly</span>
-            <span class="brand-tagline">Your money. Your control.</span>
-          </div>
+          <span class="brand-title">VAULTLY</span>
         </div>
 
         <!-- Desktop Navigation Links -->
@@ -142,13 +120,7 @@
     <div class="mobile-drawer-backdrop" id="mobileDrawerBackdrop" aria-hidden="true"></div>
     <aside class="mobile-drawer" id="mobileDrawer" aria-label="Mobile Navigation Drawer">
       <div class="drawer-header">
-        <div class="brand-badge-liquid" aria-hidden="true">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-            <path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z"/>
-            <circle cx="12" cy="12" r="3"/>
-          </svg>
-        </div>
-        <span class="brand-title">Vaultly</span>
+        <span class="brand-title">VAULTLY</span>
         <button type="button" class="drawer-close-btn" id="closeDrawerBtn" aria-label="Close navigation menu">
           <i data-lucide="x" aria-hidden="true"></i>
         </button>
@@ -207,7 +179,7 @@
               </span>
             </div>
             <h1 class="hero-headline">
-              Your money, <span class="gradient-text-emerald">in focus.</span>
+              Your money, <span class="gradient-text-mono">in focus.</span>
             </h1>
             <p class="hero-subline">
               Understand your spending. Make every decision count with real-time cosmic financial clarity.
@@ -215,7 +187,7 @@
           </div>
           <div class="hero-stats-badge" id="storageSummaryBadge">
             <span class="stat-pill-label">System Status</span>
-            <span class="stat-pill-value"><span class="status-pulse-emerald"></span> 100% Client-Side Privacy</span>
+            <span class="stat-pill-value"><span class="status-pulse-mono"></span> 100% Client-Side Privacy</span>
           </div>
         </section>
 
@@ -235,7 +207,7 @@
                 <span class="card-label">Total Net Balance</span>
                 <span class="card-caption">All recorded income minus expenses</span>
               </div>
-              <div class="card-icon-halo halo-emerald" aria-hidden="true">
+              <div class="card-icon-halo halo-mono" aria-hidden="true">
                 <i data-lucide="wallet"></i>
               </div>
             </div>
@@ -554,9 +526,9 @@
       <div class="footer-container">
         <div class="footer-left">
           <div class="footer-brand">
-            <span class="brand-title">Vaultly</span>
+            <span class="brand-title">VAULTLY</span>
             <span class="footer-dot">•</span>
-            <span>Cosmic Glassmorphism Financial Intelligence</span>
+            <span>Minimalist Monochrome Financial Intelligence</span>
           </div>
           <p class="footer-copy">
             Built with HTML5, CSS3 &amp; Vanilla JavaScript. Zero external trackers.

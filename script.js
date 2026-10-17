@@ -38,25 +38,25 @@ const STORAGE_KEY = 'vaultly_transactions';
  * Colors adhere to the Cosmic Glassmorphism aesthetic.
  */
 const EXPENSE_CATEGORIES = [
-  { id: 'Food & Dining', name: 'Food & Dining', icon: 'utensils', color: '#70F0B2' },
-  { id: 'Transport', name: 'Transport', icon: 'car', color: '#53DDE0' },
-  { id: 'Shopping', name: 'Shopping', icon: 'shopping-bag', color: '#FFD38A' },
-  { id: 'Bills & Utilities', name: 'Bills & Utilities', icon: 'zap', color: '#A78BFA' },
-  { id: 'Education', name: 'Education', icon: 'book-open', color: '#6C8CFF' },
-  { id: 'Entertainment', name: 'Entertainment', icon: 'film', color: '#FF8F9C' },
-  { id: 'Health', name: 'Health', icon: 'heart-pulse', color: '#38BDF8' },
-  { id: 'Other', name: 'Other', icon: 'more-horizontal', color: '#91A7FF' }
+  { id: 'Food & Dining', name: 'Food & Dining', icon: 'utensils', color: '#FFFFFF' },
+  { id: 'Transport', name: 'Transport', icon: 'car', color: '#E2E2E2' },
+  { id: 'Shopping', name: 'Shopping', icon: 'shopping-bag', color: '#C6C6C6' },
+  { id: 'Bills & Utilities', name: 'Bills & Utilities', icon: 'zap', color: '#AAAAAA' },
+  { id: 'Education', name: 'Education', icon: 'book-open', color: '#8E8E8E' },
+  { id: 'Entertainment', name: 'Entertainment', icon: 'film', color: '#727272' },
+  { id: 'Health', name: 'Health', icon: 'heart-pulse', color: '#565656' },
+  { id: 'Other', name: 'Other', icon: 'more-horizontal', color: '#3A3A3A' }
 ];
 
 /**
  * Income Categories for categorizing inward cash flow.
  */
 const INCOME_CATEGORIES = [
-  { id: 'Salary', name: 'Salary', icon: 'briefcase', color: '#70F0B2' },
-  { id: 'Freelance', name: 'Freelance', icon: 'laptop', color: '#53DDE0' },
-  { id: 'Allowance', name: 'Allowance', icon: 'gift', color: '#FFD38A' },
-  { id: 'Business', name: 'Business', icon: 'trending-up', color: '#6C8CFF' },
-  { id: 'Other', name: 'Other', icon: 'dollar-sign', color: '#A78BFA' }
+  { id: 'Salary', name: 'Salary', icon: 'briefcase', color: '#FFFFFF' },
+  { id: 'Freelance', name: 'Freelance', icon: 'laptop', color: '#D4D4D4' },
+  { id: 'Allowance', name: 'Allowance', icon: 'gift', color: '#A8A8A8' },
+  { id: 'Business', name: 'Business', icon: 'trending-up', color: '#7E7E7E' },
+  { id: 'Other', name: 'Other', icon: 'dollar-sign', color: '#545454' }
 ];
 
 /**
@@ -497,9 +497,9 @@ function renderSummaryCards() {
 
   // Update Net Position indicator badge text
   if (totals.netBalance > 0) {
-    DOM.balanceStatusBadge.innerHTML = `<span class="tag-dot" style="background-color: var(--accent-emerald);" aria-hidden="true"></span><span>Positive Net Savings</span>`;
+    DOM.balanceStatusBadge.innerHTML = `<span class="tag-dot tag-dot-positive" aria-hidden="true"></span><span>Positive Net Savings</span>`;
   } else if (totals.netBalance < 0) {
-    DOM.balanceStatusBadge.innerHTML = `<span class="tag-dot" style="background-color: var(--color-expense);" aria-hidden="true"></span><span>Expenses exceed income</span>`;
+    DOM.balanceStatusBadge.innerHTML = `<span class="tag-dot tag-dot-negative" aria-hidden="true"></span><span>Expenses exceed income</span>`;
   } else {
     DOM.balanceStatusBadge.innerHTML = `<span class="tag-dot" aria-hidden="true"></span><span>Net position (Income − Expenses)</span>`;
   }
@@ -965,7 +965,7 @@ function renderChart() {
         datasets: [{
           data: dataValues,
           backgroundColor: backgroundColors,
-          borderColor: 'rgba(16, 21, 42, 0.95)', // Matches deep-space glass surface for seamless cutout
+          borderColor: '#050505', // Deep space monochrome cutout
           borderWidth: 2,
           hoverOffset: 8
         }]
@@ -979,9 +979,9 @@ function renderChart() {
             display: false // Bespoke accessible category breakdown chips provide the legend
           },
           tooltip: {
-            backgroundColor: 'rgba(16, 21, 42, 0.95)',
-            titleColor: '#F5F7FF',
-            bodyColor: '#70F0B2',
+            backgroundColor: '#0A0A0A',
+            titleColor: '#FFFFFF',
+            bodyColor: '#E2E2E2',
             borderColor: 'rgba(255, 255, 255, 0.16)',
             borderWidth: 1,
             padding: 12,
@@ -1747,27 +1747,35 @@ function dismissCinematicLoader() {
   loader.setAttribute('aria-hidden', 'true');
   document.body.classList.remove('is-loading');
 
-  // Remove element after transition completes to release memory
+  // Remove element after CSS transition completes (350ms) to release memory
   setTimeout(() => {
     if (loader && loader.parentElement) {
       loader.remove();
     }
-  }, 600);
+  }, 380);
 }
 
 /**
- * Initializes the cinematic loading screen lifecycle with guaranteed safety fallback.
+ * Initializes the cinematic loading screen lifecycle with strictly enforced <= 1.0s max duration.
+ * 0–650ms: Wordmark presentation & silver reflection sweep.
+ * 650–1000ms: Smooth 0.35s fade-out revealing the dashboard.
+ * Total time: <= 1000ms. Immediate dismissal if prefers-reduced-motion is active.
  */
 function initCinematicLoader() {
   const prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const minDisplayTime = prefersReduced ? 50 : 700;
-  const maxTimeout = prefersReduced ? 100 : 1800; // Guaranteed safety fallback
+  if (prefersReduced) {
+    dismissCinematicLoader();
+    return;
+  }
+
+  const displayTime = 650;
+  const hardSafetyLimit = 1000;
 
   const startTime = Date.now();
 
   const handleDismiss = () => {
     const elapsed = Date.now() - startTime;
-    const remaining = Math.max(0, minDisplayTime - elapsed);
+    const remaining = Math.max(0, displayTime - elapsed);
     setTimeout(dismissCinematicLoader, remaining);
   };
 
@@ -1777,8 +1785,8 @@ function initCinematicLoader() {
     window.addEventListener('load', handleDismiss, { once: true });
   }
 
-  // Guaranteed safety fallback: dismisses even on slow CDN or offline state
-  setTimeout(dismissCinematicLoader, maxTimeout);
+  // Guaranteed hard safety fallback: dismisses at 1.0s under any circumstances
+  setTimeout(dismissCinematicLoader, hardSafetyLimit);
 }
 
 /**
