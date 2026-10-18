@@ -393,11 +393,131 @@ async function testChatEndpoint() {
   }, mockPostRes);
   assert.strictEqual(statusCaptured, 200);
 
-  console.log('   ✔ PASS: api/chat handler verified for CORS, 405, 400, grounded finance, natural greetings, bank clarity, corrections, and conversation history.');
+  // Test 10i: Financial Health Score query
+  await chatHandler({
+    method: 'POST',
+    body: { message: 'What is my financial health score?', context: { ...testContext, healthScore: 92, healthTier: 'Exceptional' } },
+    headers: {}
+  }, mockPostRes);
+  assert.strictEqual(statusCaptured, 200);
+  assert(jsonCaptured.reply.includes('92/100'), 'Must cite verified health score');
+
+  // Test 10j: Anomaly & duplicate detection query
+  await chatHandler({
+    method: 'POST',
+    body: { message: 'Do I have any unusual transactions or duplicates?', context: { ...testContext, anomalyCount: 2 } },
+    headers: {}
+  }, mockPostRes);
+  assert.strictEqual(statusCaptured, 200);
+  assert(jsonCaptured.reply.includes('2 transaction items flagged'), 'Must cite anomaly count');
+
+  // Test 10k: What-If simulation query
+  await chatHandler({
+    method: 'POST',
+    body: { message: 'Can I simulate a what-if scenario?', context: testContext },
+    headers: {}
+  }, mockPostRes);
+  assert.strictEqual(statusCaptured, 200);
+  assert(jsonCaptured.reply.toLowerCase().includes('digital twin') || jsonCaptured.reply.toLowerCase().includes('simulate'), 'Must point to simulator');
+
+  console.log('   ✔ PASS: api/chat handler verified for CORS, 405, 400, grounded finance, health scores, anomalies, simulations, natural greetings, bank clarity, corrections, and conversation history.');
 }
 
+// 11. Diagnostic Analytics Engine Test
+console.log('11. Testing Diagnostic Analytics Engine:');
+const {
+  calculateDiagnosticAnalytics,
+  calculatePredictiveAnalytics,
+  calculateAnomaliesAndDuplicates,
+  calculateFinancialHealthScore,
+  simulateFinancialScenario,
+  calculatePrescriptiveRecommendations
+} = require('./script.js');
+
+const sampleMultiMonthTxs = [
+  // Current month
+  { id: 'tx-cur-1', title: 'Restaurant Dinner', amount: 3500, type: 'expense', category: 'Food & Dining', date: '2026-10-10' },
+  { id: 'tx-cur-2', title: 'Fuel & Transit', amount: 1200, type: 'expense', category: 'Transport', date: '2026-10-12' },
+  // Prior month
+  { id: 'tx-prev-1', title: 'Groceries', amount: 1500, type: 'expense', category: 'Food & Dining', date: '2026-09-15' },
+  { id: 'tx-prev-2', title: 'Bus Pass', amount: 1000, type: 'expense', category: 'Transport', date: '2026-09-18' }
+];
+
+const diagnostic = calculateDiagnosticAnalytics(sampleMultiMonthTxs);
+assert(diagnostic.topDriver !== null, 'Must identify a top spending driver');
+assert.strictEqual(diagnostic.topDriver.category, 'Food & Dining', 'Food & Dining should be top driver');
+assert(diagnostic.topDriver.delta > 0, 'Top driver delta must be positive');
+assert(typeof diagnostic.narrative === 'string' && diagnostic.narrative.length > 10, 'Must produce explanatory narrative');
+console.log('   ✔ PASS: Diagnostic analytics accurately calculates category shifts and cost drivers.');
+
+// 12. Predictive Analytics Engine Test
+console.log('12. Testing Predictive Analytics Engine:');
+const predictive = calculatePredictiveAnalytics(sampleMultiMonthTxs, [{ id: 'rec-1', name: 'Wifi', amount: 1000, active: true }]);
+assert(predictive.projectedMonthEnd >= 0, 'Projected month-end spend must be valid');
+assert(predictive.confidenceRange.lowerBound <= predictive.projectedMonthEnd, 'Lower bound must be <= projection');
+assert(predictive.confidenceRange.upperBound >= predictive.projectedMonthEnd, 'Upper bound must be >= projection');
+assert(Array.isArray(predictive.assumptions) && predictive.assumptions.length >= 2, 'Must state assumptions explicitly');
+console.log('   ✔ PASS: Predictive analytics generates bounded forecasts with clear assumptions.');
+
+// 13. Anomaly & Duplicate Detection Test
+console.log('13. Testing Anomaly & Duplicate Detection Engine:');
+const anomalyTxs = [
+  { id: 'a1', title: 'Coffee', amount: 200, type: 'expense', category: 'Food & Dining', date: '2026-10-01' },
+  { id: 'a2', title: 'Sandwich', amount: 250, type: 'expense', category: 'Food & Dining', date: '2026-10-02' },
+  { id: 'a3', title: 'Juice', amount: 180, type: 'expense', category: 'Food & Dining', date: '2026-10-03' },
+  { id: 'a4', title: 'Luxury Watch', amount: 55000, type: 'expense', category: 'Shopping', date: '2026-10-04' }, // Outlier
+  { id: 'd1', title: 'Cloud Subscription', amount: 750, type: 'expense', category: 'Bills & Utilities', date: '2026-10-05' },
+  { id: 'd2', title: 'Cloud Subscription', amount: 750, type: 'expense', category: 'Bills & Utilities', date: '2026-10-06' }  // Duplicate within 24h
+];
+
+const anomalyResult = calculateAnomaliesAndDuplicates(anomalyTxs);
+assert(anomalyResult.anomalies.length >= 1, 'Should detect statistical outlier');
+assert.strictEqual(anomalyResult.anomalies[0].txId, 'a4', 'Luxury Watch should be flagged as anomaly');
+assert(anomalyResult.duplicates.length >= 1, 'Should detect near-duplicate charge');
+assert.strictEqual(anomalyResult.duplicates[0].primaryId, 'd1', 'Cloud Subscription should be flagged as duplicate');
+console.log('   ✔ PASS: Anomaly and duplicate detection correctly flags outliers and duplicate entries.');
+
+// 14. Transparent Financial Health Assessment Test
+console.log('14. Testing Financial Health Assessment Engine:');
+const healthTxs = [
+  { id: 'h1', title: 'Salary', amount: 80000, type: 'income', category: 'Salary', date: '2026-10-01' },
+  { id: 'h2', title: 'Rent', amount: 20000, type: 'expense', category: 'Bills & Utilities', date: '2026-10-02' },
+  { id: 'h3', title: 'Groceries', amount: 6000, type: 'expense', category: 'Food & Dining', date: '2026-10-03' }
+];
+const healthBudgets = [{ category: 'Food & Dining', limit: 8000 }];
+const healthGoals = [{ id: 'g1', title: 'Emergency Fund', targetAmount: 60000, currentAmount: 40000 }];
+const healthRecurring = [{ id: 'r1', amount: 1500, active: true }];
+
+const health = calculateFinancialHealthScore(healthTxs, healthBudgets, healthGoals, healthRecurring);
+assert(health.overallScore >= 0 && health.overallScore <= 100, 'Health score must be between 0 and 100');
+assert.strictEqual(health.pillars.length, 4, 'Must evaluate 4 distinct pillars');
+assert(['Exceptional', 'Strong', 'Moderate', 'Needs Focus'].includes(health.tier), 'Tier rating must be valid');
+console.log(`   ✔ PASS: Financial health score evaluated (${health.overallScore}/100 - ${health.tier}) with 4 weighted pillars.`);
+
+// 15. Financial Digital Twin (What-If Simulation) Test
+console.log('15. Testing Financial Digital Twin & What-If Scenario Simulator:');
+const baseTotals = { totalIncome: 50000, totalExpenses: 30000, netBalance: 20000 };
+const simTxs = [
+  { id: 's1', title: 'Dining', amount: 8000, type: 'expense', category: 'Food & Dining', date: '2026-10-01' },
+  { id: 's2', title: 'Shopping', amount: 4000, type: 'expense', category: 'Shopping', date: '2026-10-02' }
+];
+const simGoals = [{ id: 'sg1', title: 'MacBook', targetAmount: 80000, currentAmount: 20000 }];
+
+// Simulate +₹5,000 raise, -20% discretionary spending trim, +₹2,000 extra goal savings
+const simResult = simulateFinancialScenario(baseTotals, simTxs, simGoals, {
+  incomeDelta: 5000,
+  discretionaryCutPercent: 20,
+  extraGoalSavings: 2000
+});
+
+assert.strictEqual(simResult.simulatedIncome, 55000, 'Simulated income should be 55,000');
+assert(simResult.simulatedExpenses < 30000, 'Simulated expenses should decrease due to 20% discretionary trim');
+assert(simResult.simulatedMonthlySurplus > 20000, 'Surplus must expand');
+assert(simResult.goalProjections[0].monthsSaved > 0, 'Extra savings must accelerate goal completion');
+console.log('   ✔ PASS: What-If simulation engine computes non-mutating scenarios accurately.');
+
 testChatEndpoint().then(() => {
-  console.log('\n--- ALL TEST SUITE CHECKS PASSED SUCCESSFULLY (10/10) ---');
+  console.log('\n--- ALL TEST SUITE CHECKS PASSED SUCCESSFULLY (15/15) ---');
 }).catch(err => {
   console.error('Test suite failed:', err);
   process.exit(1);

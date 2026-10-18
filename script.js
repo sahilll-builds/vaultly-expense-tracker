@@ -336,6 +336,378 @@ function calculateSpendingForecast(transactionsList) {
   return { spentSoFar, currentDay, totalDays, avgDaily, projectedEnd };
 }
 
+/**
+ * Layer 2: Diagnostic Analytics Engine (Why did it happen?)
+ * Identifies month-over-month category deltas, cost drivers, and expenditure shifts.
+ */
+function calculateDiagnosticAnalytics(transactionsList) {
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+
+  const thisMonthTxs = transactionsList.filter(tx => {
+    if (tx.type !== 'expense') return false;
+    const d = new Date(tx.date);
+    return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+  });
+
+  const priorMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+  const priorYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+  const priorMonthTxs = transactionsList.filter(tx => {
+    if (tx.type !== 'expense') return false;
+    const d = new Date(tx.date);
+    return d.getMonth() === priorMonth && d.getFullYear() === priorYear;
+  });
+
+  const currentCatTotals = {};
+  thisMonthTxs.forEach(t => {
+    currentCatTotals[t.category] = (currentCatTotals[t.category] || 0) + t.amount;
+  });
+
+  const priorCatTotals = {};
+  priorMonthTxs.forEach(t => {
+    priorCatTotals[t.category] = (priorCatTotals[t.category] || 0) + t.amount;
+  });
+
+  const allCategories = Array.from(new Set([...Object.keys(currentCatTotals), ...Object.keys(priorCatTotals)]));
+  const categoryShifts = allCategories.map(cat => {
+    const current = currentCatTotals[cat] || 0;
+    const prior = priorCatTotals[cat] || 0;
+    const delta = current - prior;
+    const percentChange = prior > 0 ? Math.round((delta / prior) * 100) : (current > 0 ? 100 : 0);
+    return { category: cat, current, prior, delta, percentChange };
+  });
+
+  categoryShifts.sort((a, b) => b.delta - a.delta);
+
+  const topDriver = categoryShifts[0] || null;
+  const totalThisMonth = thisMonthTxs.reduce((sum, t) => sum + t.amount, 0);
+  const totalPriorMonth = priorMonthTxs.reduce((sum, t) => sum + t.amount, 0);
+  const overallDelta = totalThisMonth - totalPriorMonth;
+  const overallPct = totalPriorMonth > 0 ? Math.round((overallDelta / totalPriorMonth) * 100) : (totalThisMonth > 0 ? 100 : 0);
+
+  const largeTransactions = thisMonthTxs.filter(t => totalThisMonth > 0 && (t.amount / totalThisMonth) >= 0.2);
+
+  let narrative = '';
+  if (totalPriorMonth > 0 && topDriver && topDriver.delta > 0) {
+    narrative = `Spending changed by ${overallDelta >= 0 ? '+' : ''}${formatCurrency(overallDelta)} (${overallPct >= 0 ? '+' : ''}${overallPct}%) compared to last month. The primary cost driver is ${topDriver.category} (+${formatCurrency(topDriver.delta)}).`;
+  } else if (topDriver && totalThisMonth > 0) {
+    narrative = `Primary expense concentration is in ${topDriver.category}, accounting for ${formatCurrency(topDriver.current)} (${Math.round((topDriver.current / totalThisMonth) * 100)}% of monthly spend).`;
+  } else {
+    narrative = 'Record expenses across consecutive months to unlock full diagnostic trend comparisons.';
+  }
+
+  return {
+    categoryShifts,
+    topDriver,
+    totalThisMonth,
+    totalPriorMonth,
+    overallDelta,
+    overallPct,
+    largeTransactions,
+    narrative
+  };
+}
+
+/**
+ * Layer 3: Predictive Analytics Engine (What might happen next?)
+ * Produces confidence-bounded month-end projections and next-month cash flow forecasts.
+ */
+function calculatePredictiveAnalytics(transactionsList, recurringList = []) {
+  const forecast = calculateSpendingForecast(transactionsList);
+  const safe = calculateSafeToSpend(transactionsList, recurringList);
+  const totals = calculateTotals(transactionsList);
+
+  const activeRecurringSum = recurringList
+    .filter(r => r.active !== false)
+    .reduce((sum, r) => sum + r.amount, 0);
+
+  const lowerBound = Math.round(forecast.projectedEnd * 0.92);
+  const upperBound = Math.round(forecast.projectedEnd * 1.08);
+
+  const nextMonthProjectedExpense = Math.round(activeRecurringSum + (forecast.avgDaily * 30));
+  const nextMonthProjectedCashFlow = Math.max(0, totals.totalIncome) - nextMonthProjectedExpense;
+
+  const assumptions = [
+    `Current daily spend velocity (₹${Math.round(forecast.avgDaily)}/day) continues for the remaining ${safe.daysRemaining} days.`,
+    `Active recurring commitments (₹${activeRecurringSum}/mo) will be charged on schedule.`,
+    `Excludes unrecorded one-off emergency transactions.`
+  ];
+
+  const riskLevel = forecast.projectedEnd > totals.totalIncome ? 'high' : (forecast.projectedEnd > totals.totalIncome * 0.85 ? 'moderate' : 'low');
+
+  return {
+    spentSoFar: forecast.spentSoFar,
+    projectedMonthEnd: forecast.projectedEnd,
+    confidenceRange: { lowerBound, upperBound },
+    nextMonthProjectedExpense,
+    nextMonthProjectedCashFlow,
+    riskLevel,
+    assumptions
+  };
+}
+
+/**
+ * Anomaly & Duplicate Detection Engine
+ * Detects statistical expense outliers (Z-Score > 1.8) and potential duplicate charges within 48h.
+ */
+function calculateAnomaliesAndDuplicates(transactionsList) {
+  const expenseTxs = transactionsList.filter(t => t.type === 'expense');
+  const anomalies = [];
+  const duplicates = [];
+
+  if (expenseTxs.length >= 3) {
+    const amounts = expenseTxs.map(t => t.amount);
+    const mean = amounts.reduce((a, b) => a + b, 0) / amounts.length;
+    const variance = amounts.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / amounts.length;
+    const stdDev = Math.sqrt(variance);
+
+    expenseTxs.forEach(tx => {
+      const zScore = stdDev > 0 ? (tx.amount - mean) / stdDev : 0;
+      if (zScore >= 1.8 && tx.amount >= 1000) {
+        anomalies.push({
+          txId: tx.id,
+          title: tx.title,
+          amount: tx.amount,
+          category: tx.category,
+          date: tx.date,
+          zScore: Number(zScore.toFixed(2)),
+          severity: zScore > 2.5 ? 'high' : 'medium',
+          reason: `Unusually high expense (₹${tx.amount.toLocaleString('en-IN')}) — ${zScore.toFixed(1)}x above your historical average (₹${Math.round(mean).toLocaleString('en-IN')}).`
+        });
+      }
+    });
+  }
+
+  // Detect duplicates (same amount, identical/similar title within 2 days)
+  for (let i = 0; i < expenseTxs.length; i++) {
+    for (let j = i + 1; j < expenseTxs.length; j++) {
+      const a = expenseTxs[i];
+      const b = expenseTxs[j];
+      if (a.amount === b.amount && Math.abs(a.amount) > 0) {
+        const titleA = a.title.toLowerCase().trim();
+        const titleB = b.title.toLowerCase().trim();
+        if (titleA === titleB || (titleA.length > 3 && titleB.includes(titleA))) {
+          const dateA = new Date(a.date).getTime();
+          const dateB = new Date(b.date).getTime();
+          const daysDiff = Math.abs(dateA - dateB) / (1000 * 3600 * 24);
+          if (daysDiff <= 2) {
+            duplicates.push({
+              primaryId: a.id,
+              duplicateId: b.id,
+              amount: a.amount,
+              title: a.title,
+              dateA: a.date,
+              dateB: b.date,
+              reason: `Identical charge of ₹${a.amount.toLocaleString('en-IN')} for "${a.title}" recorded within ${Math.round(daysDiff)} days.`
+            });
+          }
+        }
+      }
+    }
+  }
+
+  return {
+    anomalies,
+    duplicates,
+    totalCount: anomalies.length + duplicates.length
+  };
+}
+
+/**
+ * Transparent Financial Health Assessment Engine (0 - 100 Score)
+ * Evaluates 4 core pillars: Savings Rate, Budget Adherence, Emergency Reserves, and Fixed Commitments.
+ */
+function calculateFinancialHealthScore(transactionsList, budgetsList = [], goalsList = [], recurringList = []) {
+  const totals = calculateTotals(transactionsList);
+  const income = totals.totalIncome;
+  const expenses = totals.totalExpenses;
+
+  // 1. Savings Rate Pillar (0 - 25 pts)
+  let savingsScore = 0;
+  const savingsRate = income > 0 ? ((income - expenses) / income) : 0;
+  if (savingsRate >= 0.25) savingsScore = 25;
+  else if (savingsRate >= 0.15) savingsScore = 20;
+  else if (savingsRate >= 0.05) savingsScore = 14;
+  else if (savingsRate >= 0.00) savingsScore = 8;
+  else savingsScore = 0;
+
+  // 2. Budget Adherence Pillar (0 - 25 pts)
+  let budgetScore = 15;
+  if (budgetsList.length > 0) {
+    const categoryTotals = {};
+    transactionsList.filter(t => t.type === 'expense').forEach(t => {
+      categoryTotals[t.category] = (categoryTotals[t.category] || 0) + t.amount;
+    });
+    const withinBudget = budgetsList.filter(b => (categoryTotals[b.category] || 0) <= b.limit).length;
+    budgetScore = Math.round((withinBudget / budgetsList.length) * 25);
+  }
+
+  // 3. Emergency Cushion & Goals (0 - 25 pts)
+  let emergencyScore = 6;
+  const totalGoalSaved = goalsList.reduce((sum, g) => sum + (g.currentAmount || 0), 0);
+  const baselineMonthlyExpense = Math.max(1000, expenses > 0 ? expenses : 15000);
+  const targetReserve = baselineMonthlyExpense * 3;
+  const coverageRatio = targetReserve > 0 ? (totalGoalSaved / targetReserve) : 0;
+  if (coverageRatio >= 1.0) emergencyScore = 25;
+  else if (coverageRatio >= 0.5) emergencyScore = 18;
+  else if (coverageRatio >= 0.2) emergencyScore = 12;
+  else emergencyScore = 6;
+
+  // 4. Recurring Fixed Load (0 - 25 pts)
+  let recurringScore = 20;
+  const activeRecurringSum = recurringList
+    .filter(r => r.active !== false)
+    .reduce((sum, r) => sum + r.amount, 0);
+  if (income > 0) {
+    const recurringRatio = activeRecurringSum / income;
+    if (recurringRatio <= 0.15) recurringScore = 25;
+    else if (recurringRatio <= 0.30) recurringScore = 20;
+    else if (recurringRatio <= 0.45) recurringScore = 12;
+    else recurringScore = 5;
+  }
+
+  const overallScore = Math.min(100, Math.max(0, savingsScore + budgetScore + emergencyScore + recurringScore));
+  let tier = 'Needs Focus';
+  let tierColor = '#EF4444';
+  if (overallScore >= 85) { tier = 'Exceptional'; tierColor = '#10B981'; }
+  else if (overallScore >= 70) { tier = 'Strong'; tierColor = '#3B82F6'; }
+  else if (overallScore >= 50) { tier = 'Moderate'; tierColor = '#F59E0B'; }
+
+  return {
+    overallScore,
+    tier,
+    tierColor,
+    pillars: [
+      { name: 'Savings Rate', score: savingsScore, max: 25, value: `${Math.round(savingsRate * 100)}%` },
+      { name: 'Budget Adherence', score: budgetScore, max: 25, value: `${budgetsList.length} active budgets` },
+      { name: 'Emergency Cushion', score: emergencyScore, max: 25, value: `${Math.round(coverageRatio * 100)}% of 3-mo reserve` },
+      { name: 'Fixed Commitments', score: recurringScore, max: 25, value: `₹${activeRecurringSum}/mo recurring` }
+    ]
+  };
+}
+
+/**
+ * Financial Digital Twin & What-If Simulation Engine
+ * Runs zero-mutation scenario projections for hypothetical income, rent, or spending changes.
+ */
+function simulateFinancialScenario(baseTotals, transactionsList, goalsList = [], params = {}) {
+  const incomeDelta = Number(params.incomeDelta || 0);
+  const fixedCostDelta = Number(params.fixedCostDelta || 0);
+  const discretionaryCutPercent = Number(params.discretionaryCutPercent || 0);
+  const oneOffPurchase = Number(params.oneOffPurchase || 0);
+  const extraGoalSavings = Number(params.extraGoalSavings || 0);
+
+  const currentIncome = baseTotals.totalIncome || 0;
+  const currentExpenses = baseTotals.totalExpenses || 0;
+
+  const discretionaryCategories = ['Food & Dining', 'Shopping', 'Entertainment'];
+  const baseDiscretionary = transactionsList
+    .filter(t => t.type === 'expense' && discretionaryCategories.includes(t.category))
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const trimmedDiscretionary = Math.round(baseDiscretionary * (1 - Math.max(0, Math.min(100, discretionaryCutPercent)) / 100));
+  const discretionarySavings = baseDiscretionary - trimmedDiscretionary;
+
+  const simulatedIncome = Math.max(0, currentIncome + incomeDelta);
+  const simulatedExpenses = Math.max(0, currentExpenses - discretionarySavings + fixedCostDelta);
+  const simulatedMonthlySurplus = simulatedIncome - simulatedExpenses;
+  const simulatedSavingsRate = simulatedIncome > 0 ? Math.round((simulatedMonthlySurplus / simulatedIncome) * 100) : 0;
+  const simulatedSafeDaily = Math.max(0, Math.round((simulatedMonthlySurplus - oneOffPurchase) / 30));
+
+  const goalProjections = goalsList.map(g => {
+    const remaining = Math.max(0, g.targetAmount - g.currentAmount);
+    const baselineMonthly = Math.max(500, Math.round(Math.max(0, simulatedMonthlySurplus) * 0.2));
+    const acceleratedMonthly = baselineMonthly + extraGoalSavings;
+
+    const baseMonths = remaining > 0 ? Math.ceil(remaining / baselineMonthly) : 0;
+    const accelMonths = remaining > 0 ? Math.ceil(remaining / acceleratedMonthly) : 0;
+    const monthsSaved = Math.max(0, baseMonths - accelMonths);
+
+    return {
+      id: g.id,
+      title: g.title,
+      remaining,
+      baseMonths,
+      accelMonths,
+      monthsSaved
+    };
+  });
+
+  return {
+    simulatedIncome,
+    simulatedExpenses,
+    simulatedMonthlySurplus,
+    simulatedSavingsRate,
+    simulatedSafeDaily,
+    discretionarySavings,
+    goalProjections,
+    narrative: `Under this simulation, your monthly surplus becomes ${formatCurrency(simulatedMonthlySurplus)} (${simulatedSavingsRate}% savings rate). Daily safe-to-spend adjusts to ~${formatCurrency(simulatedSafeDaily)}/day.`
+  };
+}
+
+/**
+ * Layer 4: Prescriptive Analytics Engine (What actions could help?)
+ * Generates prioritized, data-supported financial recommendations.
+ */
+function calculatePrescriptiveRecommendations(descriptiveTotals, diagnostic, predictive, budgetsList, goalsList, recurringList) {
+  const recommendations = [];
+
+  // 1. Budget deficit risk
+  if (predictive.riskLevel === 'high') {
+    recommendations.push({
+      id: 'rec-budget-deficit',
+      category: 'Cost Control',
+      title: 'Trim Discretionary Spending to Avoid Monthly Deficit',
+      impact: `Deficit prevention: approx ₹${Math.round(predictive.projectedMonthEnd - descriptiveTotals.totalIncome)}`,
+      action: 'Lower your daily discretionary burn to maintain a positive monthly balance.',
+      urgency: 'high'
+    });
+  }
+
+  // 2. High diagnostic cost driver
+  if (diagnostic.topDriver && diagnostic.topDriver.delta > 1500) {
+    recommendations.push({
+      id: 'rec-cost-driver',
+      category: 'Budgeting',
+      title: `Establish a Cap for ${diagnostic.topDriver.category}`,
+      impact: `Potential monthly saving: ₹${Math.round(diagnostic.topDriver.delta * 0.4)}`,
+      action: `${diagnostic.topDriver.category} increased by ${diagnostic.topDriver.percentChange}% (+₹${diagnostic.topDriver.delta.toLocaleString('en-IN')}). Setting a monthly limit will keep it bounded.`,
+      urgency: 'medium'
+    });
+  }
+
+  // 3. Goal acceleration opportunity
+  if (goalsList.length > 0 && descriptiveTotals.netBalance > 5000) {
+    const primaryGoal = goalsList[0];
+    const suggestedContribution = Math.round(descriptiveTotals.netBalance * 0.25);
+    recommendations.push({
+      id: 'rec-goal-boost',
+      category: 'Savings',
+      title: `Accelerate "${primaryGoal.title}" Goal`,
+      impact: `Target completion 1–2 months earlier`,
+      action: `Channel ₹${suggestedContribution.toLocaleString('en-IN')} of your current surplus toward ${primaryGoal.title}.`,
+      urgency: 'low'
+    });
+  }
+
+  // 4. Recurring commitments audit
+  const activeRecurring = recurringList.filter(r => r.active !== false);
+  if (activeRecurring.length >= 2) {
+    const totalRec = activeRecurring.reduce((sum, r) => sum + r.amount, 0);
+    recommendations.push({
+      id: 'rec-subs-audit',
+      category: 'Subscriptions',
+      title: 'Audit Active Subscriptions & Recurring Bills',
+      impact: `Total annual commitment: ₹${(totalRec * 12).toLocaleString('en-IN')}/year`,
+      action: `You have ${activeRecurring.length} active recurring commitments totaling ₹${totalRec.toLocaleString('en-IN')}/month.`,
+      urgency: 'low'
+    });
+  }
+
+  return recommendations;
+}
+
 /* ==============================================================================
    5. CURRENCY & DATE FORMATTING
    ============================================================================== */
@@ -377,7 +749,7 @@ function getTodayDateString() {
    6. DOM ELEMENT SELECTORS
    ============================================================================== */
 
-const DOM = {
+const DOM = (typeof document !== 'undefined') ? {
   // Navigation & Drawer
   mobileMenuToggle: document.getElementById('mobileMenuToggle'),
   mobileDrawer: document.getElementById('mobileDrawer'),
@@ -547,8 +919,48 @@ const DOM = {
   confirmDeleteBtn: document.getElementById('confirmDeleteBtn'),
 
   // Toast Container
-  toastContainer: document.getElementById('toastContainer')
-};
+  toastContainer: document.getElementById('toastContainer'),
+
+  // Financial Health Assessment
+  healthAssessmentCard: document.getElementById('healthAssessmentCard'),
+  healthScoreDial: document.getElementById('healthScoreDial'),
+  healthScoreValue: document.getElementById('healthScoreValue'),
+  healthTierBadge: document.getElementById('healthTierBadge'),
+  healthTierText: document.getElementById('healthTierText'),
+  healthPillarsGrid: document.getElementById('healthPillarsGrid'),
+
+  // Prescriptive Recommendations
+  prescriptiveRecList: document.getElementById('prescriptiveRecList'),
+
+  // Anomaly & Duplicate Review Alert
+  anomalyAlertCard: document.getElementById('anomalyAlertCard'),
+  anomalyAlertText: document.getElementById('anomalyAlertText'),
+  dismissAnomalyBannerBtn: document.getElementById('dismissAnomalyBannerBtn'),
+
+  // Diagnostic Shifts
+  diagnosticShiftsCard: document.getElementById('diagnosticShiftsCard'),
+  diagnosticShiftsTable: document.getElementById('diagnosticShiftsTable'),
+  diagnosticNarrative: document.getElementById('diagnosticNarrative'),
+
+  // Financial Digital Twin & Scenario Simulator
+  simulatorCard: document.getElementById('simulatorCard'),
+  simResetBtn: document.getElementById('simResetBtn'),
+  simIncomeSlider: document.getElementById('simIncomeSlider'),
+  simIncomeVal: document.getElementById('simIncomeVal'),
+  simRentSlider: document.getElementById('simRentSlider'),
+  simRentVal: document.getElementById('simRentVal'),
+  simTrimSlider: document.getElementById('simTrimSlider'),
+  simTrimVal: document.getElementById('simTrimVal'),
+  simPurchaseSlider: document.getElementById('simPurchaseSlider'),
+  simPurchaseVal: document.getElementById('simPurchaseVal'),
+  simOutcomeSurplus: document.getElementById('simOutcomeSurplus'),
+  simSurplusDelta: document.getElementById('simSurplusDelta'),
+  simOutcomeDaily: document.getElementById('simOutcomeDaily'),
+  simOutcomeSavingsRate: document.getElementById('simOutcomeSavingsRate'),
+  simOutcomeGoalRunway: document.getElementById('simOutcomeGoalRunway'),
+  simOutcomeGoalText: document.getElementById('simOutcomeGoalText'),
+  simNarrative: document.getElementById('simNarrative')
+} : {};
 
 /* ==============================================================================
    7. 7-VIEW CLIENT-SIDE ROUTER
@@ -1476,6 +1888,230 @@ function renderAnalyticsView() {
       </div>
     `;
   }
+
+  renderDiagnosticAnalytics();
+  renderWhatIfSimulation();
+}
+
+/* ==============================================================================
+   12B. FINANCIAL INTELLIGENCE & DIGITAL TWIN RENDERING
+   ============================================================================== */
+
+function renderFinancialHealthAssessment() {
+  if (!DOM.healthAssessmentCard || !DOM.healthScoreDial) return;
+
+  const health = calculateFinancialHealthScore(
+    state.transactions,
+    state.budgets,
+    state.goals,
+    state.recurring
+  );
+
+  DOM.healthScoreDial.style.setProperty('--health-score', health.overallScore);
+  DOM.healthScoreDial.style.setProperty('--health-color', health.tier.color);
+  if (DOM.healthScoreValue) DOM.healthScoreValue.textContent = health.overallScore;
+
+  if (DOM.healthTierBadge) {
+    DOM.healthTierBadge.style.color = health.tier.color;
+    DOM.healthTierBadge.style.borderColor = health.tier.color + '40';
+  }
+  if (DOM.healthTierText) DOM.healthTierText.textContent = health.tier.name;
+
+  if (DOM.healthPillarsGrid) {
+    DOM.healthPillarsGrid.innerHTML = health.pillars.map(p => `
+      <div class="pillar-item">
+        <div class="pillar-name-wrap">
+          <span style="font-weight: 600; color: var(--text-primary);">${escapeHTML(p.name)}</span>
+          <span class="pillar-score" style="color: ${p.score >= 70 ? '#10B981' : (p.score >= 40 ? '#F59E0B' : '#EF4444')};">${p.score}/100</span>
+        </div>
+        <div class="pillar-track" role="progressbar" aria-valuenow="${p.score}" aria-valuemin="0" aria-valuemax="100" aria-label="${escapeHTML(p.name)} score">
+          <div class="pillar-fill" style="width: ${p.score}%; background: ${p.score >= 70 ? '#10B981' : (p.score >= 40 ? '#F59E0B' : '#EF4444')};"></div>
+        </div>
+        <div class="pillar-desc">${escapeHTML(p.metric)} — ${escapeHTML(p.description)}</div>
+      </div>
+    `).join('');
+  }
+}
+
+function renderPrescriptiveRecommendations() {
+  if (!DOM.prescriptiveRecList) return;
+
+  const totals = calculateTotals(state.transactions);
+  const diagnostic = calculateDiagnosticAnalytics(state.transactions);
+  const predictive = calculatePredictiveAnalytics(state.transactions, state.recurring);
+  const recs = calculatePrescriptiveRecommendations(
+    totals,
+    diagnostic,
+    predictive,
+    state.budgets,
+    state.goals,
+    state.recurring
+  );
+
+  if (recs.length === 0) {
+    DOM.prescriptiveRecList.innerHTML = `
+      <div class="cosmic-empty-card" style="grid-column: 1 / -1; padding: 20px;">
+        <p class="cosmic-empty-text">No recommendations at this time. Your cashflow and budgeting targets are well-balanced!</p>
+      </div>
+    `;
+    return;
+  }
+
+  DOM.prescriptiveRecList.innerHTML = recs.map(rec => `
+    <div class="rec-card">
+      <div>
+        <div class="rec-head">
+          <span class="rec-category-tag">${escapeHTML(rec.category)}</span>
+          <span class="glass-tag ${rec.urgency === 'high' ? 'tag-danger' : (rec.urgency === 'medium' ? 'tag-warning' : 'tag-cyan')}">
+            ${rec.urgency.toUpperCase()}
+          </span>
+        </div>
+        <div class="rec-title">${escapeHTML(rec.title)}</div>
+        <p class="rec-action">${escapeHTML(rec.action)}</p>
+      </div>
+      <div class="rec-impact">
+        <i data-lucide="sparkles" class="btn-icon-xs"></i>
+        <span>${escapeHTML(rec.impact)}</span>
+      </div>
+    </div>
+  `).join('');
+
+  if (window.lucide && typeof window.lucide.createIcons === 'function') {
+    window.lucide.createIcons({ root: DOM.prescriptiveRecList });
+  }
+}
+
+function renderAnomalyAlertBanner() {
+  if (!DOM.anomalyAlertCard) return;
+
+  const results = calculateAnomaliesAndDuplicates(state.transactions);
+
+  if (results.totalFlagged > 0) {
+    DOM.anomalyAlertCard.style.display = 'block';
+    if (DOM.anomalyAlertText) {
+      DOM.anomalyAlertText.textContent = `${results.totalFlagged} item${results.totalFlagged > 1 ? 's' : ''} flagged for review: ${results.anomalies.length} statistical outlier${results.anomalies.length === 1 ? '' : 's'} (Z-score > 1.8), ${results.duplicates.length} duplicate entry pair${results.duplicates.length === 1 ? '' : 's'}.`;
+    }
+  } else {
+    DOM.anomalyAlertCard.style.display = 'none';
+  }
+}
+
+function renderDiagnosticAnalytics() {
+  if (!DOM.diagnosticShiftsCard) return;
+
+  const diagnostic = calculateDiagnosticAnalytics(state.transactions);
+
+  if (DOM.diagnosticNarrative) {
+    DOM.diagnosticNarrative.textContent = diagnostic.narrative;
+  }
+
+  if (DOM.diagnosticShiftsTable) {
+    if (diagnostic.categoryShifts.length === 0) {
+      DOM.diagnosticShiftsTable.innerHTML = `
+        <tr>
+          <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 18px;">
+            Need transaction history across multiple dates to compute shifts.
+          </td>
+        </tr>
+      `;
+    } else {
+      DOM.diagnosticShiftsTable.innerHTML = diagnostic.categoryShifts.map(s => {
+        const isUp = s.delta > 0;
+        const isZero = s.delta === 0;
+        const changeClass = isZero ? '' : (isUp ? 'shift-pos' : 'shift-neg');
+        const sign = isUp ? '+' : '';
+        return `
+          <tr>
+            <td style="font-weight: 600; color: var(--text-primary);">${escapeHTML(s.category)}</td>
+            <td>${formatCurrency(s.baselineSpend)}</td>
+            <td>${formatCurrency(s.currentSpend)}</td>
+            <td class="${changeClass}">${sign}${formatCurrency(s.delta)}</td>
+            <td class="${changeClass}">${sign}${s.percentChange}%</td>
+          </tr>
+        `;
+      }).join('');
+    }
+  }
+}
+
+let simState = {
+  incomeDelta: 0,
+  rentDelta: 0,
+  discretionaryTrimPct: 0,
+  majorPurchase: 0
+};
+
+function renderWhatIfSimulation() {
+  if (!DOM.simulatorCard) return;
+
+  const totals = calculateTotals(state.transactions);
+  const result = simulateFinancialScenario(totals, state.transactions, state.goals, simState);
+
+  // Update slider labels
+  if (DOM.simIncomeVal) DOM.simIncomeVal.textContent = (simState.incomeDelta >= 0 ? '+' : '') + formatCurrency(simState.incomeDelta);
+  if (DOM.simRentVal) DOM.simRentVal.textContent = (simState.rentDelta >= 0 ? '+' : '') + formatCurrency(simState.rentDelta);
+  if (DOM.simTrimVal) DOM.simTrimVal.textContent = simState.discretionaryTrimPct + '%';
+  if (DOM.simPurchaseVal) DOM.simPurchaseVal.textContent = formatCurrency(simState.majorPurchase);
+
+  // Update outcomes
+  if (DOM.simOutcomeSurplus) {
+    DOM.simOutcomeSurplus.textContent = formatCurrency(result.simulatedSurplus);
+    DOM.simOutcomeSurplus.style.color = result.simulatedSurplus >= 0 ? '#10B981' : '#EF4444';
+  }
+  if (DOM.simSurplusDelta) {
+    DOM.simSurplusDelta.textContent = (result.surplusDelta >= 0 ? '+' : '') + formatCurrency(result.surplusDelta) + ' vs baseline';
+  }
+  if (DOM.simOutcomeDaily) {
+    DOM.simOutcomeDaily.textContent = formatCurrency(result.simulatedDailyAllowance) + ' / day';
+  }
+  if (DOM.simOutcomeSavingsRate) {
+    DOM.simOutcomeSavingsRate.textContent = result.simulatedSavingsRate + '%';
+  }
+  if (DOM.simOutcomeGoalRunway) {
+    DOM.simOutcomeGoalRunway.textContent = result.goalImpact.runwayStatus;
+  }
+  if (DOM.simOutcomeGoalText) {
+    DOM.simOutcomeGoalText.textContent = result.goalImpact.details;
+  }
+  if (DOM.simNarrative) {
+    DOM.simNarrative.textContent = result.narrative;
+  }
+}
+
+function initWhatIfSimulatorListeners() {
+  if (!DOM.simulatorCard) return;
+
+  const updateSim = () => {
+    if (DOM.simIncomeSlider) simState.incomeDelta = parseFloat(DOM.simIncomeSlider.value) || 0;
+    if (DOM.simRentSlider) simState.rentDelta = parseFloat(DOM.simRentSlider.value) || 0;
+    if (DOM.simTrimSlider) simState.discretionaryTrimPct = parseFloat(DOM.simTrimSlider.value) || 0;
+    if (DOM.simPurchaseSlider) simState.majorPurchase = parseFloat(DOM.simPurchaseSlider.value) || 0;
+    renderWhatIfSimulation();
+  };
+
+  if (DOM.simIncomeSlider) DOM.simIncomeSlider.addEventListener('input', updateSim);
+  if (DOM.simRentSlider) DOM.simRentSlider.addEventListener('input', updateSim);
+  if (DOM.simTrimSlider) DOM.simTrimSlider.addEventListener('input', updateSim);
+  if (DOM.simPurchaseSlider) DOM.simPurchaseSlider.addEventListener('input', updateSim);
+
+  if (DOM.simResetBtn) {
+    DOM.simResetBtn.addEventListener('click', () => {
+      simState = { incomeDelta: 0, rentDelta: 0, discretionaryTrimPct: 0, majorPurchase: 0 };
+      if (DOM.simIncomeSlider) DOM.simIncomeSlider.value = 0;
+      if (DOM.simRentSlider) DOM.simRentSlider.value = 0;
+      if (DOM.simTrimSlider) DOM.simTrimSlider.value = 0;
+      if (DOM.simPurchaseSlider) DOM.simPurchaseSlider.value = 0;
+      renderWhatIfSimulation();
+      showToast('Simulation parameters reset to baseline.', 'info');
+    });
+  }
+
+  if (DOM.dismissAnomalyBannerBtn && DOM.anomalyAlertCard) {
+    DOM.dismissAnomalyBannerBtn.addEventListener('click', () => {
+      DOM.anomalyAlertCard.style.display = 'none';
+      showToast('Anomaly alert dismissed for current view.', 'info');
+    });
+  }
 }
 
 /* ==============================================================================
@@ -1648,6 +2284,26 @@ function localDeterministicFinancialAI(userQuery, context) {
     return `Your main target right now is **${g.title}** — you've saved ${formatCurrency(g.currentAmount)} of ${formatCurrency(g.targetAmount)} (${Math.round((g.currentAmount / g.targetAmount) * 100)}%).`;
   }
 
+  // Financial Health Score inquiry
+  if (q.includes('health') || q.includes('score')) {
+    const health = calculateFinancialHealthScore(state.transactions, state.budgets, state.goals, state.recurring);
+    return `Your Vaultly Financial Health Score is **${health.overallScore}/100** (${health.tier.name}). It's computed from 4 weighted pillars: Savings Rate, Budget Adherence, Emergency Reserves, and Recurring Commitments. Check the **Overview** dashboard for your full pillar breakdown!`;
+  }
+
+  // Anomaly & duplicate detection inquiry
+  if (q.includes('anomal') || q.includes('unusual') || q.includes('suspicious') || q.includes('duplicate')) {
+    const anomalies = calculateAnomaliesAndDuplicates(state.transactions);
+    if (anomalies.totalFlagged === 0) {
+      return "All clear! No unusual spending spikes (Z > 1.8) or duplicate transaction entries were detected in your records.";
+    }
+    return `I found **${anomalies.totalFlagged} items** flagged for review (${anomalies.anomalies.length} statistical outliers, ${anomalies.duplicates.length} duplicate pairs). You can review the flagged items in the **Transactions** view.`;
+  }
+
+  // Digital Twin & What-If simulation inquiry
+  if (q.includes('simulate') || q.includes('what if') || q.includes('scenario') || q.includes('digital twin')) {
+    return "You can use the **Financial Digital Twin & Scenario Simulator** in the Analytics tab! It lets you adjust income shocks, rent changes, discretionary expense trims, and major purchases with real-time feedback and zero mutation of your real records.";
+  }
+
   // Bank account inquiry
   if (q.includes('bank') && (q.includes('account') || q.includes('balance') || q.includes('how much'))) {
     return "Vaultly keeps your finances private on your device, so I can't peek into your live bank account. You can log income, expenses, and transfers right here in Vaultly anytime!";
@@ -1767,15 +2423,23 @@ async function handleAiChatSubmit(e) {
       content: m.text.replace(/<[^>]*>/g, '') // strip HTML formatting
     }));
 
-  // Prepare minimized grounded context
+  // Prepare grounded context enriched with financial intelligence
   const totals = calculateTotals(state.transactions);
   const breakdown = calculateCategoryBreakdown(state.transactions);
+  const health = calculateFinancialHealthScore(state.transactions, state.budgets, state.goals, state.recurring);
+  const diagnostic = calculateDiagnosticAnalytics(state.transactions);
+  const anomalyInfo = calculateAnomaliesAndDuplicates(state.transactions);
+
   const context = {
     totals,
     breakdown,
     transactionCount: state.transactions.length,
     budgetCount: state.budgets.length,
-    goalCount: state.goals.length
+    goalCount: state.goals.length,
+    healthScore: health.overallScore,
+    healthTier: health.tier.name,
+    topDriver: diagnostic.topDriver ? `${diagnostic.topDriver.category} (+₹${diagnostic.topDriver.delta})` : null,
+    anomalyCount: anomalyInfo.totalFlagged
   };
 
   let replyText = '';
@@ -1879,6 +2543,92 @@ function exportAllDataJSON() {
   a.click();
   document.body.removeChild(a);
   showToast('Downloaded complete JSON data backup.', 'success');
+}
+
+function exportFinancialReport() {
+  const totals = calculateTotals(state.transactions);
+  const safeSpend = calculateSafeToSpend(state.transactions, state.recurring);
+  const breakdown = calculateCategoryBreakdown(state.transactions);
+  const health = calculateFinancialHealthScore(state.transactions, state.budgets, state.goals, state.recurring);
+  const diagnostic = calculateDiagnosticAnalytics(state.transactions);
+  const predictive = calculatePredictiveAnalytics(state.transactions, state.recurring);
+  const recs = calculatePrescriptiveRecommendations(totals, diagnostic, predictive, state.budgets, state.goals, state.recurring);
+  const anomalies = calculateAnomaliesAndDuplicates(state.transactions);
+
+  const reportDate = new Date().toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  });
+
+  const lines = [
+    `# VAULTLY EXECUTIVE FINANCIAL DOSSIER`,
+    `Generated on: ${reportDate} | Platform: Vaultly AI Intelligence`,
+    `Client Privacy: 100% Client-Side Local Verification`,
+    ``,
+    `## 1. CASHFLOW EXECUTIVE SUMMARY`,
+    `- Total Income: ${formatCurrency(totals.totalIncome)} (${totals.incomeCount} sources)`,
+    `- Total Expenses: ${formatCurrency(totals.totalExpenses)} (${totals.expenseCount} entries)`,
+    `- Net Surplus: ${formatCurrency(totals.netBalance)}`,
+    `- Savings Retention Ratio: ${totals.totalIncome > 0 ? Math.round((totals.netBalance / totals.totalIncome) * 100) : 0}%`,
+    `- Safe-to-Spend Daily Allowance: ${formatCurrency(safeSpend.dailyAllowance)}/day (${safeSpend.daysRemaining} days remaining in cycle)`,
+    ``,
+    `## 2. FINANCIAL HEALTH SCORE: ${health.overallScore}/100 (${health.tier.name.toUpperCase()})`,
+    `Evaluated across 4 transparent quantitative pillars:`,
+    ...health.pillars.map(p => `- ${p.name}: ${p.score}/100 (${p.metric} — ${p.description})`),
+    ``,
+    `## 3. SPENDING BREAKDOWN BY CATEGORY`,
+    ...breakdown.map(b => `- ${b.category}: ${formatCurrency(b.total)} (${b.percentage}%)`),
+    ...(breakdown.length === 0 ? ['- No expense records logged yet.'] : []),
+    ``,
+    `## 4. DIAGNOSTIC MONTH-OVER-MONTH SHIFTS`,
+    `Attribution Narrative: ${diagnostic.narrative}`,
+    ...(diagnostic.categoryShifts.map(s => `- ${s.category}: Prior ${formatCurrency(s.baselineSpend)} → Current ${formatCurrency(s.currentSpend)} (Net Shift: ${s.delta >= 0 ? '+' : ''}${formatCurrency(s.delta)}, ${s.delta >= 0 ? '+' : ''}${s.percentChange}%)`)),
+    ``,
+    `## 5. PREDICTIVE OUTLOOK & MONTH-END FORECAST`,
+    `- Projected End-of-Month Outflow: ${formatCurrency(predictive.projectedEndSpend)}`,
+    `- Forecast Confidence Range: ${formatCurrency(predictive.confidenceBounds.lower)} — ${formatCurrency(predictive.confidenceBounds.upper)}`,
+    `- Forecast Assumptions: ${predictive.assumptions.join('; ')}`,
+    ``,
+    `## 6. ANOMALY & DATA INTEGRITY AUDIT`,
+    `- Statistical Outliers (Z > 1.8): ${anomalies.anomalies.length}`,
+    `- Near-Duplicate Pairs (within 48h): ${anomalies.duplicates.length}`,
+    `- Overall Flagged Status: ${anomalies.totalFlagged === 0 ? 'Optimal (No anomalies detected)' : `${anomalies.totalFlagged} items flagged for review`}`,
+    ``,
+    `## 7. PRESCRIPTIVE STRATEGIC RECOMMENDATIONS`,
+    ...recs.map(r => `### [${r.urgency.toUpperCase()}] ${r.title}\n- Category: ${r.category}\n- Action: ${r.action}\n- Expected Impact: ${r.impact}`),
+    ...(recs.length === 0 ? ['- Financial health and allocation are currently optimal!'] : []),
+    ``,
+    `## 8. SMART BUDGETS & ACTIVE GOALS`,
+    `Active Budgets:`,
+    ...state.budgets.map(b => `- ${b.category}: Monthly Limit ${formatCurrency(b.limit)}`),
+    ...(state.budgets.length === 0 ? ['- No category limits currently configured.'] : []),
+    ``,
+    `Active Savings Targets:`,
+    ...state.goals.map(g => `- ${g.title}: Saved ${formatCurrency(g.currentAmount || 0)} / ${formatCurrency(g.targetAmount)} (${Math.round(((g.currentAmount || 0) / g.targetAmount) * 100)}%)`),
+    ...(state.goals.length === 0 ? ['- No active goals registered.'] : []),
+    ``,
+    `---`,
+    `Vaultly Personal Finance — Your money. Your control.`
+  ];
+
+  const reportContent = lines.join('\n');
+  const blob = new Blob([reportContent], { type: 'text/markdown;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `vaultly_financial_report_${getTodayDateString()}.md`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+
+  showToast('Executive financial dossier downloaded. Opening print preview...', 'success');
+
+  if (typeof window !== 'undefined' && typeof window.print === 'function') {
+    setTimeout(() => {
+      window.print();
+    }, 400);
+  }
 }
 
 /* ==============================================================================
@@ -2036,11 +2786,25 @@ function renderOverview() {
   // Update Badges
   if (DOM.sidebarTxCount) DOM.sidebarTxCount.textContent = totals.incomeCount + totals.expenseCount;
   if (DOM.transactionCountBadge) DOM.transactionCountBadge.textContent = totals.incomeCount + totals.expenseCount;
+
+  // Render Intelligence Layer (Health Assessment & Prescriptions)
+  renderFinancialHealthAssessment();
+  renderPrescriptiveRecommendations();
 }
 
 function renderTransactionsList() {
   const container = DOM.transactionsList;
   if (!container) return;
+
+  renderAnomalyAlertBanner();
+
+  const anomalyData = calculateAnomaliesAndDuplicates(state.transactions);
+  const anomalyMap = new Map();
+  anomalyData.anomalies.forEach(a => anomalyMap.set(a.tx.id, a.reason));
+  anomalyData.duplicates.forEach(d => {
+    anomalyMap.set(d.tx1.id, d.reason);
+    anomalyMap.set(d.tx2.id, d.reason);
+  });
 
   const filtered = filterAndSortTransactions(
     state.transactions,
@@ -2071,6 +2835,8 @@ function renderTransactionsList() {
     const row = document.createElement('article');
     row.className = 'tx-row';
     const isIncome = tx.type === 'income';
+    const isAnomaly = anomalyMap.has(tx.id);
+    const anomalyReason = isAnomaly ? anomalyMap.get(tx.id) : '';
 
     row.innerHTML = `
       <div class="tx-left">
@@ -2081,6 +2847,7 @@ function renderTransactionsList() {
           <div class="tx-title-row">
             <h3 class="tx-title">${escapeHTML(tx.title)}</h3>
             <span class="glass-tag tx-category-tag">${escapeHTML(tx.category)}</span>
+            ${isAnomaly ? `<span class="anomaly-pill-badge" title="${escapeHTML(anomalyReason)}"><i data-lucide="alert-triangle" style="width: 12px; height: 12px;"></i> Flagged</span>` : ''}
           </div>
           <div class="tx-meta">
             <span>${formatDate(tx.date)}</span>
@@ -2104,6 +2871,10 @@ function renderTransactionsList() {
     `;
     container.appendChild(row);
   });
+
+  if (window.lucide && typeof window.lucide.createIcons === 'function') {
+    window.lucide.createIcons({ root: container });
+  }
 }
 
 function filterAndSortTransactions(list, typeFilter, query, categoryFilter, sortBy) {
@@ -2507,6 +3278,7 @@ function setupEventListeners() {
   }
 
   if (DOM.exportCsvBtn) DOM.exportCsvBtn.addEventListener('click', exportTransactionsCSV);
+  if (DOM.exportReportBtn) DOM.exportReportBtn.addEventListener('click', exportFinancialReport);
 
   // Budgets & Subscriptions Events
   if (DOM.openAddBudgetBtn) DOM.openAddBudgetBtn.addEventListener('click', () => openModal(DOM.budgetModal));
@@ -2690,6 +3462,9 @@ function setupEventListeners() {
       closeMobileDrawer();
     }
   });
+
+  // What-If Simulator and Anomaly Banner Listeners
+  initWhatIfSimulatorListeners();
 }
 
 /* ==============================================================================
@@ -2728,8 +3503,27 @@ function initApp() {
   console.info('[Vaultly] Initialized with Obsidian Spatial Architecture.');
 }
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initApp);
-} else {
-  initApp();
+if (typeof document !== 'undefined') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initApp);
+  } else {
+    initApp();
+  }
+}
+
+// Export calculation & intelligence engines for Node-based automated test runner
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    calculateTotals,
+    calculateCategoryBreakdown,
+    calculateSafeToSpend,
+    calculateSpendingForecast,
+    calculateDiagnosticAnalytics,
+    calculatePredictiveAnalytics,
+    calculateAnomaliesAndDuplicates,
+    calculateFinancialHealthScore,
+    simulateFinancialScenario,
+    calculatePrescriptiveRecommendations,
+    parseNaturalLanguageTransaction
+  };
 }

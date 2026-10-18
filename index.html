@@ -377,6 +377,58 @@
               </article>
             </section>
 
+            <!-- Financial Health Assessment & Recommendations -->
+            <section class="section-container" aria-label="Financial Health Assessment">
+              <article class="glass-card health-assessment-card" id="healthAssessmentCard">
+                <div class="card-spotlight" aria-hidden="true"></div>
+                <div class="card-refraction-shine" aria-hidden="true"></div>
+                <div class="health-score-header">
+                  <div class="panel-title-wrap">
+                    <div class="panel-icon-shield" aria-hidden="true"><i data-lucide="award"></i></div>
+                    <div>
+                      <h2 class="panel-title">Financial Health Assessment</h2>
+                      <p class="panel-subtitle">Transparent, data-backed resilience score across 4 pillars</p>
+                    </div>
+                  </div>
+                  <div class="health-gauge-wrap">
+                    <div class="health-dial" id="healthScoreDial" style="--health-score: 85; --health-color: #10B981;">
+                      <div class="health-dial-inner">
+                        <span class="health-dial-val" id="healthScoreValue">85</span>
+                        <span class="health-dial-denom">/100</span>
+                      </div>
+                    </div>
+                    <div>
+                      <span class="health-tier-badge" id="healthTierBadge">
+                        <i data-lucide="check-circle" class="btn-icon-xs" style="color: #10B981;"></i>
+                        <span id="healthTierText">Strong Resilience</span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 4 Pillars Grid -->
+                <div class="pillar-grid" id="healthPillarsGrid">
+                  <!-- Dynamically rendered via JS -->
+                </div>
+              </article>
+
+              <!-- Prescriptive Smart Recommendations -->
+              <div class="prescriptive-section" id="prescriptiveContainer">
+                <div class="panel-header" style="margin-top: 20px; margin-bottom: 12px; border-bottom: none; padding-bottom: 0;">
+                  <div class="panel-title-wrap">
+                    <div class="panel-icon-sparkle" aria-hidden="true"><i data-lucide="lightbulb"></i></div>
+                    <div>
+                      <h3 class="panel-title" style="font-size: 1rem;">Actionable Recommendations</h3>
+                      <p class="panel-subtitle">Grounded steps to optimize cash flow and reach goals faster</p>
+                    </div>
+                  </div>
+                </div>
+                <div class="rec-grid" id="prescriptiveRecList">
+                  <!-- Dynamically populated via JS -->
+                </div>
+              </div>
+            </section>
+
             <!-- 4. Safe to Spend & Financial Goal Previews -->
             <section class="overview-twin-grid" id="safe-spend-section" aria-label="Smart Financial Insights">
               <!-- Safe to Spend Card -->
@@ -568,6 +620,24 @@
                 <div class="card-spotlight" aria-hidden="true"></div>
                 <div class="card-refraction-shine" aria-hidden="true"></div>
                 
+                <!-- Anomaly & Duplicate Review Alert Bar -->
+                <div class="glass-card anomaly-alert-card" id="anomalyAlertCard" style="display: none; margin-bottom: 20px;">
+                  <div class="anomaly-alert-inner">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                      <i data-lucide="alert-triangle" class="btn-icon-sm" style="color: #F59E0B;"></i>
+                      <div>
+                        <span style="font-weight: 700; color: #FFFFFF; font-size: 0.9rem;">Unusual Activity Detected</span>
+                        <p style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px;" id="anomalyAlertText">
+                          0 potential anomalies or duplicates detected for review.
+                        </p>
+                      </div>
+                    </div>
+                    <button type="button" class="btn-ghost-glass btn-sm" id="dismissAnomalyBannerBtn">
+                      <span>Dismiss Alert</span>
+                    </button>
+                  </div>
+                </div>
+
                 <!-- Header & Toolbar -->
                 <div class="transactions-panel-header">
                   <div class="tx-title-cluster">
@@ -749,6 +819,140 @@
                 </div>
                 <div style="margin-top: 14px;" id="monthlyReportContent">
                   <!-- Dynamically populated via JS -->
+                </div>
+              </article>
+            </section>
+
+            <!-- Diagnostic Shifts & Cost Driver Attribution -->
+            <section class="section-container" style="margin-top: 24px;" aria-label="Diagnostic Cost Drivers">
+              <article class="glass-card" id="diagnosticShiftsCard">
+                <div class="card-spotlight" aria-hidden="true"></div>
+                <div class="card-refraction-shine" aria-hidden="true"></div>
+                <div class="panel-header">
+                  <div class="panel-title-wrap">
+                    <div class="panel-icon-box" aria-hidden="true"><i data-lucide="bar-chart-2"></i></div>
+                    <div>
+                      <h2 class="panel-title">Month-over-Month Shift Diagnostics</h2>
+                      <p class="panel-subtitle">Root-cause attribution of spending changes compared to prior 30-day baseline</p>
+                    </div>
+                  </div>
+                  <span class="glass-tag">Diagnostic Layer</span>
+                </div>
+                
+                <div class="sim-narrative-box" id="diagnosticNarrative" style="margin-top: 16px;">
+                  Calculating spending shift velocity across categories...
+                </div>
+
+                <div style="overflow-x: auto; margin-top: 14px;">
+                  <table class="diagnostic-shift-table">
+                    <thead>
+                      <tr>
+                        <th>Category</th>
+                        <th>Prior 30d</th>
+                        <th>Current 30d</th>
+                        <th>Net Shift (₹)</th>
+                        <th>% Change</th>
+                      </tr>
+                    </thead>
+                    <tbody id="diagnosticShiftsTable">
+                      <tr>
+                        <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 18px;">
+                          Need at least two spending cycles or prior records to map shifts.
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </article>
+            </section>
+
+            <!-- Financial Digital Twin & What-If Scenario Simulator -->
+            <section class="section-container" style="margin-top: 24px;" aria-label="What-If Scenario Simulator">
+              <article class="glass-card simulator-card" id="simulatorCard">
+                <div class="card-spotlight" aria-hidden="true"></div>
+                <div class="card-refraction-shine" aria-hidden="true"></div>
+                <div class="panel-header">
+                  <div class="panel-title-wrap">
+                    <div class="panel-icon-box" aria-hidden="true"><i data-lucide="sliders"></i></div>
+                    <div>
+                      <h2 class="panel-title">Financial Digital Twin & Scenario Simulator</h2>
+                      <p class="panel-subtitle">Stress-test income shocks, discretionary trims, rent fluctuations, or major expenses (Zero mutation of real records)</p>
+                    </div>
+                  </div>
+                  <button type="button" class="btn-ghost-glass btn-sm" id="simResetBtn">
+                    <i data-lucide="rotate-ccw" class="btn-icon-xs"></i>
+                    <span>Reset Simulation</span>
+                  </button>
+                </div>
+
+                <!-- Simulation Sliders -->
+                <div class="sim-controls-grid">
+                  <div class="sim-control-group">
+                    <div class="sim-control-label">
+                      <span>Monthly Income Adjustment</span>
+                      <span class="sim-control-val" id="simIncomeVal">₹0</span>
+                    </div>
+                    <input type="range" class="sim-slider" id="simIncomeSlider" min="-50000" max="50000" step="1000" value="0" aria-label="Monthly income adjustment slider">
+                    <span style="font-size: 0.68rem; color: var(--text-muted);">-₹50k (loss) to +₹50k (bonus/raise)</span>
+                  </div>
+
+                  <div class="sim-control-group">
+                    <div class="sim-control-label">
+                      <span>Fixed Living / Rent Delta</span>
+                      <span class="sim-control-val" id="simRentVal">₹0</span>
+                    </div>
+                    <input type="range" class="sim-slider" id="simRentSlider" min="-20000" max="30000" step="500" value="0" aria-label="Fixed living and rent delta slider">
+                    <span style="font-size: 0.68rem; color: var(--text-muted);">-₹20k (cheaper lease) to +₹30k (higher rent)</span>
+                  </div>
+
+                  <div class="sim-control-group">
+                    <div class="sim-control-label">
+                      <span>Trim Discretionary Spend</span>
+                      <span class="sim-control-val" id="simTrimVal">0%</span>
+                    </div>
+                    <input type="range" class="sim-slider" id="simTrimSlider" min="0" max="50" step="5" value="0" aria-label="Trim discretionary spend percentage slider">
+                    <span style="font-size: 0.68rem; color: var(--text-muted);">Cut non-essential spend by up to 50%</span>
+                  </div>
+
+                  <div class="sim-control-group">
+                    <div class="sim-control-label">
+                      <span>One-Off Major Purchase</span>
+                      <span class="sim-control-val" id="simPurchaseVal">₹0</span>
+                    </div>
+                    <input type="range" class="sim-slider" id="simPurchaseSlider" min="0" max="100000" step="2500" value="0" aria-label="One-off major purchase amount slider">
+                    <span style="font-size: 0.68rem; color: var(--text-muted);">Simulate laptop, vacation, or gadget expense</span>
+                  </div>
+                </div>
+
+                <!-- Simulation Live Outcomes -->
+                <div class="sim-outcomes-grid">
+                  <div class="sim-outcome-tile">
+                    <span class="sim-tile-label">Simulated Monthly Surplus</span>
+                    <div class="sim-tile-number" id="simOutcomeSurplus">₹0.00</div>
+                    <span class="sim-tile-sub" id="simSurplusDelta">Same as baseline</span>
+                  </div>
+
+                  <div class="sim-outcome-tile">
+                    <span class="sim-tile-label">Simulated Safe-to-Spend</span>
+                    <div class="sim-tile-number" id="simOutcomeDaily">₹0.00 / day</div>
+                    <span class="sim-tile-sub">Daily disposable velocity</span>
+                  </div>
+
+                  <div class="sim-outcome-tile">
+                    <span class="sim-tile-label">Simulated Savings Rate</span>
+                    <div class="sim-tile-number" id="simOutcomeSavingsRate">0.0%</div>
+                    <span class="sim-tile-sub">Retention efficiency</span>
+                  </div>
+
+                  <div class="sim-outcome-tile">
+                    <span class="sim-tile-label">Savings Goals Runway</span>
+                    <div class="sim-tile-number" id="simOutcomeGoalRunway" style="font-size: 1rem;">Stable</div>
+                    <span class="sim-tile-sub" id="simOutcomeGoalText">No impact on active targets</span>
+                  </div>
+                </div>
+
+                <div class="sim-narrative-box" id="simNarrative">
+                  Simulate adjustments to forecast your cashflow buffer and goal completion timeline in real time.
                 </div>
               </article>
             </section>

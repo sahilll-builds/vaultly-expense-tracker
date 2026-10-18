@@ -3207,6 +3207,355 @@ body {
   height: 18px;
 }
 
+/* ==============================================================================
+   16B. FINANCIAL INTELLIGENCE & DIGITAL TWIN COMPONENTS
+   ============================================================================== */
+
+/* Financial Health Assessment */
+.health-assessment-card {
+  margin-top: 20px;
+}
+
+.health-score-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.health-gauge-wrap {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.health-dial {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: conic-gradient(var(--health-color, #10B981) calc(var(--health-score, 0) * 1%), rgba(255, 255, 255, 0.08) 0deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.6);
+}
+
+.health-dial-inner {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+
+.health-dial-val {
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #FFFFFF;
+}
+
+.health-dial-denom {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+}
+
+.health-tier-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.pillar-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.pillar-item {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+}
+
+.pillar-name-wrap {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.78rem;
+  margin-bottom: 8px;
+}
+
+.pillar-score {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.pillar-track {
+  width: 100%;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.pillar-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #FFFFFF, rgba(255, 255, 255, 0.6));
+  transition: width 0.4s ease;
+}
+
+.pillar-desc {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 6px;
+}
+
+/* Prescriptive Recommendations */
+.prescriptive-section {
+  margin-top: 20px;
+}
+
+.rec-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.rec-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.rec-card:hover {
+  border-color: rgba(255, 255, 255, 0.25);
+  transform: translateY(-2px);
+}
+
+.rec-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.rec-category-tag {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+}
+
+.rec-title {
+  font-family: var(--font-heading);
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+.rec-action {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  margin-bottom: 12px;
+}
+
+.rec-impact {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #10B981;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Financial Digital Twin (What-If Simulator) */
+.simulator-card {
+  margin-top: 24px;
+}
+
+.sim-controls-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 18px;
+  margin-top: 16px;
+  padding: 18px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: var(--radius-md);
+}
+
+.sim-control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sim-control-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.sim-control-val {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.sim-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.12);
+  outline: none;
+  cursor: pointer;
+}
+
+.sim-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+}
+
+.sim-outcomes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.sim-outcome-tile {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-md);
+  padding: 14px;
+}
+
+.sim-tile-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.sim-tile-number {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #FFFFFF;
+  margin-top: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.sim-tile-sub {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.sim-narrative-box {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.03);
+  border-left: 3px solid #FFFFFF;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+/* Anomaly & Duplicate Alert Strip */
+.anomaly-alert-card {
+  margin-bottom: 20px;
+  border-left: 3px solid #F59E0B;
+  background: rgba(245, 158, 11, 0.04);
+}
+
+.anomaly-alert-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.anomaly-pill-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: rgba(245, 158, 11, 0.15);
+  color: #F59E0B;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+/* Diagnostic Shifts Table */
+.diagnostic-shift-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  margin-top: 14px;
+}
+
+.diagnostic-shift-table th,
+.diagnostic-shift-table td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.diagnostic-shift-table th {
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.shift-pos {
+  color: #EF4444;
+  font-weight: 600;
+}
+
+.shift-neg {
+  color: #10B981;
+  font-weight: 600;
+}
+
 /* --------------------------------------------------------------------------
    17. COMPREHENSIVE RESPONSIVE BREAKPOINT SYSTEM
    Strict support across:
@@ -3765,3 +4114,88 @@ body {
     transition: opacity 0.05s linear !important;
   }
 }
+
+/* ── 10. PRINT MEDIA STYLESHEET (EXECUTIVE FINANCIAL DOSSIER) ── */
+@media print {
+  body {
+    background: #FFFFFF !important;
+    color: #111111 !important;
+    font-size: 10pt;
+  }
+
+  .sidebar,
+  .mobile-header,
+  .mobile-bottom-nav,
+  .mobile-drawer,
+  .mobile-drawer-backdrop,
+  .btn-liquid-primary,
+  .btn-ghost-glass,
+  .btn-liquid-secondary,
+  .nebula-cloud,
+  .liquid-orb,
+  .stars-layer,
+  .glass-spotlight,
+  .toast-container,
+  .card-refraction-shine,
+  .card-spotlight,
+  .cinematic-loader,
+  #spendingForecastCard button,
+  #exportReportBtn {
+    display: none !important;
+  }
+
+  .app-container {
+    display: block !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .main-content {
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .view-panel {
+    display: block !important;
+  }
+
+  .view-panel:not(.active) {
+    display: none !important;
+  }
+
+  .glass-card {
+    background: #FAFAFA !important;
+    color: #111111 !important;
+    border: 1px solid #DDDDDD !important;
+    box-shadow: none !important;
+    break-inside: avoid;
+    margin-bottom: 16px !important;
+    padding: 16px !important;
+  }
+
+  .panel-title,
+  .hero-balance-val,
+  .sim-tile-number,
+  .health-dial-val {
+    color: #000000 !important;
+  }
+
+  .panel-subtitle,
+  .rec-action,
+  .pillar-desc,
+  .safe-spend-description {
+    color: #555555 !important;
+  }
+
+  .diagnostic-shift-table th,
+  .diagnostic-shift-table td {
+    border-bottom: 1px solid #E5E5E5 !important;
+    color: #111111 !important;
+  }
+
+  .diagnostic-shift-table th {
+    color: #666666 !important;
+  }
+}
+

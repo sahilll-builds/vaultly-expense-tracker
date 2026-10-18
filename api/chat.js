@@ -33,7 +33,8 @@ function isRateLimited(ip) {
 const FINANCE_KEYWORDS = [
   'spend', 'expense', 'income', 'budget', 'goal', 'balance',
   'saving', 'transaction', 'money', '₹', 'rupee', 'salary',
-  'cashflow', 'finance', 'afford'
+  'cashflow', 'finance', 'afford', 'health', 'score', 'anomaly',
+  'unusual', 'duplicate', 'simulate', 'twin', 'scenario'
 ];
 
 /**
@@ -97,6 +98,29 @@ function generateDeterministicAnswer(message, context = {}) {
 
   if (q.includes('goal') || q.includes('saving')) {
     return `You have ${context.goalCount || 0} active savings goals registered. Head to the Goals tab to track your progress or stash some funds!`;
+  }
+
+  // Financial Health Score inquiry
+  if (q.includes('health') || q.includes('score')) {
+    if (context.healthScore !== undefined) {
+      return `Your Vaultly Financial Health Score is ${context.healthScore}/100 (${context.healthTier || 'Active'}). It reflects your savings retention, budget adherence, emergency runway, and recurring commitments. Check the Overview tab for your full pillar breakdown!`;
+    }
+    return `Your Financial Health Score is computed across 4 weighted pillars on the Overview dashboard. Log your income and budgets to view your score!`;
+  }
+
+  // Anomaly & duplicate detection inquiry
+  if (q.includes('anomal') || q.includes('unusual') || q.includes('duplicate') || q.includes('suspicious')) {
+    if (context.anomalyCount !== undefined) {
+      return context.anomalyCount > 0 
+        ? `You have ${context.anomalyCount} transaction items flagged for review (statistical outliers or duplicate entries). Check the Transactions view to inspect them.`
+        : `No suspicious spikes or duplicate transactions detected in your verified records!`;
+    }
+    return `Vaultly automatically monitors for unusual spending spikes and duplicate records in your Transactions view.`;
+  }
+
+  // Digital Twin & What-If simulation inquiry
+  if (q.includes('simulate') || q.includes('what if') || q.includes('scenario') || q.includes('twin')) {
+    return `Head over to the Analytics tab to test out the Financial Digital Twin! You can simulate income changes, rent adjustments, spending cuts, or major purchases with real-time feedback and zero mutation of your records.`;
   }
 
   // --- General conversation fallbacks ---
@@ -199,7 +223,7 @@ The user's verified financial data (use exact numbers, never invent):
 - Top Category: ${topCat ? `${topCat.category} (₹${topCat.total}, ${topCat.percentage}%)` : 'None'}
 - Total Transactions: ${context?.transactionCount || 0}
 - Active Budgets: ${context?.budgetCount || 0}
-- Active Goals: ${context?.goalCount || 0}
+- Active Goals: ${context?.goalCount || 0}${context?.healthScore !== undefined ? `\n- Financial Health Score: ${context.healthScore}/100 (${context.healthTier || 'Evaluated'})` : ''}${context?.topDriver ? `\n- Key Spending Shift Driver: ${context.topDriver}` : ''}${context?.anomalyCount !== undefined ? `\n- Flagged Anomalies/Duplicates: ${context.anomalyCount}` : ''}
 
 Rules for financial responses:
 1. NEVER invent, guess, or hallucinate transactions or numbers that are not in the context.
