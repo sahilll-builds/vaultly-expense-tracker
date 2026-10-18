@@ -831,7 +831,7 @@
                 <div class="ai-chat-header">
                   <div>
                     <h2 class="panel-title">VAULTLY AI</h2>
-                    <p class="panel-subtitle">Grounded conversational intelligence for your personal finances</p>
+                    <p class="panel-subtitle">Your intelligent assistant for everything — finances, learning, coding, planning, and more</p>
                   </div>
                   <div style="display: flex; gap: 8px; align-items: center;">
                     <span class="glass-tag tag-emerald" id="aiStatusPill">
@@ -849,33 +849,33 @@
                 <div class="ai-messages-thread" id="aiChatThread" role="log" aria-live="polite">
                   <div class="ai-msg assistant">
                     <div class="ai-msg-bubble">
-                      <p><strong>Welcome to Vaultly AI.</strong> I analyze your verified transaction records to give you clear, accurate answers about your cashflow, budgets, and savings goals.</p>
-                      <p style="margin-top: 8px; font-size: 0.84rem; color: var(--text-secondary);">You can ask me questions like <em>"How much did I spend this month?"</em> or enter natural language transactions like <em>"Spent ₹350 on lunch today"</em>.</p>
+                      <p>Hey! 👋 I'm <strong>Vaultly AI</strong>. I'm here to help you make sense of your money, learn something new, work through an idea, or simply have a conversation. What's on your mind?</p>
                     </div>
                   </div>
                 </div>
 
                 <!-- Quick Suggested Prompts -->
                 <div class="ai-quick-prompts" id="aiPromptChips">
-                  <button type="button" class="ai-prompt-chip" data-prompt="How much did I spend this month?">How much did I spend this month?</button>
-                  <button type="button" class="ai-prompt-chip" data-prompt="What is my largest expense category?">What is my largest expense?</button>
-                  <button type="button" class="ai-prompt-chip" data-prompt="Calculate my safe daily spend allowance">Daily Safe-to-Spend</button>
-                  <button type="button" class="ai-prompt-chip" data-prompt="Summarize my financial health this month">Financial Health Summary</button>
+                  <button type="button" class="ai-prompt-chip" data-prompt="Help me understand something.">Help me understand something</button>
+                  <button type="button" class="ai-prompt-chip" data-prompt="Let's talk about my spending.">Let's talk about my spending</button>
+                  <button type="button" class="ai-prompt-chip" data-prompt="Teach me something new.">Teach me something new</button>
+                  <button type="button" class="ai-prompt-chip" data-prompt="Help me plan my week.">Help me plan my week</button>
+                  <button type="button" class="ai-prompt-chip" data-prompt="I have an idea. Let's work on it.">I have an idea. Let's work on it</button>
                 </div>
 
                 <!-- Chat & Natural Language Entry Bar -->
                 <form class="ai-input-bar" id="aiChatForm">
-                  <input 
-                    type="text" 
+                  <textarea 
                     id="aiChatInput" 
                     class="ai-text-input" 
-                    placeholder="Ask a financial question, or type: Spent ₹250 on lunch today..." 
+                    placeholder="Ask me anything, or log a transaction like: Spent ₹250 on lunch..." 
                     autocomplete="off"
+                    rows="1"
                     required
-                  >
+                  ></textarea>
                   <button type="button" id="aiParseBtn" class="btn-ghost-glass" title="Quickly convert natural language into a transaction">
                     <i data-lucide="plus-circle" class="btn-icon-xs" aria-hidden="true"></i>
-                    <span>Log Transaction</span>
+                    <span>Log Tx</span>
                   </button>
                   <button type="submit" class="btn-liquid-primary" id="aiSendBtn">
                     <i data-lucide="send" class="btn-icon-xs" aria-hidden="true"></i>

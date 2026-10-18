@@ -1,6 +1,7 @@
 // api/chat.js - Vercel Serverless Function for Vaultly AI Assistant
 // Multi-provider support (Gemini / OpenAI) with zero-leakage error handling
 // and guaranteed offline deterministic fallback.
+// General-purpose conversational AI with deep Vaultly finance integration.
 
 const rateLimitMap = new Map();
 
@@ -28,6 +29,34 @@ function isRateLimited(ip) {
   return record.count > maxRequests;
 }
 
+// Keywords that signal a finance-related conversation
+const FINANCE_KEYWORDS = [
+  'spend', 'expense', 'income', 'budget', 'goal', 'balance',
+  'saving', 'transaction', 'money', '₹', 'rupee', 'salary',
+  'cashflow', 'finance', 'afford'
+];
+
+/**
+ * Check if any of the last N messages (including current) are finance-related.
+ * @param {string} currentMessage - The latest user message
+ * @param {Array} history - Conversation history array
+ * @returns {boolean}
+ */
+function isFinanceRelated(currentMessage, history = []) {
+  const messagesToCheck = [currentMessage];
+
+  // Also check the last 2 messages from history (so total of 3 including current)
+  const recentHistory = history.slice(-2);
+  for (const msg of recentHistory) {
+    if (msg && msg.content) {
+      messagesToCheck.push(msg.content);
+    }
+  }
+
+  const combined = messagesToCheck.join(' ').toLowerCase();
+  return FINANCE_KEYWORDS.some(keyword => combined.includes(keyword));
+}
+
 function generateDeterministicAnswer(message, context = {}) {
   const q = String(message || '').toLowerCase();
   const totals = context.totals || { totalIncome: 0, totalExpenses: 0, netBalance: 0, expenseCount: 0 };
@@ -37,6 +66,8 @@ function generateDeterministicAnswer(message, context = {}) {
   const formatINR = (num) => {
     return '₹' + Number(num || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 });
   };
+
+  // --- Finance-related fallbacks (preserved exactly for test compatibility) ---
 
   if (q.includes('spend') && (q.includes('this month') || q.includes('how much') || q.includes('total'))) {
     return `According to your verified records, your total recorded expenses are ${formatINR(totals.totalExpenses)} across ${totals.expenseCount || 0} logged transactions.`;
@@ -68,7 +99,30 @@ function generateDeterministicAnswer(message, context = {}) {
     return `You have ${context.goalCount || 0} active savings goals registered. Check the Goals tab to track progress and contribute funds!`;
   }
 
-  return `Financial Overview: Total Income is ${formatINR(totals.totalIncome)}, Total Expenses are ${formatINR(totals.totalExpenses)}, leaving a Net Balance of ${formatINR(totals.netBalance)}. Feel free to ask about your top categories, spending habits, or safe daily allowance!`;
+  // --- General conversation fallbacks ---
+
+  // Greetings
+  if (/\b(hey|hi|hello|what'?s\s*up|howdy|yo)\b/i.test(q)) {
+    return `Hey there! 👋 I'm Vaultly AI, your personal assistant. I can help with general questions, learning, coding, planning, and of course your finances. What can I do for you?`;
+  }
+
+  // Bank account inquiry
+  if (q.includes('bank') && (q.includes('account') || q.includes('balance') || q.includes('how much'))) {
+    return "Vaultly is a privacy-first personal finance platform that stores all records client-side on your device. I don't have access to your live bank account or external banking credentials unless an official integration is configured. You can log income, expenses, and account transfers directly in Vaultly!";
+  }
+
+  // User correction
+  if (q.includes('no, i meant') || q.includes('i meant') || q.includes('not what i asked') || q.includes('that is wrong')) {
+    return "My apologies for misunderstanding! Could you clarify what you'd like to explore? I'm ready to help with anything from general questions to specific calculations.";
+  }
+
+  // Check if the message looks finance-related (even if not caught above)
+  if (FINANCE_KEYWORDS.some(keyword => q.includes(keyword))) {
+    return `Financial Overview: Total Income is ${formatINR(totals.totalIncome)}, Total Expenses are ${formatINR(totals.totalExpenses)}, leaving a Net Balance of ${formatINR(totals.netBalance)}. Feel free to ask about your top categories, spending habits, or safe daily allowance!`;
+  }
+
+  // General fallback for non-finance questions
+  return `I'm currently running in offline mode without AI connectivity. For the best experience with general questions, please ensure the GEMINI_API_KEY or OPENAI_API_KEY environment variable is configured. I can still help with your Vaultly financial data! Try asking about your spending, budgets, or savings goals.`;
 }
 
 module.exports = async function handler(req, res) {
@@ -92,27 +146,48 @@ module.exports = async function handler(req, res) {
   }
 
   // 3. Payload validation
-  const { message, context } = req.body || {};
+  const { message, context, history } = req.body || {};
   if (!message || typeof message !== 'string' || message.trim() === '') {
     return res.status(400).json({ error: 'Invalid request: "message" string is required.' });
   }
 
   const trimmedMessage = message.trim();
-  if (trimmedMessage.length > 2000) {
-    return res.status(400).json({ error: 'Message exceeds maximum length of 2000 characters.' });
+  if (trimmedMessage.length > 4000) {
+    return res.status(400).json({ error: 'Message exceeds maximum length of 4000 characters.' });
   }
+
+  // Normalize and limit conversation history to last 20 messages
+  const conversationHistory = Array.isArray(history) ? history.slice(-20) : [];
 
   // 4. Check for API keys
   const geminiKey = process.env.GEMINI_API_KEY;
   const openaiKey = process.env.OPENAI_API_KEY;
 
-  // Build grounded context prompt
+  // Determine if conversation is finance-related
+  const financeMode = isFinanceRelated(trimmedMessage, conversationHistory);
+
+  // Build system prompt — general-purpose with conditional finance context
   const totals = context?.totals || { totalIncome: 0, totalExpenses: 0, netBalance: 0 };
   const topCat = (context?.breakdown && context.breakdown[0]) ? context.breakdown[0] : null;
 
-  const systemInstructions = `You are Vaultly AI, an intelligent, concise, and helpful personal finance advisor.
-Answer the user's financial question directly, encouragingly, and concisely.
-Ground your answer ONLY in these verified user numbers:
+  let systemInstructions = `You are Vaultly AI, a friendly, intelligent, and versatile conversational assistant.
+You can help with any topic: general questions, science, learning, coding, writing, debugging, planning, brainstorming, and casual conversation.
+You also have deep, optional integration with the user's personal finance data in Vaultly.
+- When the user asks about their finances, spending, budgets, or goals, use the verified financial context provided.
+- For general questions (e.g. coding, explaining black holes, telling jokes, writing emails), answer directly, creatively, and naturally without forcing financial topics or numbers.
+- If asked about live bank accounts or external credentials, explain that Vaultly is a private, client-side app that does not connect directly to external banks without an official integration.
+- Maintain context across follow-up questions, understanding pronouns ("it", "that", "the second one") and references to previous messages.
+- If the user corrects you, acknowledge the correction gracefully and adjust your answer.
+- Be conversational, concise, and helpful. Use clean markdown formatting (bullet points, bold text, code blocks) when appropriate.
+- Never invent financial data. If financial context is provided, cite exact numbers.
+- Acknowledge uncertainty rather than fabricating facts.
+- Adapt response length to the question — punchy and warm for casual chat, structured and clear for complex topics.`;
+
+  // Conditionally append financial context only when relevant
+  if (financeMode && context) {
+    systemInstructions += `
+
+The user's verified financial data (use exact numbers, never invent):
 - Total Income: ₹${totals.totalIncome || 0}
 - Total Expenses: ₹${totals.totalExpenses || 0}
 - Net Balance: ₹${totals.netBalance || 0}
@@ -121,29 +196,54 @@ Ground your answer ONLY in these verified user numbers:
 - Active Budgets: ${context?.budgetCount || 0}
 - Active Goals: ${context?.goalCount || 0}
 
-Rules:
+Rules for financial responses:
 1. NEVER invent, guess, or hallucinate transactions or numbers that are not in the context.
 2. If the user asks how much they spent, reference the exact Total Expenses ₹${totals.totalExpenses || 0}.
 3. Always format currency using the ₹ symbol.
-4. Keep the response concise (1-3 brief paragraphs).
-5. If the user expresses intent to record a transaction (e.g., "spent 200 on coffee"), confirm the details and mention that it has been pre-filled for their review.`;
+4. If the user expresses intent to record a transaction (e.g., "spent 200 on coffee"), confirm the details and mention that it has been pre-filled for their review.`;
+  }
 
   // 5. Provider dispatch: Gemini first
   if (geminiKey) {
     try {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`;
+
+      // Build contents array with conversation history for Gemini
+      // Gemini uses role: 'user' and role: 'model'
+      const contents = [];
+
+      // Prepend system instructions as first user message context
+      // (Gemini doesn't have a dedicated system role in v1beta contents)
+      contents.push({
+        role: 'user',
+        parts: [{ text: systemInstructions }]
+      });
+      contents.push({
+        role: 'model',
+        parts: [{ text: 'Understood. I\'m ready to help as Vaultly AI.' }]
+      });
+
+      // Add conversation history
+      for (const msg of conversationHistory) {
+        if (msg && msg.content && (msg.role === 'user' || msg.role === 'assistant')) {
+          contents.push({
+            role: msg.role === 'assistant' ? 'model' : 'user',
+            parts: [{ text: msg.content }]
+          });
+        }
+      }
+
+      // Add the current user message
+      contents.push({
+        role: 'user',
+        parts: [{ text: trimmedMessage }]
+      });
+
       const payload = {
-        contents: [
-          {
-            role: 'user',
-            parts: [
-              { text: `${systemInstructions}\n\nUser Question: ${trimmedMessage}` }
-            ]
-          }
-        ],
+        contents,
         generationConfig: {
-          temperature: 0.3,
-          maxOutputTokens: 500
+          temperature: 0.7,
+          maxOutputTokens: 1500
         }
       };
 
@@ -175,14 +275,27 @@ Rules:
   if (openaiKey) {
     try {
       const url = 'https://api.openai.com/v1/chat/completions';
+
+      // Build messages array with conversation history for OpenAI
+      const messages = [
+        { role: 'system', content: systemInstructions }
+      ];
+
+      // Add conversation history
+      for (const msg of conversationHistory) {
+        if (msg && msg.content && (msg.role === 'user' || msg.role === 'assistant')) {
+          messages.push({ role: msg.role, content: msg.content });
+        }
+      }
+
+      // Add the current user message
+      messages.push({ role: 'user', content: trimmedMessage });
+
       const payload = {
         model: 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: systemInstructions },
-          { role: 'user', content: trimmedMessage }
-        ],
-        temperature: 0.3,
-        max_tokens: 500
+        messages,
+        temperature: 0.7,
+        max_tokens: 1500
       };
 
       const controller = new AbortController();

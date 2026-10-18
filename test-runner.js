@@ -341,7 +341,59 @@ async function testChatEndpoint() {
   assert(jsonCaptured.reply.includes('2,500') || jsonCaptured.reply.includes('2500'), 'Reply must cite verified total expense');
   assert.strictEqual(jsonCaptured.source, 'deterministic-fallback');
 
-  console.log('   ✔ PASS: api/chat handler verified for CORS, 405, 400, and grounded fallback output.');
+  // Test 10d: Greeting Test (must NOT return finance report)
+  await chatHandler({
+    method: 'POST',
+    body: { message: 'Hey', context: testContext },
+    headers: {}
+  }, mockPostRes);
+  assert.strictEqual(statusCaptured, 200);
+  assert(jsonCaptured.reply.toLowerCase().includes('hey') || jsonCaptured.reply.toLowerCase().includes('vaultly ai'), 'Greeting must be natural');
+  assert(!jsonCaptured.reply.includes('Financial Overview: Total Income'), 'Greeting must not be forced into a financial overview');
+
+  // Test 10e: General Knowledge / Non-Finance (must NOT return financial report)
+  await chatHandler({
+    method: 'POST',
+    body: { message: 'Explain black holes in simple words.', context: testContext },
+    headers: {}
+  }, mockPostRes);
+  assert.strictEqual(statusCaptured, 200);
+  assert(!jsonCaptured.reply.includes('Financial Overview: Total Income'), 'General questions must not force a financial summary');
+
+  // Test 10f: Missing live bank account data
+  await chatHandler({
+    method: 'POST',
+    body: { message: 'How much money do I have in my bank account?', context: testContext },
+    headers: {}
+  }, mockPostRes);
+  assert.strictEqual(statusCaptured, 200);
+  assert(jsonCaptured.reply.toLowerCase().includes('bank') || jsonCaptured.reply.toLowerCase().includes('client-side'), 'Must clarify no live bank access');
+
+  // Test 10g: User correction
+  await chatHandler({
+    method: 'POST',
+    body: { message: 'No, I meant something else.', context: testContext },
+    headers: {}
+  }, mockPostRes);
+  assert.strictEqual(statusCaptured, 200);
+  assert(jsonCaptured.reply.toLowerCase().includes('apologies') || jsonCaptured.reply.toLowerCase().includes('clarify'), 'Must acknowledge correction');
+
+  // Test 10h: Multi-turn history payload acceptance
+  await chatHandler({
+    method: 'POST',
+    body: {
+      message: 'Give me a beginner project.',
+      history: [
+        { role: 'user', content: 'Teach me Python.' },
+        { role: 'assistant', content: 'Python is a versatile programming language!' }
+      ],
+      context: testContext
+    },
+    headers: {}
+  }, mockPostRes);
+  assert.strictEqual(statusCaptured, 200);
+
+  console.log('   ✔ PASS: api/chat handler verified for CORS, 405, 400, grounded finance, natural greetings, bank clarity, corrections, and conversation history.');
 }
 
 testChatEndpoint().then(() => {

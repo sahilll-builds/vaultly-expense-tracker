@@ -143,7 +143,7 @@ const state = {
   aiMessages: [
     {
       sender: 'assistant',
-      text: 'Welcome to Vaultly AI. I analyze your verified records to give you clear, accurate answers about your cashflow, budgets, and savings goals. Ask me a question or enter a transaction like: "Spent ₹250 on lunch today".'
+      text: 'Hey! 👋 I\'m <strong>Vaultly AI</strong>. I\'m here to help you make sense of your money, learn something new, work through an idea, or simply have a conversation. What\'s on your mind?'
     }
   ]
 };
@@ -1487,29 +1487,130 @@ function renderAiMessages() {
   if (!thread) return;
 
   thread.innerHTML = '';
-  state.aiMessages.forEach(msg => {
+  state.aiMessages.forEach((msg, index) => {
     const div = document.createElement('div');
     div.className = `ai-msg ${msg.sender}`;
-    div.innerHTML = `<div class="ai-msg-bubble">${msg.text}</div>`;
+    const bubble = document.createElement('div');
+    bubble.className = 'ai-msg-bubble';
+
+    if (msg.sender === 'assistant') {
+      bubble.innerHTML = renderMarkdownSafe(msg.text);
+      if (!msg.text.includes('ai-thinking-indicator') && index > 0) {
+        const copyBtn = document.createElement('button');
+        copyBtn.type = 'button';
+        copyBtn.className = 'ai-copy-btn';
+        copyBtn.title = 'Copy response';
+        copyBtn.innerHTML = '<i data-lucide="copy" class="btn-icon-xs"></i>';
+        copyBtn.onclick = async () => {
+          try {
+            const cleanText = bubble.innerText.trim();
+            await navigator.clipboard.writeText(cleanText);
+            showToast('Response copied to clipboard', 'info');
+          } catch (e) {
+            showToast('Failed to copy text', 'warning');
+          }
+        };
+        bubble.appendChild(copyBtn);
+      }
+    } else {
+      bubble.textContent = msg.text;
+    }
+
+    div.appendChild(bubble);
     thread.appendChild(div);
   });
-  thread.scrollTop = thread.scrollHeight;
+
+  if (window.lucide && typeof window.lucide.createIcons === 'function') {
+    window.lucide.createIcons({ root: thread });
+  }
+
+  const isNearBottom = thread.scrollHeight - thread.scrollTop - thread.clientHeight < 160;
+  if (isNearBottom) {
+    thread.scrollTop = thread.scrollHeight;
+  }
 }
 
 /**
- * Local Deterministic Financial AI Engine (Guaranteed zero-failure offline fallback).
- * Answers user questions with verified arithmetic directly from application state.
+ * Safe markdown renderer for AI responses.
+ * Converts markdown formatting to sanitized HTML without executing raw scripts.
  */
-function localDeterministicFinancialAI(userQuery, context) {
-  const q = userQuery.toLowerCase();
-  const totals = context.totals;
-  const topCat = context.breakdown[0];
+function renderMarkdownSafe(text) {
+  if (!text) return '';
+  let html = text;
 
-  if (q.includes('spend') && (q.includes('this month') || q.includes('how much'))) {
-    return `According to your verified records, your total recorded expenses amount to **${formatCurrency(totals.totalExpenses)}** across ${totals.expenseCount} logged transactions.`;
+  if (html.includes('ai-thinking-indicator')) {
+    return html;
   }
 
-  if (q.includes('largest') || q.includes('top category') || q.includes('most')) {
+  // Escape HTML entities to prevent XSS
+  html = html
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+  // Code blocks (```lang ... ``` or ``` ... ```)
+  html = html.replace(/```(?:[a-zA-Z0-9_\-]+)?\n?([\s\S]*?)```/g, (match, code) => {
+    return `<pre class="ai-code-block"><code>${code.trim()}</code></pre>`;
+  });
+
+  // Inline code (`code`)
+  html = html.replace(/`([^`]+)`/g, '<code class="ai-inline-code">$1</code>');
+
+  // Bold (**text** or __text__)
+  html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/__([^_]+)__/g, '<strong>$1</strong>');
+
+  // Italic (*text*)
+  html = html.replace(/(?<![*])\*([^*]+)\*(?![*])/g, '<em>$1</em>');
+
+  // Headers (### Header)
+  html = html.replace(/^### (.*$)/gim, '<h4 style="margin: 8px 0 4px; font-size: 0.95rem; font-weight: 700;">$1</h4>');
+  html = html.replace(/^## (.*$)/gim, '<h3 style="margin: 10px 0 4px; font-size: 1rem; font-weight: 700;">$1</h3>');
+
+  // Unordered list items (- item or * item)
+  html = html.replace(/^[\*\-]\s+(.+)$/gm, '<li>$1</li>');
+
+  // Ordered list items (1. item)
+  html = html.replace(/^\d+\.\s+(.+)$/gm, '<li>$1</li>');
+
+  // Wrap consecutive <li> items in <ul>
+  html = html.replace(/(?:<li>.*?<\/li>\s*)+/gs, (match) => `<ul>${match}</ul>`);
+
+  // Paragraph line breaks
+  const paragraphs = html.split(/\n\n+/);
+  html = paragraphs.map(p => {
+    p = p.trim();
+    if (!p) return '';
+    if (p.startsWith('<pre') || p.startsWith('<ul') || p.startsWith('<h3') || p.startsWith('<h4')) {
+      return p;
+    }
+    return `<p>${p.replace(/\n/g, '<br>')}</p>`;
+  }).filter(Boolean).join('');
+
+  return html;
+}
+
+/**
+ * Local Deterministic Conversational & Financial AI Engine.
+ * Provides instant grounded answers for finance, and friendly offline responses for general queries.
+ */
+function localDeterministicFinancialAI(userQuery, context) {
+  const q = String(userQuery || '').toLowerCase().trim();
+  const totals = context?.totals || { totalIncome: 0, totalExpenses: 0, netBalance: 0, expenseCount: 0 };
+  const breakdown = Array.isArray(context?.breakdown) ? context.breakdown : [];
+  const topCat = breakdown[0];
+
+  // 1. General greetings & conversational openers
+  if (/^(hey|hi|hello|howdy|yo|sup|what'?s\s*up|good\s*(morning|afternoon|evening|day))[!?.]*$/i.test(q)) {
+    return "Hey! How's it going? 😊 What would you like to talk about today? I can help you with anything — general questions, learning, coding, writing, brainstorming, or exploring your Vaultly finances.";
+  }
+
+  // 2. Personal Finance Queries
+  if (q.includes('spend') && (q.includes('this month') || q.includes('how much') || q.includes('total'))) {
+    return `According to your verified records, your total recorded expenses amount to **${formatCurrency(totals.totalExpenses)}** across ${totals.expenseCount || 0} logged transactions.`;
+  }
+
+  if (q.includes('largest') || q.includes('top category') || q.includes('most') || q.includes('highest')) {
     if (topCat) {
       return `Your largest expense category is **${topCat.category}**, accounting for **${formatCurrency(topCat.total)}** (${topCat.percentage}% of all your recorded spending).`;
     }
@@ -1525,7 +1626,7 @@ function localDeterministicFinancialAI(userQuery, context) {
     return `Based on your remaining net balance and commitments, your daily Safe-to-Spend allowance is approximately **${formatCurrency(safe.dailyAllowance)}/day** for the remaining ${safe.daysRemaining} days of this month.`;
   }
 
-  if (q.includes('budget') || q.includes('limits')) {
+  if (q.includes('budget') || q.includes('limits') || q.includes('limit')) {
     if (state.budgets.length === 0) {
       return `You haven't created any category budgets yet. Navigate to the **Budgets** view to establish monthly caps!`;
     }
@@ -1533,7 +1634,7 @@ function localDeterministicFinancialAI(userQuery, context) {
     return `You have ${state.budgets.length} active budgets configured: ${list}.`;
   }
 
-  if (q.includes('goal') || q.includes('savings')) {
+  if (q.includes('goal') || q.includes('savings') || q.includes('saving')) {
     if (state.goals.length === 0) {
       return `No active savings goals found. Head over to the **Goals** tab to set a target for an emergency fund, laptop, or trip.`;
     }
@@ -1541,7 +1642,24 @@ function localDeterministicFinancialAI(userQuery, context) {
     return `Your primary goal is **${g.title}** (${formatCurrency(g.currentAmount)} saved toward ${formatCurrency(g.targetAmount)}, ${Math.round((g.currentAmount / g.targetAmount) * 100)}%).`;
   }
 
-  return `Based on your recorded transactions: Total Income is **${formatCurrency(totals.totalIncome)}**, Total Expenses are **${formatCurrency(totals.totalExpenses)}**, leaving a Net Balance of **${formatCurrency(totals.netBalance)}**. Ask me to compare categories, inspect budgets, or estimate your safe daily spend!`;
+  // Bank account inquiry
+  if (q.includes('bank') && (q.includes('account') || q.includes('balance') || q.includes('how much'))) {
+    return "Vaultly is a privacy-first personal finance platform that stores all records client-side on your device. I don't have access to your live bank account or external banking credentials unless an official integration is configured. You can log income, expenses, and account transfers directly in Vaultly!";
+  }
+
+  // User correction
+  if (q.includes('no, i meant') || q.includes('i meant') || q.includes('not what i asked') || q.includes('that is wrong')) {
+    return "My apologies for misunderstanding! Could you clarify what you'd like to explore? I'm ready to help with anything from general questions to specific calculations.";
+  }
+
+  // 3. Finance keywords fallback
+  const financeKeywords = ['money', 'income', 'expense', 'transaction', 'cash', 'rupee', '₹', 'salary', 'cashflow', 'afford', 'cost'];
+  if (financeKeywords.some(k => q.includes(k))) {
+    return `Based on your recorded transactions: Total Income is **${formatCurrency(totals.totalIncome)}**, Total Expenses are **${formatCurrency(totals.totalExpenses)}**, leaving a Net Balance of **${formatCurrency(totals.netBalance)}**. Ask me to compare categories, inspect budgets, or estimate your safe daily spend!`;
+  }
+
+  // 4. General query fallback when offline/no API key configured
+  return "I'm currently running in offline mode without AI connectivity. I can still help with your Vaultly financial data — try asking about your spending, balance, budgets, or savings goals! For full general-purpose conversations on any topic, please configure `GEMINI_API_KEY` or `OPENAI_API_KEY` in your environment.";
 }
 
 /**
@@ -1619,14 +1737,29 @@ async function handleAiChatSubmit(e) {
   if (!userText) return;
 
   input.value = '';
+  if (input.tagName === 'TEXTAREA') {
+    input.style.height = 'auto';
+  }
 
   // Append user message
-  state.aiMessages.push({ sender: 'user', text: escapeHTML(userText) });
+  state.aiMessages.push({ sender: 'user', text: userText });
   renderAiMessages();
 
   // Add temporary typing indicator
-  state.aiMessages.push({ sender: 'assistant', text: '<em>Analyzing financial records...</em>' });
+  state.aiMessages.push({
+    sender: 'assistant',
+    text: '<span class="ai-thinking-indicator"><span class="status-pulse-mono" aria-hidden="true"></span> Thinking...</span>'
+  });
   renderAiMessages();
+
+  // Build conversation history for multi-turn context (last 20 messages)
+  const history = state.aiMessages
+    .filter(m => !m.text.includes('ai-thinking-indicator'))
+    .slice(-20)
+    .map(m => ({
+      role: m.sender === 'user' ? 'user' : 'assistant',
+      content: m.text.replace(/<[^>]*>/g, '') // strip HTML formatting
+    }));
 
   // Prepare minimized grounded context
   const totals = calculateTotals(state.transactions);
@@ -1642,11 +1775,11 @@ async function handleAiChatSubmit(e) {
   let replyText = '';
 
   try {
-    // Attempt secure Vercel API endpoint
+    // Attempt secure serverless API endpoint
     const response = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: userText, context })
+      body: JSON.stringify({ message: userText, context, history })
     });
 
     if (response.ok) {
@@ -1656,12 +1789,11 @@ async function handleAiChatSubmit(e) {
       }
     }
   } catch (err) {
-    // Graceful offline fallback
     console.info('[Vaultly AI] Offline / API fallback active:', err.message);
   }
 
   if (!replyText) {
-    // Use verified local deterministic rules
+    // Use verified local deterministic conversational engine
     replyText = localDeterministicFinancialAI(userText, context);
   }
 
@@ -2463,10 +2595,11 @@ function setupEventListeners() {
       state.aiMessages = [
         {
           sender: 'assistant',
-          text: 'Conversation reset. What questions do you have about your personal finances or budgets?'
+          text: 'Hey! 👋 I\'m <strong>Vaultly AI</strong>. Fresh conversation started. What would you like to talk about?'
         }
       ];
       renderAiMessages();
+      showToast('Started new conversation', 'info');
     });
   }
 
@@ -2477,6 +2610,20 @@ function setupEventListeners() {
         const prompt = chip.getAttribute('data-prompt');
         handleAiPromptChipClick(prompt);
       }
+    });
+  }
+
+  // Textarea auto-resize and Enter/Shift+Enter key handling
+  if (DOM.aiChatInput && DOM.aiChatInput.tagName === 'TEXTAREA') {
+    DOM.aiChatInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        handleAiChatSubmit();
+      }
+    });
+    DOM.aiChatInput.addEventListener('input', () => {
+      DOM.aiChatInput.style.height = 'auto';
+      DOM.aiChatInput.style.height = Math.min(DOM.aiChatInput.scrollHeight, 120) + 'px';
     });
   }
 
