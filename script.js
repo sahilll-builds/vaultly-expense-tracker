@@ -1321,8 +1321,12 @@ function initSpatialCardTilt() {
     if (heroSpotlight) {
       heroCard.addEventListener('mousemove', e => {
         const rect = heroCard.getBoundingClientRect();
-        heroSpotlight.style.setProperty('--spotlight-x', `${e.clientX - rect.left}px`);
-        heroSpotlight.style.setProperty('--spotlight-y', `${e.clientY - rect.top}px`);
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        heroSpotlight.style.setProperty('--spotlight-x', `${x}px`);
+        heroSpotlight.style.setProperty('--spotlight-y', `${y}px`);
+        heroSpotlight.style.setProperty('--mouse-x', `${x}px`);
+        heroSpotlight.style.setProperty('--mouse-y', `${y}px`);
       });
     }
   }
@@ -1373,6 +1377,8 @@ function initSpatialCardTilt() {
       if (spotlight) {
         spotlight.style.setProperty('--spotlight-x', `${x}px`);
         spotlight.style.setProperty('--spotlight-y', `${y}px`);
+        spotlight.style.setProperty('--mouse-x', `${x}px`);
+        spotlight.style.setProperty('--mouse-y', `${y}px`);
       }
     });
 

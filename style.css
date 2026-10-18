@@ -553,7 +553,7 @@ button:active,
   inset: 0;
   border-radius: inherit;
   background: radial-gradient(
-    360px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    360px circle at var(--spotlight-x, var(--mouse-x, 50%)) var(--spotlight-y, var(--mouse-y, 50%)),
     rgba(255, 255, 255, 0.12) 0%,
     rgba(220, 245, 255, 0.05) 40%,
     transparent 75%
@@ -1279,6 +1279,37 @@ button:active,
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(255, 255, 255, 0.16);
   font-weight: 500;
+}
+
+/* Magic UI Animated Shiny Text for tags / status badges */
+.shiny-text {
+  background: linear-gradient(
+    110deg,
+    var(--text-secondary) 30%,
+    #FFFFFF 50%,
+    var(--text-secondary) 70%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shinyTextSweep 4s ease-in-out infinite;
+}
+
+@keyframes shinyTextSweep {
+  0%, 25% {
+    background-position: 200% 0;
+  }
+  75%, 100% {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shiny-text {
+    animation: none;
+    -webkit-text-fill-color: currentColor;
+  }
 }
 
 /* --------------------------------------------------------------------------
