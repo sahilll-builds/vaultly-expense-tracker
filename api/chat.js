@@ -70,59 +70,59 @@ function generateDeterministicAnswer(message, context = {}) {
   // --- Finance-related fallbacks (preserved exactly for test compatibility) ---
 
   if (q.includes('spend') && (q.includes('this month') || q.includes('how much') || q.includes('total'))) {
-    return `According to your verified records, your total recorded expenses are ${formatINR(totals.totalExpenses)} across ${totals.expenseCount || 0} logged transactions.`;
+    return `You've spent a total of ${formatINR(totals.totalExpenses)} across ${totals.expenseCount || 0} logged transactions so far.`;
   }
 
   if (q.includes('largest') || q.includes('top category') || q.includes('most') || q.includes('highest')) {
     if (topCat) {
-      return `Your largest expense category is ${topCat.category}, accounting for ${formatINR(topCat.total)} (${topCat.percentage || 0}% of all your recorded spending).`;
+      return `Looks like your biggest expense is ${topCat.category}, coming out to ${formatINR(topCat.total)} (${topCat.percentage || 0}% of your total spending).`;
     }
-    return `You haven't recorded any expenses yet to determine a top category.`;
+    return `You haven't recorded any expenses yet to find a top category.`;
   }
 
   if (q.includes('balance') || q.includes('net') || q.includes('saved')) {
-    return `Your current net balance is ${formatINR(totals.netBalance)} (Total Income: ${formatINR(totals.totalIncome)} − Total Expenses: ${formatINR(totals.totalExpenses)}).`;
+    return `Your net balance is sitting at ${formatINR(totals.netBalance)} right now (Total Income: ${formatINR(totals.totalIncome)} − Total Expenses: ${formatINR(totals.totalExpenses)}).`;
   }
 
   if (q.includes('safe') || q.includes('daily')) {
     const daysRemaining = Math.max(1, 30 - new Date().getDate());
     const remainingAfterExpenses = Math.max(0, totals.netBalance);
     const daily = Math.round(remainingAfterExpenses / daysRemaining);
-    return `Based on your remaining net balance, your estimated safe daily allowance is approximately ${formatINR(daily)}/day for the next ${daysRemaining} days of this month.`;
+    return `You're good to spend about ${formatINR(daily)}/day over the remaining ${daysRemaining} days this month.`;
   }
 
   if (q.includes('budget') || q.includes('limit')) {
-    return `You have ${context.budgetCount || 0} active budget categories configured. Track spending vs limits in the Budgets view!`;
+    return `You have ${context.budgetCount || 0} active budget categories configured. Check out the Budgets tab to track your spending!`;
   }
 
   if (q.includes('goal') || q.includes('saving')) {
-    return `You have ${context.goalCount || 0} active savings goals registered. Check the Goals tab to track progress and contribute funds!`;
+    return `You have ${context.goalCount || 0} active savings goals registered. Head to the Goals tab to track your progress or stash some funds!`;
   }
 
   // --- General conversation fallbacks ---
 
   // Greetings
   if (/\b(hey|hi|hello|what'?s\s*up|howdy|yo)\b/i.test(q)) {
-    return `Hey there! 👋 I'm Vaultly AI, your personal assistant. I can help with general questions, learning, coding, planning, and of course your finances. What can I do for you?`;
+    return `Hey! 👋 I'm Vaultly AI. What's on your mind? We can check your spending, brainstorm an idea, learn something new, or just chat.`;
   }
 
   // Bank account inquiry
   if (q.includes('bank') && (q.includes('account') || q.includes('balance') || q.includes('how much'))) {
-    return "Vaultly is a privacy-first personal finance platform that stores all records client-side on your device. I don't have access to your live bank account or external banking credentials unless an official integration is configured. You can log income, expenses, and account transfers directly in Vaultly!";
+    return "Vaultly is privacy-first and keeps everything stored client-side on your device, so I can't peek into your live bank account. You can log income, expenses, and account transfers right here anytime!";
   }
 
   // User correction
   if (q.includes('no, i meant') || q.includes('i meant') || q.includes('not what i asked') || q.includes('that is wrong')) {
-    return "My apologies for misunderstanding! Could you clarify what you'd like to explore? I'm ready to help with anything from general questions to specific calculations.";
+    return "Ah, my bad! Apologies for the confusion. Could you clarify what you'd like to explore instead? I'm all ears!";
   }
 
   // Check if the message looks finance-related (even if not caught above)
   if (FINANCE_KEYWORDS.some(keyword => q.includes(keyword))) {
-    return `Financial Overview: Total Income is ${formatINR(totals.totalIncome)}, Total Expenses are ${formatINR(totals.totalExpenses)}, leaving a Net Balance of ${formatINR(totals.netBalance)}. Feel free to ask about your top categories, spending habits, or safe daily allowance!`;
+    return `Here's a quick look at your numbers: Total Income is ${formatINR(totals.totalIncome)}, Total Expenses are ${formatINR(totals.totalExpenses)}, leaving a Net Balance of ${formatINR(totals.netBalance)}. Feel free to ask about your top categories, spending habits, or safe daily spend!`;
   }
 
   // General fallback for non-finance questions
-  return `I'm currently running in offline mode without AI connectivity. For the best experience with general questions, please ensure the GEMINI_API_KEY or OPENAI_API_KEY environment variable is configured. I can still help with your Vaultly financial data! Try asking about your spending, budgets, or savings goals.`;
+  return `I'm currently running in offline mode without an AI key connected. For open-ended conversation on any topic, configure GEMINI_API_KEY or OPENAI_API_KEY in your environment. I can still help with your Vaultly finances anytime though — ask about your spending, budgets, or savings goals!`;
 }
 
 module.exports = async function handler(req, res) {
@@ -171,17 +171,22 @@ module.exports = async function handler(req, res) {
   const topCat = (context?.breakdown && context.breakdown[0]) ? context.breakdown[0] : null;
 
   let systemInstructions = `You are Vaultly AI, a friendly, intelligent, and versatile conversational assistant.
-You can help with any topic: general questions, science, learning, coding, writing, debugging, planning, brainstorming, and casual conversation.
-You also have deep, optional integration with the user's personal finance data in Vaultly.
-- When the user asks about their finances, spending, budgets, or goals, use the verified financial context provided.
-- For general questions (e.g. coding, explaining black holes, telling jokes, writing emails), answer directly, creatively, and naturally without forcing financial topics or numbers.
-- If asked about live bank accounts or external credentials, explain that Vaultly is a private, client-side app that does not connect directly to external banks without an official integration.
-- Maintain context across follow-up questions, understanding pronouns ("it", "that", "the second one") and references to previous messages.
-- If the user corrects you, acknowledge the correction gracefully and adjust your answer.
-- Be conversational, concise, and helpful. Use clean markdown formatting (bullet points, bold text, code blocks) when appropriate.
-- Never invent financial data. If financial context is provided, cite exact numbers.
-- Acknowledge uncertainty rather than fabricating facts.
-- Adapt response length to the question — punchy and warm for casual chat, structured and clear for complex topics.`;
+Tone & Personality:
+- Be casual, warm, and natural — talk like a sharp, helpful friend, never like a stiff corporate bot or dry textbook.
+- Use natural conversational phrasing and contractions (I'm, you're, let's, don't).
+- Keep casual chatter lightweight and snappy. Save detailed explanations for when the user genuinely asks for them.
+- Avoid robotic clichés like "As an AI...", "Certainly!", "I am here to assist you with...", or "According to verified records...".
+
+Capabilities & Context:
+- You can help with any topic: casual talk, learning, coding, writing, debugging, planning, and brainstorming.
+- You ALSO have access to the user's personal finance data in Vaultly when they want to talk money.
+- When the user asks about their finances, spending, budgets, or goals, use the verified financial context provided below in an encouraging, clear, and approachable way.
+- For general questions (coding, science, jokes, advice), answer directly and naturally without forcing financial topics.
+- If asked about live bank accounts, explain casually that Vaultly is privacy-first and keeps everything client-side on their device, so it doesn't connect directly to external banks without an official integration.
+- Maintain context across follow-up questions, understanding pronouns ("it", "that", "the last one") and references to earlier messages.
+- If the user corrects you, acknowledge it gracefully: "Good catch!", "My bad!", etc.
+- Never invent financial data. When financial context is provided, cite exact numbers.
+- Adapt your response style to what the user needs — quick and friendly for casual chat, structured and clear for complex questions.`;
 
   // Conditionally append financial context only when relevant
   if (financeMode && context) {

@@ -143,7 +143,7 @@ const state = {
   aiMessages: [
     {
       sender: 'assistant',
-      text: 'Hey! 👋 I\'m <strong>Vaultly AI</strong>. I\'m here to help you make sense of your money, learn something new, work through an idea, or simply have a conversation. What\'s on your mind?'
+      text: "Hey! 👋 I'm **Vaultly AI**. What's on your mind? We can check your spending, brainstorm an idea, learn something cool, or just chat."
     }
   ]
 };
@@ -1542,6 +1542,12 @@ function renderMarkdownSafe(text) {
     return html;
   }
 
+  // Pre-convert benign HTML formatting tags to markdown so they don't leak as literal HTML entities
+  html = html
+    .replace(/<\/?(?:strong|b)>/gi, '**')
+    .replace(/<\/?(?:em|i)>/gi, '*')
+    .replace(/<br\s*\/?>/gi, '\n');
+
   // Escape HTML entities to prevent XSS
   html = html
     .replace(/&/g, '&amp;')
@@ -1602,64 +1608,64 @@ function localDeterministicFinancialAI(userQuery, context) {
 
   // 1. General greetings & conversational openers
   if (/^(hey|hi|hello|howdy|yo|sup|what'?s\s*up|good\s*(morning|afternoon|evening|day))[!?.]*$/i.test(q)) {
-    return "Hey! How's it going? 😊 What would you like to talk about today? I can help you with anything — general questions, learning, coding, writing, brainstorming, or exploring your Vaultly finances.";
+    return "Hey! How's it going? 👋 What's on your mind today? We can check your spending, brainstorm an idea, nerd out on something new, or just chat.";
   }
 
   // 2. Personal Finance Queries
   if (q.includes('spend') && (q.includes('this month') || q.includes('how much') || q.includes('total'))) {
-    return `According to your verified records, your total recorded expenses amount to **${formatCurrency(totals.totalExpenses)}** across ${totals.expenseCount || 0} logged transactions.`;
+    return `You've spent a total of **${formatCurrency(totals.totalExpenses)}** across ${totals.expenseCount || 0} transactions so far.`;
   }
 
   if (q.includes('largest') || q.includes('top category') || q.includes('most') || q.includes('highest')) {
     if (topCat) {
-      return `Your largest expense category is **${topCat.category}**, accounting for **${formatCurrency(topCat.total)}** (${topCat.percentage}% of all your recorded spending).`;
+      return `Looks like your biggest expense is **${topCat.category}**, coming out to **${formatCurrency(topCat.total)}** (${topCat.percentage}% of your spending).`;
     }
-    return `You haven't recorded any expenses yet to determine a top category.`;
+    return `You haven't logged any expenses yet to find a top category.`;
   }
 
   if (q.includes('balance') || q.includes('net') || q.includes('saved')) {
-    return `Your recorded net balance is **${formatCurrency(totals.netBalance)}** (Total Income: ${formatCurrency(totals.totalIncome)} − Total Expenses: ${formatCurrency(totals.totalExpenses)}).`;
+    return `Your net balance is sitting at **${formatCurrency(totals.netBalance)}** right now (Income: ${formatCurrency(totals.totalIncome)} − Expenses: ${formatCurrency(totals.totalExpenses)}).`;
   }
 
   if (q.includes('safe') || q.includes('daily')) {
     const safe = calculateSafeToSpend(state.transactions, state.recurring);
-    return `Based on your remaining net balance and commitments, your daily Safe-to-Spend allowance is approximately **${formatCurrency(safe.dailyAllowance)}/day** for the remaining ${safe.daysRemaining} days of this month.`;
+    return `You're good to spend about **${formatCurrency(safe.dailyAllowance)}/day** over the remaining ${safe.daysRemaining} days this month.`;
   }
 
   if (q.includes('budget') || q.includes('limits') || q.includes('limit')) {
     if (state.budgets.length === 0) {
-      return `You haven't created any category budgets yet. Navigate to the **Budgets** view to establish monthly caps!`;
+      return `No budgets set up yet! Head over to the **Budgets** view whenever you want to set a monthly cap on food, shopping, or bills.`;
     }
     const list = state.budgets.map(b => `${b.category}: ${formatCurrency(b.limit)}`).join(', ');
-    return `You have ${state.budgets.length} active budgets configured: ${list}.`;
+    return `You've got ${state.budgets.length} budgets running: ${list}. Looking solid!`;
   }
 
   if (q.includes('goal') || q.includes('savings') || q.includes('saving')) {
     if (state.goals.length === 0) {
-      return `No active savings goals found. Head over to the **Goals** tab to set a target for an emergency fund, laptop, or trip.`;
+      return `No savings goals yet! Hop into the **Goals** tab to start saving for a rainy day, vacation, or new tech.`;
     }
     const g = state.goals[0];
-    return `Your primary goal is **${g.title}** (${formatCurrency(g.currentAmount)} saved toward ${formatCurrency(g.targetAmount)}, ${Math.round((g.currentAmount / g.targetAmount) * 100)}%).`;
+    return `Your main target right now is **${g.title}** — you've saved ${formatCurrency(g.currentAmount)} of ${formatCurrency(g.targetAmount)} (${Math.round((g.currentAmount / g.targetAmount) * 100)}%).`;
   }
 
   // Bank account inquiry
   if (q.includes('bank') && (q.includes('account') || q.includes('balance') || q.includes('how much'))) {
-    return "Vaultly is a privacy-first personal finance platform that stores all records client-side on your device. I don't have access to your live bank account or external banking credentials unless an official integration is configured. You can log income, expenses, and account transfers directly in Vaultly!";
+    return "Vaultly keeps your finances private on your device, so I can't peek into your live bank account. You can log income, expenses, and transfers right here in Vaultly anytime!";
   }
 
   // User correction
   if (q.includes('no, i meant') || q.includes('i meant') || q.includes('not what i asked') || q.includes('that is wrong')) {
-    return "My apologies for misunderstanding! Could you clarify what you'd like to explore? I'm ready to help with anything from general questions to specific calculations.";
+    return "Ah, my bad! Apologies for the confusion. Could you clarify what you'd like to explore instead? I'm all ears!";
   }
 
   // 3. Finance keywords fallback
   const financeKeywords = ['money', 'income', 'expense', 'transaction', 'cash', 'rupee', '₹', 'salary', 'cashflow', 'afford', 'cost'];
   if (financeKeywords.some(k => q.includes(k))) {
-    return `Based on your recorded transactions: Total Income is **${formatCurrency(totals.totalIncome)}**, Total Expenses are **${formatCurrency(totals.totalExpenses)}**, leaving a Net Balance of **${formatCurrency(totals.netBalance)}**. Ask me to compare categories, inspect budgets, or estimate your safe daily spend!`;
+    return `Here's where things stand: Income is **${formatCurrency(totals.totalIncome)}**, Expenses are **${formatCurrency(totals.totalExpenses)}**, leaving a Net Balance of **${formatCurrency(totals.netBalance)}**. Want to check your top categories or safe daily spend?`;
   }
 
   // 4. General query fallback when offline/no API key configured
-  return "I'm currently running in offline mode without AI connectivity. I can still help with your Vaultly financial data — try asking about your spending, balance, budgets, or savings goals! For full general-purpose conversations on any topic, please configure `GEMINI_API_KEY` or `OPENAI_API_KEY` in your environment.";
+  return "I'm running in offline mode right now without an active AI key. You can still ask me anything about your Vaultly records — like spending, balance, budgets, or savings goals! For free-form conversations on any topic, configure `GEMINI_API_KEY` or `OPENAI_API_KEY` in your environment.";
 }
 
 /**
@@ -2595,7 +2601,7 @@ function setupEventListeners() {
       state.aiMessages = [
         {
           sender: 'assistant',
-          text: 'Hey! 👋 I\'m <strong>Vaultly AI</strong>. Fresh conversation started. What would you like to talk about?'
+          text: "Hey! Fresh chat started. 👋 What's on your mind today?"
         }
       ];
       renderAiMessages();
