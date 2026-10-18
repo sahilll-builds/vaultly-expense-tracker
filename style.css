@@ -533,6 +533,20 @@ body {
   box-shadow: var(--shadow-3d-lift);
 }
 
+/* ── TACTILE CLICK / PRESS STATE (Distinct from hover and cursor tilt) ── */
+button:active,
+.btn-liquid-primary:active,
+.btn-liquid-secondary:active,
+.btn-ghost-glass:active,
+.carousel-control-btn:active {
+  transform: scale(0.97);
+  transition: transform 0.08s ease;
+}
+
+.glass-card:not(.hero-balance-card):active {
+  transform: scale(0.99);
+}
+
 /* Water-White Spotlight Glow (Cursor Follower) */
 .card-spotlight {
   position: absolute;
@@ -2907,6 +2921,212 @@ body {
   background: rgba(255, 255, 255, 0.07);
   border-color: rgba(255, 255, 255, 0.16);
   transform: translateX(4px);
+}
+
+/* ==============================================================================
+   CAROUSEL 1: HORIZONTAL GOALS CAROUSEL (GOALS SECTION)
+   ============================================================================== */
+.goals-carousel-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.goals-carousel-viewport {
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+  padding: 4px 0;
+}
+
+.goals-carousel-track {
+  display: flex;
+  gap: 20px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding: 8px 2px 14px;
+}
+
+.goals-carousel-track::-webkit-scrollbar {
+  display: none;
+}
+
+.goals-carousel-track .goal-card {
+  flex: 0 0 calc(33.333% - 14px);
+  min-width: 290px;
+  max-width: 420px;
+  scroll-snap-align: start;
+  scroll-snap-stop: normal;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  transition: transform var(--transition-normal), border-color var(--transition-normal), box-shadow var(--transition-normal);
+}
+
+@media (max-width: 1100px) {
+  .goals-carousel-track .goal-card {
+    flex: 0 0 calc(50% - 10px);
+    min-width: 280px;
+  }
+}
+
+@media (max-width: 640px) {
+  .goals-carousel-track .goal-card {
+    flex: 0 0 100%;
+    min-width: 250px;
+  }
+}
+
+.goals-carousel-indicators {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 10px;
+}
+
+.carousel-indicator-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.20);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+  border: none;
+  padding: 0;
+}
+
+.carousel-indicator-dot.active {
+  background: #FFFFFF;
+  width: 24px;
+  border-radius: var(--radius-pill);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
+}
+
+.carousel-btn-group {
+  display: flex;
+  gap: 6px;
+}
+
+.btn-icon-only {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+}
+
+/* ==============================================================================
+   CAROUSEL 2: VERTICAL AI INSIGHTS CAROUSEL (OVERVIEW PAGE)
+   ============================================================================== */
+.vertical-carousel-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.carousel-vertical-nav-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.carousel-counter-badge {
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  padding: 3px 9px;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--glass-border);
+  letter-spacing: 0.05em;
+}
+
+.ai-insights-vertical-viewport {
+  width: 100%;
+  height: 220px;
+  overflow: hidden;
+  position: relative;
+  margin-top: 14px;
+}
+
+.ai-insights-vertical-track {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  height: 100%;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.ai-insights-vertical-track::-webkit-scrollbar {
+  display: none;
+}
+
+.insight-slide {
+  flex: 0 0 100%;
+  min-height: 100%;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 18px 22px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.insight-slide:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.insight-slide-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.insight-slide-tag {
+  font-size: 0.70rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.insight-slide-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-top: 4px;
+}
+
+.insight-slide-desc {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-top: 6px;
+}
+
+.insight-slide-metric {
+  font-family: var(--font-mono);
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-top: 6px;
 }
 
 /* BUDGETS, GOALS & RECURRING */

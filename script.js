@@ -855,8 +855,12 @@ const DOM = (typeof document !== 'undefined') ? {
   closeRecurringModalBtn: document.getElementById('closeRecurringModalBtn'),
   cancelRecurringBtn: document.getElementById('cancelRecurringBtn'),
 
-  // Goals
+  // Goals & Horizontal Carousel (Carousel 1)
+  goalsCarouselViewport: document.getElementById('goalsCarouselViewport'),
   goalsGrid: document.getElementById('goalsGrid'),
+  goalsCarouselPrevBtn: document.getElementById('goalsCarouselPrevBtn'),
+  goalsCarouselNextBtn: document.getElementById('goalsCarouselNextBtn'),
+  goalsCarouselIndicators: document.getElementById('goalsCarouselIndicators'),
   openAddGoalBtn: document.getElementById('openAddGoalBtn'),
   goalModal: document.getElementById('goalModal'),
   goalForm: document.getElementById('goalForm'),
@@ -865,6 +869,12 @@ const DOM = (typeof document !== 'undefined') ? {
   goalDateInput: document.getElementById('goalDateInput'),
   closeGoalModalBtn: document.getElementById('closeGoalModalBtn'),
   cancelGoalBtn: document.getElementById('cancelGoalBtn'),
+
+  // Vertical AI Insights Carousel (Carousel 2)
+  aiInsightPrevBtn: document.getElementById('aiInsightPrevBtn'),
+  aiInsightNextBtn: document.getElementById('aiInsightNextBtn'),
+  aiInsightsCounter: document.getElementById('aiInsightsCounter'),
+  aiInsightsViewport: document.getElementById('aiInsightsViewport'),
 
   // Contribution Modal
   contributionModal: document.getElementById('contributionModal'),
@@ -1297,15 +1307,24 @@ function initSpatialBalanceOrb() {
 
 function initSpatialCardTilt() {
   const prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (prefersReduced || window.innerWidth < 1024) return;
+  const isTouchDevice = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+  if (prefersReduced || isTouchDevice || window.innerWidth < 1024) return;
 
-  // Note: .hero-balance-card is deliberately excluded so the Hero Net Balance section remains static and fixed in place
+  // Note: .hero-balance-card is deliberately excluded from tilt targets so the Hero Net Balance section remains static
   const targetSelector = '.metric-card, .safe-spend-card, .insights-card, .goal-preview-card, .spending-dist-card, .overview-recent-card, .budget-card, .goal-card';
   const cards = document.querySelectorAll(targetSelector);
 
   const heroCard = document.getElementById('heroBalanceCard');
   if (heroCard) {
     heroCard.style.transform = 'none';
+    const heroSpotlight = heroCard.querySelector('.card-spotlight');
+    if (heroSpotlight) {
+      heroCard.addEventListener('mousemove', e => {
+        const rect = heroCard.getBoundingClientRect();
+        heroSpotlight.style.setProperty('--spotlight-x', `${e.clientX - rect.left}px`);
+        heroSpotlight.style.setProperty('--spotlight-y', `${e.clientY - rect.top}px`);
+      });
+    }
   }
 
   cards.forEach(card => {
@@ -1708,28 +1727,46 @@ function handleRecurringFormSubmit(e) {
    11. FINANCIAL GOALS & SAVINGS PLANNER
    ============================================================================== */
 
+let goalsCarouselListenersAttached = false;
+
 function renderGoalsView() {
   const grid = DOM.goalsGrid;
   if (!grid) return;
 
   grid.innerHTML = '';
+  const indicators = DOM.goalsCarouselIndicators;
+  const prevBtn = DOM.goalsCarouselPrevBtn;
+  const nextBtn = DOM.goalsCarouselNextBtn;
+
   if (state.goals.length === 0) {
     grid.innerHTML = `
-      <div class="cosmic-empty-card" style="grid-column: 1 / -1;">
+      <div class="cosmic-empty-card" style="width: 100%; min-width: 280px;">
         <div class="cosmic-empty-halo"><i data-lucide="target"></i></div>
         <h3 class="cosmic-empty-heading">No financial goals yet</h3>
         <p class="cosmic-empty-text">Create savings targets for an emergency fund, travel, or hardware.</p>
       </div>
     `;
+    if (indicators) indicators.innerHTML = '';
+    if (prevBtn) { prevBtn.disabled = true; prevBtn.style.opacity = '0.35'; }
+    if (nextBtn) { nextBtn.disabled = true; nextBtn.style.opacity = '0.35'; }
+    if (window.lucide && typeof window.lucide.createIcons === 'function') {
+      window.lucide.createIcons({ root: grid });
+    }
     return;
   }
 
-  state.goals.forEach(goal => {
+  if (prevBtn) { prevBtn.disabled = false; prevBtn.style.opacity = '1'; }
+  if (nextBtn) { nextBtn.disabled = false; nextBtn.style.opacity = '1'; }
+
+  state.goals.forEach((goal, i) => {
     const percent = Math.min(100, Math.round((goal.currentAmount / goal.targetAmount) * 100));
     const remaining = Math.max(0, goal.targetAmount - goal.currentAmount);
 
     const card = document.createElement('article');
     card.className = 'glass-card goal-card';
+    card.setAttribute('role', 'article');
+    card.setAttribute('aria-label', `Goal ${i + 1} of ${state.goals.length}: ${goal.title}`);
+    card.setAttribute('data-goal-index', i);
     card.innerHTML = `
       <div class="goal-head">
         <div>
@@ -1760,6 +1797,79 @@ function renderGoalsView() {
     `;
     grid.appendChild(card);
   });
+
+  // Render indicator dots
+  if (indicators) {
+    indicators.innerHTML = state.goals.map((g, i) =>
+      `<button type="button" class="carousel-indicator-dot ${i === 0 ? 'active' : ''}" data-goal-index="${i}" aria-label="Scroll to goal ${i + 1}: ${escapeHTML(g.title)}"></button>`
+    ).join('');
+  }
+
+  if (window.lucide && typeof window.lucide.createIcons === 'function') {
+    window.lucide.createIcons({ root: grid });
+  }
+
+  // Attach carousel listeners once
+  if (!goalsCarouselListenersAttached) {
+    goalsCarouselListenersAttached = true;
+
+    // Scroll listener to update active dot
+    grid.addEventListener('scroll', () => {
+      const card = grid.querySelector('.goal-card');
+      const cardWidth = card ? card.getBoundingClientRect().width + 20 : 310;
+      const activeIdx = Math.min(state.goals.length - 1, Math.max(0, Math.round(grid.scrollLeft / cardWidth)));
+      if (indicators) {
+        const dots = indicators.querySelectorAll('.carousel-indicator-dot');
+        dots.forEach((dot, idx) => {
+          dot.classList.toggle('active', idx === activeIdx);
+        });
+      }
+    }, { passive: true });
+
+    // Indicator dot clicks
+    if (indicators) {
+      indicators.addEventListener('click', e => {
+        const dot = e.target.closest('.carousel-indicator-dot');
+        if (dot) {
+          const idx = parseInt(dot.getAttribute('data-goal-index'), 10);
+          const card = grid.children[idx];
+          if (card) {
+            card.scrollIntoView({ behavior: 'smooth', inline: 'start', block: 'nearest' });
+          }
+        }
+      });
+    }
+
+    // Prev / Next button clicks
+    if (prevBtn) {
+      prevBtn.addEventListener('click', () => {
+        const card = grid.querySelector('.goal-card');
+        const scrollAmount = card ? card.getBoundingClientRect().width + 20 : 310;
+        grid.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+      });
+    }
+
+    if (nextBtn) {
+      nextBtn.addEventListener('click', () => {
+        const card = grid.querySelector('.goal-card');
+        const scrollAmount = card ? card.getBoundingClientRect().width + 20 : 310;
+        grid.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+      });
+    }
+
+    // Keyboard navigation (ArrowLeft / ArrowRight)
+    grid.addEventListener('keydown', e => {
+      const card = grid.querySelector('.goal-card');
+      const scrollAmount = card ? card.getBoundingClientRect().width + 20 : 310;
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        grid.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        grid.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+      }
+    });
+  }
 }
 
 function handleGoalFormSubmit(e) {
@@ -2592,6 +2702,178 @@ function exportFinancialReport() {
    15. DASHBOARD RENDERING & OVERVIEW
    ============================================================================== */
 
+let aiCarouselScrollHandlerAttached = false;
+
+function renderVerticalAiInsightsCarousel() {
+  const container = DOM.insightsBody;
+  if (!container) return;
+
+  const totals = calculateTotals(state.transactions);
+  const safeSpend = calculateSafeToSpend(state.transactions, state.recurring);
+  const breakdown = calculateCategoryBreakdown(state.transactions);
+  const anomalyData = calculateAnomaliesAndDuplicates(state.transactions);
+  const recurringActive = (state.recurring || []).filter(r => r.active !== false);
+  const activeGoal = (state.goals || []).find(g => (g.currentAmount || 0) < g.targetAmount) || (state.goals || [])[0];
+
+  const slides = [];
+
+  // Slide 1: Top Expenditure Concentration
+  if (breakdown.length > 0) {
+    const top = breakdown[0];
+    const highConcentration = top.percentage > 35;
+    slides.push({
+      tag: 'TOP EXPENDITURE',
+      tagClass: highConcentration ? 'tag-warning' : 'tag-neutral',
+      headline: `${escapeHTML(top.category)}: ${formatCurrency(top.total)}`,
+      detail: `${top.percentage}% of all recorded spending is concentrated in ${escapeHTML(top.category)}.`,
+      footer: highConcentration ? 'High concentration risk. Consider setting a category ceiling.' : 'Spend allocation is well-balanced across categories.'
+    });
+  } else {
+    slides.push({
+      tag: 'SPENDING PATTERNS',
+      tagClass: 'tag-neutral',
+      headline: 'No Outflows Recorded',
+      detail: 'Log daily expenses to surface category concentrations and cost drivers.',
+      footer: 'Grounded intelligence activates with your first transaction.'
+    });
+  }
+
+  // Slide 2: Safe-to-Spend Daily Liquidity
+  slides.push({
+    tag: 'SAFE LIQUIDITY',
+    tagClass: safeSpend.dailyAllowance > 500 ? 'tag-emerald' : 'tag-warning',
+    headline: `${formatCurrency(safeSpend.dailyAllowance)} / day`,
+    detail: `Calculated daily safe spending limit across ${safeSpend.daysRemaining} day${safeSpend.daysRemaining === 1 ? '' : 's'} remaining in the cycle.`,
+    footer: safeSpend.dailyAllowance > 500 ? 'Liquid runway is robust. Fixed commitments fully covered.' : 'Pacing velocity tight. Minimize discretionary card spending.'
+  });
+
+  // Slide 3: Earned Income Retention Rate
+  if (totals.totalIncome > 0) {
+    const retention = Math.max(0, Math.round((totals.netBalance / totals.totalIncome) * 100));
+    const retentionClass = retention >= 30 ? 'tag-emerald' : (retention > 0 ? 'tag-neutral' : 'tag-danger');
+    slides.push({
+      tag: 'CAPITAL RETENTION',
+      tagClass: retentionClass,
+      headline: `${retention}% Retained Surplus`,
+      detail: `${formatCurrency(totals.netBalance)} net surplus remaining from ${formatCurrency(totals.totalIncome)} earned.`,
+      footer: retention >= 30 ? 'Strong savings rate exceeding the 30% wealth benchmark.' : (retention > 0 ? 'Positive net margin. Consider allocating surplus to goals.' : 'Outflows exceed income this period. Deficit warning.')
+    });
+  } else {
+    slides.push({
+      tag: 'CAPITAL RETENTION',
+      tagClass: 'tag-neutral',
+      headline: '0% Retention Baseline',
+      detail: 'No earned income logged for this cycle.',
+      footer: 'Log payroll or invoice income to track your capital retention ratio.'
+    });
+  }
+
+  // Slide 4: Fixed Commitments Load
+  const totalRecurring = recurringActive.reduce((sum, r) => sum + r.amount, 0);
+  slides.push({
+    tag: 'RECURRING LOAD',
+    tagClass: recurringActive.length > 5 ? 'tag-warning' : 'tag-neutral',
+    headline: `${recurringActive.length} Active Commitment${recurringActive.length === 1 ? '' : 's'}`,
+    detail: `${formatCurrency(totalRecurring)} committed monthly across recurring obligations.`,
+    footer: recurringActive.length > 0 ? 'Recurring obligations are auto-deducted from safe-to-spend liquidity.' : 'No active subscriptions logged. Add commitments to track recurring burn.'
+  });
+
+  // Slide 5: Audit & Integrity Watch
+  const outlierCount = anomalyData.anomalies.length;
+  const duplicateCount = anomalyData.duplicates.length;
+  const hasRisk = outlierCount > 0 || duplicateCount > 0;
+  slides.push({
+    tag: 'AUDIT & INTEGRITY',
+    tagClass: hasRisk ? 'tag-danger' : 'tag-emerald',
+    headline: hasRisk ? `${outlierCount} Outlier${outlierCount === 1 ? '' : 's'}, ${duplicateCount} Duplicate${duplicateCount === 1 ? '' : 's'}` : 'Audit Ledger Clean',
+    detail: hasRisk ? 'Statistical variance or duplicate transaction charges detected in records.' : 'Zero Z-score outliers or identical merchant charges detected.',
+    footer: hasRisk ? 'Review flagged transactions in the ledger to resolve discrepancies.' : 'Transaction records adhere to strict variance bounds.'
+  });
+
+  // Slide 6: Savings Goal Runway
+  if (activeGoal) {
+    const pct = Math.min(100, Math.round(((activeGoal.currentAmount || 0) / activeGoal.targetAmount) * 100));
+    const remaining = Math.max(0, activeGoal.targetAmount - (activeGoal.currentAmount || 0));
+    slides.push({
+      tag: 'TARGET RUNWAY',
+      tagClass: pct >= 100 ? 'tag-emerald' : 'tag-neutral',
+      headline: `${escapeHTML(activeGoal.title)} (${pct}%)`,
+      detail: `${formatCurrency(activeGoal.currentAmount || 0)} accumulated of ${formatCurrency(activeGoal.targetAmount)} target.`,
+      footer: remaining === 0 ? 'Goal milestone achieved! Funds ready for release.' : `${formatCurrency(remaining)} remaining to achieve target objective.`
+    });
+  } else {
+    slides.push({
+      tag: 'TARGET RUNWAY',
+      tagClass: 'tag-neutral',
+      headline: 'No Active Goals',
+      detail: 'Set capital targets for emergency funds, tech hardware, or travel.',
+      footer: 'Goal trajectories track progress against net surplus automatically.'
+    });
+  }
+
+  // Render slides into container
+  container.innerHTML = slides.map((s, idx) => `
+    <article class="insight-slide" data-slide-index="${idx}" tabindex="0" role="article" aria-label="Insight ${idx + 1} of ${slides.length}: ${s.headline}">
+      <div class="insight-slide-head">
+        <span class="glass-tag ${s.tagClass}">${s.tag}</span>
+        <span class="panel-subtitle" style="font-size: 0.72rem;">Slide ${idx + 1} / ${slides.length}</span>
+      </div>
+      <div style="margin: 8px 0;">
+        <h4 style="font-size: 1.05rem; font-weight: 700; color: var(--text-primary); margin-bottom: 4px;">${s.headline}</h4>
+        <p style="font-size: 0.83rem; color: var(--text-secondary); line-height: 1.45;">${s.detail}</p>
+      </div>
+      <div style="font-size: 0.75rem; color: var(--text-muted); border-top: 1px solid var(--glass-border); padding-top: 6px;">
+        ${s.footer}
+      </div>
+    </article>
+  `).join('');
+
+  // Update counter badge
+  if (DOM.aiInsightsCounter) {
+    DOM.aiInsightsCounter.textContent = `1 / ${slides.length}`;
+  }
+
+  // Attach carousel listeners once
+  if (!aiCarouselScrollHandlerAttached) {
+    aiCarouselScrollHandlerAttached = true;
+
+    container.addEventListener('scroll', () => {
+      const slideHeight = container.clientHeight || 220;
+      const currentIdx = Math.min(slides.length - 1, Math.max(0, Math.round(container.scrollTop / slideHeight)));
+      if (DOM.aiInsightsCounter) {
+        DOM.aiInsightsCounter.textContent = `${currentIdx + 1} / ${slides.length}`;
+      }
+    }, { passive: true });
+
+    // Up / Down button handlers
+    if (DOM.aiInsightPrevBtn) {
+      DOM.aiInsightPrevBtn.addEventListener('click', () => {
+        const slideHeight = container.clientHeight || 220;
+        container.scrollBy({ top: -slideHeight, behavior: 'smooth' });
+      });
+    }
+
+    if (DOM.aiInsightNextBtn) {
+      DOM.aiInsightNextBtn.addEventListener('click', () => {
+        const slideHeight = container.clientHeight || 220;
+        container.scrollBy({ top: slideHeight, behavior: 'smooth' });
+      });
+    }
+
+    // Keyboard ArrowUp/ArrowDown on vertical container
+    container.addEventListener('keydown', e => {
+      const slideHeight = container.clientHeight || 220;
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        container.scrollBy({ top: -slideHeight, behavior: 'smooth' });
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        container.scrollBy({ top: slideHeight, behavior: 'smooth' });
+      }
+    });
+  }
+}
+
 function renderDashboard() {
   renderOverview();
   renderTransactionsList();
@@ -2629,28 +2911,8 @@ function renderOverview() {
   DOM.monthProgressBar.style.width = `${safeSpend.monthProgress}%`;
   DOM.monthProgressPercent.textContent = `${safeSpend.monthProgress}%`;
 
-  // Update Insights
-  if (breakdown.length > 0) {
-    const top = breakdown[0];
-    DOM.insightTopCategory.textContent = `${top.category} — ${formatCurrency(top.total)} (${top.percentage}% of all expenses)`;
-  } else {
-    DOM.insightTopCategory.textContent = 'No expense records yet to analyze.';
-  }
-
-  const allTx = state.transactions;
-  if (allTx.length > 0) {
-    const largest = [...allTx].sort((a, b) => b.amount - a.amount)[0];
-    DOM.insightLargestTx.textContent = `${largest.title} (${formatCurrency(largest.amount)}) • ${formatDate(largest.date)}`;
-  } else {
-    DOM.insightLargestTx.textContent = 'No transactions recorded yet.';
-  }
-
-  if (totals.totalIncome > 0) {
-    const retention = Math.max(0, Math.round((totals.netBalance / totals.totalIncome) * 100));
-    DOM.insightSavingsRate.textContent = `${retention}% of your earned income is currently retained as net savings.`;
-  } else {
-    DOM.insightSavingsRate.textContent = 'Log income and expenses to view retention rate.';
-  }
+  // Update Vertical AI Insights Carousel (Carousel 2)
+  renderVerticalAiInsightsCarousel();
 
   // Update Net Savings Rate Card
   const savingsRate = totals.totalIncome > 0 ? Math.max(0, Math.round((totals.netBalance / totals.totalIncome) * 100)) : 0;

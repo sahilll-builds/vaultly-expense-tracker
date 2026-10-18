@@ -530,8 +530,8 @@
                 </div>
               </article>
 
-              <!-- Spatial AI Insight Panel -->
-              <article class="glass-card spatial-ai-insight-card" id="overviewAiInsightCard">
+              <!-- Spatial Vertical AI Insights Carousel (Carousel 2) -->
+              <article class="glass-card spatial-ai-insight-card vertical-carousel-card" id="overviewAiInsightCard" aria-label="AI Financial Insights Carousel">
                 <div class="border-beam-wrap" aria-hidden="true"><div class="border-beam"></div></div>
                 <div class="card-spotlight" aria-hidden="true"></div>
                 <div class="card-refraction-shine" aria-hidden="true"></div>
@@ -540,36 +540,25 @@
                     <div class="panel-icon-sparkle" aria-hidden="true"><i data-lucide="sparkles"></i></div>
                     <div>
                       <h2 class="panel-title">Vaultly AI Insights</h2>
-                      <p class="panel-subtitle">Grounded intelligence based on your verified numbers</p>
+                      <p class="panel-subtitle">Vertical intelligence carousel generated from verified data</p>
                     </div>
                   </div>
-                  <button type="button" class="btn-ghost-glass btn-sm" data-view-target="ai">
-                    <span>Chat AI</span>
-                    <i data-lucide="arrow-right" class="btn-icon-xs"></i>
-                  </button>
+                  <div class="carousel-vertical-nav-group" style="display: flex; gap: 8px; align-items: center;">
+                    <span class="carousel-counter-badge" id="aiInsightsCounter" aria-live="polite">1 / 5</span>
+                    <div class="carousel-btn-group" aria-label="Vertical insight navigation">
+                      <button type="button" class="btn-ghost-glass btn-icon-only" id="aiInsightPrevBtn" aria-label="Previous insight" title="Scroll up">
+                        <i data-lucide="chevron-up" class="btn-icon-xs" aria-hidden="true"></i>
+                      </button>
+                      <button type="button" class="btn-ghost-glass btn-icon-only" id="aiInsightNextBtn" aria-label="Next insight" title="Scroll down">
+                        <i data-lucide="chevron-down" class="btn-icon-xs" aria-hidden="true"></i>
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
-                <div class="insights-body" id="insightsBody">
-                  <div class="insight-row">
-                    <div class="insight-icon-box" aria-hidden="true"><i data-lucide="pie-chart"></i></div>
-                    <div class="insight-text-group">
-                      <span class="insight-heading">Largest Spending Category</span>
-                      <p class="insight-content" id="insightTopCategory">No expense records yet to analyze.</p>
-                    </div>
-                  </div>
-                  <div class="insight-row">
-                    <div class="insight-icon-box" aria-hidden="true"><i data-lucide="activity"></i></div>
-                    <div class="insight-text-group">
-                      <span class="insight-heading">Largest Single Transaction</span>
-                      <p class="insight-content" id="insightLargestTx">No transactions recorded yet.</p>
-                    </div>
-                  </div>
-                  <div class="insight-row">
-                    <div class="insight-icon-box" aria-hidden="true"><i data-lucide="trending-up"></i></div>
-                    <div class="insight-text-group">
-                      <span class="insight-heading">Savings Retention Ratio</span>
-                      <p class="insight-content" id="insightSavingsRate">Log income and expenses to view retention rate.</p>
-                    </div>
+                <div class="ai-insights-vertical-viewport carousel-viewport" id="aiInsightsViewport">
+                  <div class="ai-insights-vertical-track" id="insightsBody" role="region" aria-label="Vertical AI Insights" tabindex="0">
+                    <!-- Dynamically populated via JS -->
                   </div>
                 </div>
 
@@ -1007,20 +996,36 @@
                ================================================================= -->
           <div class="view-panel" id="viewGoals" data-view="goals">
             <section class="section-container" aria-label="Savings Goals">
-              <div class="glass-card">
+              <div class="glass-card goals-carousel-panel">
                 <div class="panel-header" style="margin-bottom: 20px;">
                   <div>
                     <h2 class="panel-title">Financial Goals</h2>
                     <p class="panel-subtitle">Define target milestones and record contributions toward your savings targets</p>
                   </div>
-                  <button type="button" class="btn-liquid-primary" id="openAddGoalBtn">
-                    <i data-lucide="plus" class="btn-icon-xs" aria-hidden="true"></i>
-                    <span>New Goal</span>
-                  </button>
+                  <div class="carousel-header-actions" style="display: flex; gap: 12px; align-items: center;">
+                    <div class="carousel-btn-group" aria-label="Goal carousel navigation">
+                      <button type="button" class="btn-ghost-glass btn-icon-only" id="goalsCarouselPrevBtn" aria-label="Previous goals" title="Scroll left">
+                        <i data-lucide="chevron-left" class="btn-icon-xs" aria-hidden="true"></i>
+                      </button>
+                      <button type="button" class="btn-ghost-glass btn-icon-only" id="goalsCarouselNextBtn" aria-label="Next goals" title="Scroll right">
+                        <i data-lucide="chevron-right" class="btn-icon-xs" aria-hidden="true"></i>
+                      </button>
+                    </div>
+                    <button type="button" class="btn-liquid-primary" id="openAddGoalBtn">
+                      <i data-lucide="plus" class="btn-icon-xs" aria-hidden="true"></i>
+                      <span>New Goal</span>
+                    </button>
+                  </div>
                 </div>
 
-                <div class="goals-grid" id="goalsGrid">
-                  <!-- Dynamically populated via JS -->
+                <div class="goals-carousel-viewport" id="goalsCarouselViewport">
+                  <div class="goals-carousel-track" id="goalsGrid" role="region" aria-label="Horizontal Goals Carousel" tabindex="0">
+                    <!-- Dynamically populated via JS -->
+                  </div>
+                </div>
+
+                <div class="goals-carousel-indicators" id="goalsCarouselIndicators" aria-label="Goals carousel page indicator">
+                  <!-- Dynamic page dots -->
                 </div>
               </div>
             </section>

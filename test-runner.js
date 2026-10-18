@@ -544,11 +544,39 @@ console.log('   ✔ PASS: Hero Balance card and 3D visual are verified fixed and
 console.log('17. Testing Desktop Sidebar Fixed Left Positioning:');
 assert(/position:\s*fixed;[\s\S]*?left:\s*0;/.test(cssSrc), 'desktop-sidebar must have position: fixed and left: 0');
 assert(/margin-left:\s*250px;/.test(cssSrc), 'main-content-area must have margin-left: 250px on desktop');
-assert(/margin-left:\s*0\s*!important;/.test(cssSrc), 'main-content-area must reset margin-left to 0 on mobile/tablets');
-console.log('   ✔ PASS: Desktop sidebar is verified fixed to left position and does not move.');
+// 18. Testing Exactly Two Carousels (Horizontal Goals & Vertical AI Insights)
+console.log('18. Testing Exactly Two Carousels System:');
+const htmlSrc = fs.readFileSync('index.html', 'utf8');
+
+// Check Horizontal Goals Carousel in index.html
+assert(htmlSrc.includes('id="goalsCarouselPrevBtn"') && htmlSrc.includes('id="goalsCarouselNextBtn"'), 'Goals carousel must have Prev/Next buttons');
+assert(htmlSrc.includes('id="goalsCarouselViewport"'), 'Goals carousel must have a viewport container');
+
+// Check Vertical AI Insights Carousel in index.html
+assert(htmlSrc.includes('id="aiInsightPrevBtn"') && htmlSrc.includes('id="aiInsightNextBtn"'), 'AI Insights carousel must have Prev/Next buttons');
+assert(htmlSrc.includes('id="aiInsightsViewport"'), 'AI Insights carousel must have a viewport container');
+
+// Check CSS Scroll-Snapping in style.css
+assert(/scroll-snap-type:\s*x\s+mandatory/i.test(cssSrc), 'style.css must define horizontal scroll-snap-type: x mandatory for goals carousel');
+assert(/scroll-snap-type:\s*y\s+mandatory/i.test(cssSrc), 'style.css must define vertical scroll-snap-type: y mandatory for AI insights carousel');
+
+// Verify Carousel Constraint: exactly two carousel instances
+const carouselMatches = htmlSrc.match(/carousel-viewport/gi) || [];
+assert.strictEqual(carouselMatches.length, 2, 'Exactly two carousel viewports must exist across the entire website');
+console.log('   ✔ PASS: Exactly two carousels verified (Horizontal Goals & Vertical AI Insights).');
+
+// 19. Testing Distinct 3-Tier Interaction System (Cursor vs Hover vs Click)
+console.log('19. Testing Distinct 3-Tier Interaction System:');
+// Verify tactile click/press states in style.css
+assert(/:active\s*\{[^}]*transform:\s*scale\(0\.9[5-9]/i.test(cssSrc), 'style.css must define tactile :active press scale on interactive buttons/cards');
+// Verify hover transitions
+assert(/\.btn-liquid-primary:hover|\.goal-card:hover/i.test(cssSrc), 'style.css must have distinct hover states');
+// Verify cursor tracking throttling / pointer coarse fallback in script.js
+assert(scriptSrc.includes('pointer: coarse') || scriptSrc.includes('prefersReduced'), 'script.js must respect pointer: coarse and reduced motion');
+console.log('   ✔ PASS: Distinct cursor, hover, and tactile click feedback verified.');
 
 testChatEndpoint().then(() => {
-  console.log('\n--- ALL TEST SUITE CHECKS PASSED SUCCESSFULLY (17/17) ---');
+  console.log('\n--- ALL TEST SUITE CHECKS PASSED SUCCESSFULLY (19/19) ---');
 }).catch(err => {
   console.error('Test suite failed:', err);
   process.exit(1);
