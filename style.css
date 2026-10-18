@@ -1170,6 +1170,7 @@ body {
     0 20px 50px rgba(0, 0, 0, 0.50),
     0 0 50px rgba(255, 255, 255, 0.10),
     inset 0 1px 0 rgba(255, 255, 255, 0.20);
+  transform: none !important;
 }
 
 /* Income card subtle silver lift on hover */
@@ -2696,6 +2697,22 @@ body {
     inset 0 1px 0 rgba(255, 255, 255, 0.25);
   position: relative;
   overflow: hidden;
+  transform: none !important;
+}
+
+/* Explicitly lock Hero Net Balance card & 3D chrome visuals as fixed and non-movable */
+.hero-balance-card:hover,
+.hero-balance-card:focus-within,
+.hero-balance-card.is-tilting {
+  transform: none !important;
+}
+
+.chrome-sculpture-wrap,
+.chrome-canvas,
+.chrome-canvas:hover,
+.balance-visual-orb,
+.balance-visual-orb:hover {
+  transform: none !important;
 }
 
 /* 3D BALANCE STAGE & LIQUID CHROME OBJECT */

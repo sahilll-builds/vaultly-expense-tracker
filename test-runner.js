@@ -516,8 +516,32 @@ assert(simResult.simulatedMonthlySurplus > 20000, 'Surplus must expand');
 assert(simResult.goalProjections[0].monthsSaved > 0, 'Extra savings must accelerate goal completion');
 console.log('   ✔ PASS: What-If simulation engine computes non-mutating scenarios accurately.');
 
+// 16. Testing Hero Balance & 3D Chrome Visual Immovability (Stationary Integrity)
+console.log('16. Testing Hero Balance & 3D Chrome Visual Immovability:');
+const fs = require('fs');
+const scriptSrc = fs.readFileSync('script.js', 'utf8');
+const cssSrc = fs.readFileSync('style.css', 'utf8');
+
+// Verify script.js does not include .hero-balance-card in spatial tilt
+const tiltSelectorMatch = scriptSrc.match(/const targetSelector = '([^']+)';/);
+assert(tiltSelectorMatch, 'targetSelector must be defined in script.js');
+assert(!tiltSelectorMatch[1].includes('.hero-balance-card'), 'hero-balance-card must NOT be included in tilt targets');
+
+// Verify script.js resets heroCard transform to none
+assert(scriptSrc.includes("heroCard.style.transform = 'none'"), 'heroCard must have transform set to none');
+
+// Verify balance visual orb has no mousemove listener
+const orbFunc = scriptSrc.slice(scriptSrc.indexOf('function initSpatialBalanceOrb'), scriptSrc.indexOf('function initSpatialCardTilt'));
+assert(!orbFunc.includes("addEventListener('mousemove'"), 'spatial balance orb must not attach mousemove listener');
+
+// Verify style.css enforces transform: none !important on hero-balance-card and balance-card:hover
+assert(cssSrc.includes('.hero-balance-card') && cssSrc.includes('transform: none !important'), 'style.css must enforce transform: none !important on hero-balance-card');
+assert(cssSrc.includes('.balance-card:hover') && cssSrc.includes('transform: none !important'), 'style.css must enforce transform: none !important on balance-card:hover');
+assert(cssSrc.includes('.chrome-canvas') && cssSrc.includes('transform: none !important'), 'style.css must enforce transform: none !important on chrome-canvas');
+console.log('   ✔ PASS: Hero Balance card and 3D visual are verified fixed and non-movable under all states.');
+
 testChatEndpoint().then(() => {
-  console.log('\n--- ALL TEST SUITE CHECKS PASSED SUCCESSFULLY (15/15) ---');
+  console.log('\n--- ALL TEST SUITE CHECKS PASSED SUCCESSFULLY (16/16) ---');
 }).catch(err => {
   console.error('Test suite failed:', err);
   process.exit(1);

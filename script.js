@@ -1100,13 +1100,8 @@ function initLiquidChromeSculpture() {
     }
 
     float map(vec3 p) {
-      // Idle harmonic float oscillation
-      p.y += sin(u_time * 1.1) * 0.07;
-      p.x += cos(u_time * 0.85) * 0.05;
-
-      // Mouse rotation with smooth inertia
-      p.yz *= rot(u_mouse.y * 0.55);
-      p.xz *= rot(u_mouse.x * 0.75 + u_time * 0.22);
+      // Fixed centered sculpture — steady in-place axial rotation with zero position drift or mouse displacement
+      p.xz *= rot(u_time * 0.22);
 
       // Liquid surface ripple harmonics
       float ripple = sin(p.x * 2.8 + u_time * 1.4) * cos(p.y * 2.8 + u_time * 1.2) * sin(p.z * 2.8 + u_time * 1.3) * 0.11;
@@ -1230,26 +1225,11 @@ function initLiquidChromeSculpture() {
   const uTime = gl.getUniformLocation(program, 'u_time');
   const uMouse = gl.getUniformLocation(program, 'u_mouse');
 
-  // Mouse tracking with smooth spring lerping
-  let targetMouseX = 0;
-  let targetMouseY = 0;
+  // Fixed sculpture: coordinates locked to center, completely stationary and non-movable
+  const targetMouseX = 0;
+  const targetMouseY = 0;
   let currentMouseX = 0;
   let currentMouseY = 0;
-
-  if (card) {
-    card.addEventListener('mousemove', (e) => {
-      const rect = card.getBoundingClientRect();
-      const nx = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-      const ny = -(((e.clientY - rect.top) / rect.height) * 2 - 1);
-      targetMouseX = nx;
-      targetMouseY = ny;
-    });
-
-    card.addEventListener('mouseleave', () => {
-      targetMouseX = 0;
-      targetMouseY = 0;
-    });
-  }
 
   function resizeCanvas() {
     const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
@@ -1309,47 +1289,24 @@ function initLiquidChromeSculpture() {
 
 function initSpatialBalanceOrb() {
   const orb = DOM.spatialBalanceOrb;
-  const balanceCard = document.querySelector('.balance-card');
-  if (!orb || !balanceCard) return;
+  if (!orb) return;
 
-  const prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (prefersReduced) return;
-
-  let ticking = false;
-
-  balanceCard.addEventListener('mousemove', (e) => {
-    if (!ticking) {
-      window.requestAnimationFrame(() => {
-        const rect = balanceCard.getBoundingClientRect();
-        const cardX = e.clientX - rect.left;
-        const cardY = e.clientY - rect.top;
-        const centerX = rect.width / 2;
-        const centerY = rect.height / 2;
-
-        const deltaX = (cardX - centerX) / centerX;
-        const deltaY = (cardY - centerY) / centerY;
-
-        const rotateX = deltaY * -12;
-        const rotateY = deltaX * 14;
-
-        orb.style.transform = `perspective(500px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.04)`;
-        ticking = false;
-      });
-      ticking = true;
-    }
-  });
-
-  balanceCard.addEventListener('mouseleave', () => {
-    orb.style.transform = 'perspective(500px) rotateX(0deg) rotateY(0deg) scale(1)';
-  });
+  // The Hero Balance visual is fixed and completely stationary (not movable)
+  orb.style.transform = 'perspective(500px) rotateX(0deg) rotateY(0deg) scale(1)';
 }
 
 function initSpatialCardTilt() {
   const prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (prefersReduced || window.innerWidth < 1024) return;
 
-  const targetSelector = '.hero-balance-card, .metric-card, .safe-spend-card, .insights-card, .goal-preview-card, .spending-dist-card, .overview-recent-card, .budget-card, .goal-card';
+  // Note: .hero-balance-card is deliberately excluded so the Hero Net Balance section remains static and fixed in place
+  const targetSelector = '.metric-card, .safe-spend-card, .insights-card, .goal-preview-card, .spending-dist-card, .overview-recent-card, .budget-card, .goal-card';
   const cards = document.querySelectorAll(targetSelector);
+
+  const heroCard = document.getElementById('heroBalanceCard');
+  if (heroCard) {
+    heroCard.style.transform = 'none';
+  }
 
   cards.forEach(card => {
     let currentX = 0;
