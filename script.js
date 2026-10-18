@@ -1391,6 +1391,225 @@ function initSpatialCardTilt() {
 }
 
 /* ==============================================================================
+   MAGIC UI 3D NEON WHITE SPARKS & LIGHT ENGINE (Blank Space Hover Effect)
+   ============================================================================== */
+
+function initBlankSpaceSparksEffect() {
+  const canvas = document.getElementById('spatialSparksCanvas');
+  if (!canvas) return;
+
+  const prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const isTouchDevice = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+  if (prefersReduced || isTouchDevice) {
+    canvas.style.display = 'none';
+    return;
+  }
+
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  let width = 0;
+  let height = 0;
+  let dpr = 1;
+
+  function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = Math.floor(width * dpr);
+    canvas.height = Math.floor(height * dpr);
+    ctx.scale(dpr, dpr);
+  }
+
+  window.addEventListener('resize', resize, { passive: true });
+  resize();
+
+  const particles = [];
+  const maxParticles = 60;
+  const focalLength = 320; // 3D perspective projection depth
+
+  let mouseX = -1000;
+  let mouseY = -1000;
+  let targetNeonIntensity = 0;
+  let currentNeonIntensity = 0;
+  let isHoveringBlankSpace = false;
+  let animFrameId = null;
+  let lastMoveTime = 0;
+
+  function spawnSpark(x, y, count = 1) {
+    if (particles.length >= maxParticles) return;
+    for (let i = 0; i < count; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 0.6 + Math.random() * 2.2;
+      const isFlare = Math.random() > 0.45; // 4-point star sparkle flare
+      particles.push({
+        x: x + (Math.random() - 0.5) * 8,
+        y: y + (Math.random() - 0.5) * 8,
+        z: (Math.random() - 0.5) * 120, // 3D depth
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 0.25, // Subtle upward buoyancy
+        vz: (Math.random() - 0.5) * 1.8,
+        size: 1.2 + Math.random() * 2.4,
+        alpha: 0.9 + Math.random() * 0.1,
+        decay: 0.016 + Math.random() * 0.024,
+        rotation: Math.random() * Math.PI,
+        rotSpeed: (Math.random() - 0.5) * 0.08,
+        flare: isFlare,
+        life: 0,
+        maxLife: 35 + Math.floor(Math.random() * 30)
+      });
+    }
+  }
+
+  function onPointerMove(e) {
+    mouseX = e.clientX;
+    mouseY = e.clientY;
+    lastMoveTime = performance.now();
+
+    // Determine whether cursor is over blank space vs an interactive card/control
+    const target = e.target;
+    const insideInteractive = target && target.closest && target.closest(
+      '.glass-card, .desktop-sidebar, .mobile-drawer, .glass-modal-dialog, button, input, select, textarea, a, .ai-input-bar, .modal-backdrop'
+    );
+
+    isHoveringBlankSpace = !insideInteractive;
+
+    if (isHoveringBlankSpace) {
+      targetNeonIntensity = 1.0;
+      // Spawn crisp 3D white sparks along movement path
+      spawnSpark(mouseX, mouseY, Math.random() > 0.3 ? 2 : 1);
+    } else {
+      targetNeonIntensity = 0;
+    }
+
+    if (!animFrameId) {
+      animFrameId = requestAnimationFrame(render);
+    }
+  }
+
+  function onPointerLeave() {
+    isHoveringBlankSpace = false;
+    targetNeonIntensity = 0;
+  }
+
+  document.addEventListener('mousemove', onPointerMove, { passive: true });
+  document.addEventListener('mouseleave', onPointerLeave, { passive: true });
+
+  function render(now) {
+    // Smoothly interpolate neon ambient light intensity
+    currentNeonIntensity += (targetNeonIntensity - currentNeonIntensity) * 0.12;
+
+    // Dim neon aura if user stops moving for > 700ms
+    if (isHoveringBlankSpace && now - lastMoveTime > 700) {
+      targetNeonIntensity = 0.45; // Soft resting pulse
+    }
+
+    ctx.clearRect(0, 0, width, height);
+
+    // 1. Draw Neon White Aura in Blank Space
+    if (currentNeonIntensity > 0.01 && mouseX > 0 && mouseY > 0) {
+      const glowRadius = 140;
+      const grad = ctx.createRadialGradient(mouseX, mouseY, 0, mouseX, mouseY, glowRadius);
+      grad.addColorStop(0, `rgba(255, 255, 255, ${0.16 * currentNeonIntensity})`);
+      grad.addColorStop(0.25, `rgba(235, 245, 255, ${0.08 * currentNeonIntensity})`);
+      grad.addColorStop(0.65, `rgba(200, 225, 255, ${0.02 * currentNeonIntensity})`);
+      grad.addColorStop(1, 'transparent');
+
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(mouseX, mouseY, glowRadius, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Secondary tight neon white core halo
+      const coreRadius = 28;
+      const coreGrad = ctx.createRadialGradient(mouseX, mouseY, 0, mouseX, mouseY, coreRadius);
+      coreGrad.addColorStop(0, `rgba(255, 255, 255, ${0.45 * currentNeonIntensity})`);
+      coreGrad.addColorStop(0.5, `rgba(240, 248, 255, ${0.18 * currentNeonIntensity})`);
+      coreGrad.addColorStop(1, 'transparent');
+      ctx.fillStyle = coreGrad;
+      ctx.beginPath();
+      ctx.arc(mouseX, mouseY, coreRadius, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // 2. Draw 3D White Spark Particles
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      p.life++;
+      p.alpha -= p.decay;
+      p.x += p.vx;
+      p.y += p.vy;
+      p.z += p.vz;
+      p.vx *= 0.96;
+      p.vy *= 0.96;
+      p.rotation += p.rotSpeed;
+
+      if (p.alpha <= 0 || p.life >= p.maxLife) {
+        particles.splice(i, 1);
+        continue;
+      }
+
+      // 3D Perspective Projection
+      const zFactor = Math.max(0.1, (focalLength + p.z) / focalLength);
+      const px = p.x;
+      const py = p.y;
+      const radius = Math.max(0.6, p.size * zFactor);
+      const alpha = Math.min(1, Math.max(0, p.alpha));
+
+      // Draw soft neon glow disc
+      const sparkGlow = ctx.createRadialGradient(px, py, 0, px, py, radius * 3.2);
+      sparkGlow.addColorStop(0, `rgba(255, 255, 255, ${alpha})`);
+      sparkGlow.addColorStop(0.35, `rgba(240, 248, 255, ${alpha * 0.75})`);
+      sparkGlow.addColorStop(0.8, `rgba(210, 230, 255, ${alpha * 0.2})`);
+      sparkGlow.addColorStop(1, 'transparent');
+
+      ctx.fillStyle = sparkGlow;
+      ctx.beginPath();
+      ctx.arc(px, py, radius * 3.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Draw 4-point star flare glint if marked as flare
+      if (p.flare && alpha > 0.15) {
+        ctx.save();
+        ctx.translate(px, py);
+        ctx.rotate(p.rotation);
+
+        const flareLen = radius * 4.2;
+        const flareThick = Math.max(0.5, radius * 0.45);
+
+        ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.95})`;
+        // Horizontal Diamond
+        ctx.beginPath();
+        ctx.moveTo(-flareLen, 0);
+        ctx.lineTo(0, flareThick);
+        ctx.lineTo(flareLen, 0);
+        ctx.lineTo(0, -flareThick);
+        ctx.closePath();
+        ctx.fill();
+
+        // Vertical Diamond
+        ctx.beginPath();
+        ctx.moveTo(0, -flareLen);
+        ctx.lineTo(flareThick, 0);
+        ctx.lineTo(0, flareLen);
+        ctx.lineTo(-flareThick, 0);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.restore();
+      }
+    }
+
+    // Stop animation frame loop when idle to preserve 0% idle CPU
+    if (particles.length > 0 || currentNeonIntensity > 0.01) {
+      animFrameId = requestAnimationFrame(render);
+    } else {
+      animFrameId = null;
+    }
+  }
+}
+
+/* ==============================================================================
    9. TRANSACTION MANAGEMENT & CRUD
    ============================================================================== */
 
@@ -3713,6 +3932,7 @@ function initApp() {
   initLiquidChromeSculpture();
   initSpatialBalanceOrb();
   initSpatialCardTilt();
+  initBlankSpaceSparksEffect();
 
   // Initial render
   renderDashboard();

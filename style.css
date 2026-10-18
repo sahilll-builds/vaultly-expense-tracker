@@ -453,6 +453,26 @@ body {
 }
 
 /* --------------------------------------------------------------------------
+   MAGIC UI 3D NEON WHITE SPARKS & LIGHT CANVAS (Blank Space Interaction)
+   -------------------------------------------------------------------------- */
+.spatial-sparks-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 5;
+  mix-blend-mode: screen;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spatial-sparks-canvas {
+    display: none !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
    4. GLASSMORPHISM CORE SYSTEM & 3D PANELS
    Water-white frosted surfaces with 3D depth perspective & multi-layer shadows.
    -------------------------------------------------------------------------- */
