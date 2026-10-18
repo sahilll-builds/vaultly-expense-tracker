@@ -211,21 +211,18 @@ Rules for financial responses:
   // 5. Provider dispatch: Gemini first
   if (geminiKey) {
     try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`;
-
       // Build contents array with conversation history for Gemini
       // Gemini uses role: 'user' and role: 'model'
       const contents = [];
 
       // Prepend system instructions as first user message context
-      // (Gemini doesn't have a dedicated system role in v1beta contents)
       contents.push({
         role: 'user',
         parts: [{ text: systemInstructions }]
       });
       contents.push({
         role: 'model',
-        parts: [{ text: 'Understood. I\'m ready to help as Vaultly AI.' }]
+        parts: [{ text: "Understood! I'm Vaultly AI, ready to help with casual conversations, general questions, learning, coding, brainstorming, and personal finance." }]
       });
 
       // Add conversation history
@@ -252,22 +249,31 @@ Rules for financial responses:
         }
       };
 
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      // Try latest models in descending order of capability & availability
+      const candidateModels = ['gemini-flash-latest', 'gemini-3.8-flash', 'gemini-2.5-flash', 'gemini-1.5-flash'];
+      for (const modelName of candidateModels) {
+        try {
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${geminiKey}`;
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 12000);
 
-      const apiRes = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-        signal: controller.signal
-      });
-      clearTimeout(timeoutId);
+          const apiRes = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+            signal: controller.signal
+          });
+          clearTimeout(timeoutId);
 
-      if (apiRes.ok) {
-        const apiData = await apiRes.json();
-        const reply = apiData?.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (reply) {
-          return res.status(200).json({ reply: reply.trim(), source: 'ai-gemini' });
+          if (apiRes.ok) {
+            const apiData = await apiRes.json();
+            const reply = apiData?.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (reply) {
+              return res.status(200).json({ reply: reply.trim(), source: 'ai-gemini', model: modelName });
+            }
+          }
+        } catch (subErr) {
+          // Attempt next candidate
         }
       }
     } catch (err) {
