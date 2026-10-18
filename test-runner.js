@@ -540,8 +540,15 @@ assert(cssSrc.includes('.balance-card:hover') && cssSrc.includes('transform: non
 assert(cssSrc.includes('.chrome-canvas') && cssSrc.includes('transform: none !important'), 'style.css must enforce transform: none !important on chrome-canvas');
 console.log('   ✔ PASS: Hero Balance card and 3D visual are verified fixed and non-movable under all states.');
 
+// 17. Testing Desktop Sidebar Fixed Left Positioning (Non-Movable)
+console.log('17. Testing Desktop Sidebar Fixed Left Positioning:');
+assert(/position:\s*fixed;[\s\S]*?left:\s*0;/.test(cssSrc), 'desktop-sidebar must have position: fixed and left: 0');
+assert(/margin-left:\s*250px;/.test(cssSrc), 'main-content-area must have margin-left: 250px on desktop');
+assert(/margin-left:\s*0\s*!important;/.test(cssSrc), 'main-content-area must reset margin-left to 0 on mobile/tablets');
+console.log('   ✔ PASS: Desktop sidebar is verified fixed to left position and does not move.');
+
 testChatEndpoint().then(() => {
-  console.log('\n--- ALL TEST SUITE CHECKS PASSED SUCCESSFULLY (16/16) ---');
+  console.log('\n--- ALL TEST SUITE CHECKS PASSED SUCCESSFULLY (17/17) ---');
 }).catch(err => {
   console.error('Test suite failed:', err);
   process.exit(1);

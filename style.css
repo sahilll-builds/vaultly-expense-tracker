@@ -2540,8 +2540,10 @@ body {
   width: 250px;
   min-width: 250px;
   height: 100vh;
-  position: sticky;
+  position: fixed;
+  left: 0;
   top: 0;
+  bottom: 0;
   z-index: 110;
   background: var(--bg-sidebar);
   border-right: 1px solid var(--glass-border);
@@ -2549,6 +2551,7 @@ body {
   gap: 20px;
   backdrop-filter: var(--blur-xl);
   -webkit-backdrop-filter: var(--blur-xl);
+  overflow-y: auto;
 }
 
 .sidebar-header {
@@ -2645,7 +2648,9 @@ body {
 .main-content-area {
   flex: 1;
   min-width: 0;
-  max-width: 100%;
+  margin-left: 250px;
+  width: calc(100% - 250px);
+  max-width: calc(100% - 250px);
   display: flex;
   flex-direction: column;
   overflow-x: hidden;
@@ -3607,6 +3612,12 @@ body {
 @media (max-width: 1024px) {
   .desktop-sidebar {
     display: none !important;
+  }
+
+  .main-content-area {
+    margin-left: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
   }
 
   .nav-links-desktop {
