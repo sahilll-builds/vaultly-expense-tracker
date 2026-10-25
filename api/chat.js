@@ -70,7 +70,10 @@ function generateDeterministicAnswer(message, context = {}) {
 
   // --- Finance-related fallbacks (preserved exactly for test compatibility) ---
 
-  if (q.includes('spend') && (q.includes('this month') || q.includes('how much') || q.includes('total'))) {
+  if (q.includes('spend') || q.includes('spending') || q.includes('outflow')) {
+    if (topCat) {
+      return `You've spent a total of ${formatINR(totals.totalExpenses)} across ${totals.expenseCount || 0} logged transactions so far. Top expense is ${topCat.category} at ${formatINR(topCat.total)} (${topCat.percentage || 0}%).`;
+    }
     return `You've spent a total of ${formatINR(totals.totalExpenses)} across ${totals.expenseCount || 0} logged transactions so far.`;
   }
 
@@ -184,7 +187,7 @@ module.exports = async function handler(req, res) {
   const conversationHistory = Array.isArray(history) ? history.slice(-20) : [];
 
   // 4. Check for API keys
-  const geminiKey = process.env.GEMINI_API_KEY;
+  const geminiKey = process.env.GEMINI_API_KEY || req.body?.geminiKey;
   const openaiKey = process.env.OPENAI_API_KEY;
 
   // Determine if conversation is finance-related

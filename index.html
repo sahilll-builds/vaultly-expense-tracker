@@ -1121,6 +1121,32 @@
                     </div>
                   </div>
 
+                  <!-- Gemini AI API Key Configuration -->
+                  <div class="insight-row">
+                    <div class="insight-icon-box" aria-hidden="true"><i data-lucide="sparkles"></i></div>
+                    <div class="insight-text-group" style="width: 100%;">
+                      <span class="insight-heading">Gemini AI Intelligence Key</span>
+                      <p class="insight-content">Power Vaultly AI with Google Gemini for real-time conversation, deep financial advice, learning, and coding support.</p>
+                      <div style="margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; max-width: 580px;">
+                        <input type="password" id="geminiApiKeyInput" class="form-input-text" placeholder="Enter Gemini API key..." style="flex: 1; min-width: 240px; padding: 7px 12px; background: rgba(255,255,255,0.04); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-primary); font-family: monospace; font-size: 0.85rem;" autocomplete="off" spellcheck="false">
+                        <button type="button" id="toggleGeminiKeyVisibilityBtn" class="btn-ghost-glass btn-sm" title="Show / Hide Key">
+                          <i data-lucide="eye" class="btn-icon-xs" aria-hidden="true"></i>
+                        </button>
+                        <button type="button" id="saveGeminiKeyBtn" class="btn-liquid-primary btn-sm">
+                          <i data-lucide="key" class="btn-icon-xs" aria-hidden="true"></i>
+                          <span>Save Key</span>
+                        </button>
+                        <button type="button" id="resetGeminiKeyBtn" class="btn-ghost-glass btn-sm" title="Reset to default key">
+                          <span>Reset</span>
+                        </button>
+                      </div>
+                      <p id="geminiKeyStatusText" style="font-size: 0.78rem; color: #10b981; margin-top: 6px; display: flex; align-items: center; gap: 5px;">
+                        <span class="status-pulse-mono" style="width: 6px; height: 6px; background: #10b981;" aria-hidden="true"></span>
+                        <span id="geminiKeyStatusLabel">Gemini Key configured and active</span>
+                      </p>
+                    </div>
+                  </div>
+
                   <!-- Backup & Export -->
                   <div class="insight-row">
                     <div class="insight-icon-box" aria-hidden="true"><i data-lucide="hard-drive"></i></div>

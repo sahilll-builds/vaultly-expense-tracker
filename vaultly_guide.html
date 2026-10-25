@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Vaultly: Complete Project Understanding & Architecture Guide</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 14mm 14mm 16mm 14mm;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #1e293b;
+      background-color: #ffffff;
+      line-height: 1.55;
+      font-size: 13px;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .container {
+      max-width: 100%;
+      margin: 0 auto;
+    }
+
+    /* Cover / Header Section */
+    .doc-header {
+      border-bottom: 2px solid #0f172a;
+      padding-bottom: 18px;
+      margin-bottom: 24px;
+    }
+
+    .badge-pill {
+      display: inline-block;
+      background-color: #0f172a;
+      color: #38bdf8;
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      margin-bottom: 10px;
+    }
+
+    .doc-title {
+      font-size: 26px;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+      margin-bottom: 6px;
+    }
+
+    .doc-subtitle {
+      font-size: 14px;
+      color: #64748b;
+      font-weight: 500;
+      margin-bottom: 12px;
+    }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      background-color: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 11.5px;
+    }
+
+    .meta-item strong {
+      display: block;
+      color: #0f172a;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 2px;
+    }
+
+    .meta-item span {
+      color: #475569;
+    }
+
+    /* Section Styles */
+    .section {
+      margin-bottom: 22px;
+      page-break-inside: auto;
+    }
+
+    .section-break-before {
+      page-break-before: always;
+    }
+
+    .section-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: #0f172a;
+      border-bottom: 1.5px solid #e2e8f0;
+      padding-bottom: 6px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-number {
+      background-color: #0f172a;
+      color: #ffffff;
+      font-size: 11px;
+      font-weight: 700;
+      width: 22px;
+      height: 22px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+    }
+
+    p {
+      margin-bottom: 10px;
+      color: #334155;
+    }
+
+    /* Cards & Callouts */
+    .card-callout {
+      background-color: #f8fafc;
+      border-left: 3.5px solid #38bdf8;
+      border-radius: 0 6px 6px 0;
+      padding: 12px 14px;
+      margin-bottom: 14px;
+      font-size: 12.5px;
+    }
+
+    .card-callout strong {
+      color: #0f172a;
+    }
+
+    .analogy-box {
+      background-color: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-left: 4px solid #16a34a;
+      border-radius: 6px;
+      padding: 12px 14px;
+      margin-bottom: 14px;
+      font-size: 12.5px;
+    }
+
+    .analogy-title {
+      font-weight: 700;
+      color: #15803d;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 14px;
+      font-size: 12px;
+    }
+
+    th {
+      background-color: #0f172a;
+      color: #ffffff;
+      text-align: left;
+      padding: 8px 10px;
+      font-weight: 600;
+      font-size: 11px;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    td {
+      padding: 8px 10px;
+      border-bottom: 1px solid #e2e8f0;
+      color: #334155;
+      vertical-align: top;
+    }
+
+    tr:nth-child(even) td {
+      background-color: #f8fafc;
+    }
+
+    /* Code Blocks */
+    pre {
+      background-color: #0b1120;
+      color: #f1f5f9;
+      font-family: "JetBrains Mono", Consolas, "Courier New", monospace;
+      font-size: 11px;
+      line-height: 1.5;
+      padding: 12px 14px;
+      border-radius: 6px;
+      overflow-x: auto;
+      margin-bottom: 12px;
+      border: 1px solid #1e293b;
+    }
+
+    code {
+      font-family: "JetBrains Mono", Consolas, "Courier New", monospace;
+      font-size: 11px;
+      background-color: #f1f5f9;
+      color: #0f172a;
+      padding: 1.5px 5px;
+      border-radius: 4px;
+      border: 1px solid #e2e8f0;
+    }
+
+    pre code {
+      background: none;
+      color: inherit;
+      padding: 0;
+      border: none;
+    }
+
+    .code-comment { color: #64748b; }
+    .code-tag { color: #f43f5e; font-weight: 600; }
+    .code-attr { color: #38bdf8; }
+    .code-val { color: #fde047; }
+    .code-keyword { color: #c084fc; font-weight: 600; }
+    .code-func { color: #60a5fa; }
+    .code-str { color: #86efac; }
+
+    /* Flowcharts / Architecture Visuals */
+    .diagram-container {
+      background-color: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 14px;
+      margin-bottom: 14px;
+    }
+
+    .diagram-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .diagram-card {
+      background-color: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 10px 12px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    }
+
+    .diagram-card-title {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #0f172a;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 4px;
+      margin-bottom: 6px;
+    }
+
+    .diagram-card-content {
+      font-size: 11px;
+      color: #475569;
+      line-height: 1.45;
+    }
+
+    .flow-step-box {
+      background-color: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-left: 3px solid #0f172a;
+      border-radius: 4px;
+      padding: 8px 10px;
+      margin-bottom: 6px;
+      font-size: 11.5px;
+    }
+
+    .flow-step-box strong {
+      color: #0f172a;
+    }
+
+    /* Lists */
+    ul, ol {
+      margin-left: 20px;
+      margin-bottom: 12px;
+      color: #334155;
+    }
+
+    li {
+      margin-bottom: 4px;
+    }
+
+    /* Quiz Box */
+    .quiz-box {
+      background-color: #faf5ff;
+      border: 1px solid #e9d5ff;
+      border-left: 4px solid #9333ea;
+      border-radius: 6px;
+      padding: 14px;
+      margin-top: 14px;
+      page-break-inside: avoid;
+    }
+
+    .quiz-title {
+      font-size: 13.5px;
+      font-weight: 800;
+      color: #6b21a8;
+      margin-bottom: 8px;
+    }
+
+    .quiz-question {
+      margin-bottom: 10px;
+      font-size: 12px;
+    }
+
+    .quiz-question strong {
+      color: #4c1d95;
+    }
+
+    .roadmap-badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 700;
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+
+    .roadmap-badge.active-badge {
+      background: #0f172a;
+      color: #38bdf8;
+    }
+
+    .footer-note {
+      text-align: center;
+      font-size: 10px;
+      color: #94a3b8;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 10px;
+      margin-top: 24px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    
+    <!-- HEADER -->
+    <header class="doc-header">
+      <div class="badge-pill">Vaultly Master Engineering Series • Chapter 1</div>
+      <h1 class="doc-title">Vaultly: Complete Project Understanding</h1>
+      <div class="doc-subtitle">Software Architecture Blueprint & Foundation Lesson for Full-Stack Mastery</div>
+      
+      <div class="meta-grid">
+        <div class="meta-item">
+          <strong>Application</strong>
+          <span>Vaultly Expense Tracker</span>
+        </div>
+        <div class="meta-item">
+          <strong>Architecture</strong>
+          <span>Vanilla SPA + Serverless AI</span>
+        </div>
+        <div class="meta-item">
+          <strong>Role</strong>
+          <span>Senior Architect & Mentor</span>
+        </div>
+        <div class="meta-item">
+          <strong>Storage Layer</strong>
+          <span>Client-Side LocalStorage</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- SECTION 1 -->
+    <section class="section">
+      <h2 class="section-title"><span class="section-number">1</span> What Vaultly Actually Is (Audited from Code)</h2>
+      <p>
+        <strong>Vaultly</strong> is a privacy-first, client-side personal finance and financial intelligence <strong>Single Page Application (SPA)</strong> paired with an on-demand serverless conversational AI assistant.
+      </p>
+      
+      <div class="card-callout">
+        <strong>The Problem It Solves:</strong> Most budgeting and finance apps require users to upload bank logins, credit card statements, and daily cash transactions to unknown third-party cloud databases. Vaultly eliminates that risk entirely: <strong>100% of financial transactions, budgets, recurring obligations, and savings goals remain on the user's local machine in browser <code>localStorage</code></strong>.
+      </div>
+
+      <p><strong>Core Capabilities Discovered in Code:</strong></p>
+      <ul>
+        <li><strong>Personal Finance Management:</strong> Multi-currency transaction logging, categorized budgets, multi-tier savings goals, and recurring payment tracking.</li>
+        <li><strong>Financial Intelligence Engines:</strong>
+          <ul>
+            <li><strong>4-Pillar Financial Health Score:</strong> Evaluates Savings Rate (30%), Budget Adherence (30%), Runway Days (25%), and Volatility (15%).</li>
+            <li><strong>What-If Digital Twin:</strong> Simulates cashflow scenarios before users make discretionary purchases.</li>
+            <li><strong>Anomaly Detection Engine:</strong> Flags statistical expense spikes compared against historical category averages.</li>
+            <li><strong>Safe-to-Spend Runway:</strong> Computes true disposable capital after deducting fixed commitments.</li>
+          </ul>
+        </li>
+        <li><strong>Conversational AI Assistant:</strong> Seamlessly queries real financial context when finance topics are discussed, while remaining a versatile assistant for coding, writing, learning, and general problem-solving.</li>
+      </ul>
+    </section>
+
+    <!-- SECTION 2 -->
+    <section class="section">
+      <h2 class="section-title"><span class="section-number">2</span> High-Level Architecture Diagram</h2>
+      <p>Vaultly separates the privacy-safe user interface from cloud AI using an intelligent dual-tier architecture:</p>
+      
+      <div class="diagram-container">
+        <div class="diagram-grid">
+          <div class="diagram-card">
+            <div class="diagram-card-title">TIER 1: Client-Side Browser (100% Private)</div>
+            <div class="diagram-card-content">
+              • <strong>DOM Viewport (index.html):</strong> 7 view panels, modal dialogs, and SVG icons.<br>
+              • <strong>Presentation Layer (style.css):</strong> Obsidian Glass monochrome design system.<br>
+              • <strong>Application Controller (script.js):</strong> Central reactive state object.<br>
+              • <strong>Persistence:</strong> <code>localStorage</code> (Key: <code>vaultly_state_v2</code>).<br>
+              • <strong>Analytics:</strong> HTML5 Canvas via Chart.js v4.4.1.
+            </div>
+          </div>
+          <div class="diagram-card">
+            <div class="diagram-card-title">TIER 2: Cloud Serverless (api/chat.js)</div>
+            <div class="diagram-card-content">
+              • <strong>Vercel Serverless Function:</strong> Secure Node.js proxy environment.<br>
+              • <strong>In-Memory Rate Limiter:</strong> Prevents API flooding and token exhaustion.<br>
+              • <strong>Google Gemini API:</strong> Primary fast conversational LLM.<br>
+              • <strong>OpenAI API:</strong> Secondary fallback LLM.<br>
+              • <strong>Deterministic Offline Engine:</strong> Instant rule-based answers when offline.
+            </div>
+          </div>
+        </div>
+
+        <div style="font-size:11px; color:#475569; text-align:center; padding: 4px; background:#e2e8f0; border-radius:4px; font-weight:600;">
+          Data Flow: User Click ➔ script.js Controller ➔ LocalStorage ➔ Math Engines ➔ DOM Update ➔ Optional /api/chat Proxy
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 3 -->
+    <section class="section">
+      <h2 class="section-title"><span class="section-number">3</span> The Actual Technology Stack</h2>
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 22%;">Layer</th>
+            <th style="width: 33%;">Technology Discovered</th>
+            <th>Architectural Rationale</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Frontend Core</strong></td>
+            <td>Semantic HTML5, CSS3, Modern Vanilla JS (ES2022+)</td>
+            <td>Zero framework overhead (no React/Next.js client bloat). Instant 0ms hydration and minimal CPU footprint.</td>
+          </tr>
+          <tr>
+            <td><strong>Build Tooling</strong></td>
+            <td>Zero-Build Architecture</td>
+            <td>No root <code>package.json</code> or compiler needed. Runs natively in any standard browser immediately.</td>
+          </tr>
+          <tr>
+            <td><strong>Design System</strong></td>
+            <td>Obsidian Glass Monochrome</td>
+            <td>CSS custom properties, glassmorphism backdrops, smooth cubic-bezier transitions, and high-DPI responsive design.</td>
+          </tr>
+          <tr>
+            <td><strong>Iconography</strong></td>
+            <td>Lucide Icons CDN (v0.344.0)</td>
+            <td>Lightweight SVG vector icons replaced dynamically via client-side DOM scan (<code>lucide.createIcons()</code>).</td>
+          </tr>
+          <tr>
+            <td><strong>Visual Charts</strong></td>
+            <td>Chart.js CDN (v4.4.1)</td>
+            <td>Hardware-accelerated HTML5 <code>&lt;canvas&gt;</code> rendering for doughnut distributions and bar charts.</td>
+          </tr>
+          <tr>
+            <td><strong>Storage</strong></td>
+            <td>Browser <code>localStorage</code></td>
+            <td>Zero external database dependency. Complete data ownership and offline accessibility for users.</td>
+          </tr>
+          <tr>
+            <td><strong>Backend Gateway</strong></td>
+            <td>Vercel Serverless (Node.js)</td>
+            <td>Houses <code>api/chat.js</code> to keep secret AI API keys safe on the server side instead of exposing them in client JS.</td>
+          </tr>
+          <tr>
+            <td><strong>AI Models</strong></td>
+            <td>Google Gemini & OpenAI</td>
+            <td>Gemini 1.5 Flash / 2.0 Flash with secondary OpenAI <code>gpt-4o-mini</code> support and deterministic offline fallback.</td>
+          </tr>
+          <tr>
+            <td><strong>Quality Harness</strong></td>
+            <td>Node.js Testing Scripts</td>
+            <td>19 unit tests in <code>test-runner.js</code>; 14-device viewport responsive auditor in <code>verify-responsive.mjs</code>.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- SECTION 4 & 5 (PAGE BREAK FOR CLEAN PRINT) -->
+    <section class="section section-break-before">
+      <h2 class="section-title"><span class="section-number">4</span> Simplified Project Folder Tree</h2>
+      <pre><code>vaultly-expense-tracker/
+├── index.html                   <span class="code-comment"># Single-Page Application DOM structure & 7 view panels</span>
+├── style.css                    <span class="code-comment"># Obsidian Glass styling, responsive layout & animations</span>
+├── script.js                    <span class="code-comment"># Reactive state manager, math engines & UI controller</span>
+├── vercel.json                  <span class="code-comment"># Routing configuration & HTTP security headers</span>
+├── test-runner.js               <span class="code-comment"># 19 automated unit tests for math & state parsers</span>
+├── verify-responsive.mjs        <span class="code-comment"># Headless Chrome CDP 14-viewport responsive validation</span>
+├── README.md                    <span class="code-comment"># Project manual, installation guide & financial formulas</span>
+├── .gitignore                   <span class="code-comment"># Git ignore patterns (.tmp-chrome-profile, .vercel, etc.)</span>
+├── api/
+│   └── chat.js                  <span class="code-comment"># Vercel serverless function (AI proxy & rate limiter)</span>
+└── docs/
+    └── superpowers/plans/       <span class="code-comment"># Architecture plans & technical specifications</span></code></pre>
+
+      <h2 class="section-title" style="margin-top: 18px;"><span class="section-number">5</span> The 10 Most Important Files to Understand First</h2>
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 28%;">File Path</th>
+            <th>Primary Function & Developer Responsibility</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>index.html</code></td>
+            <td>The single-page skeleton. Contains all 7 view panels, modal dialogs, and external CDN script tags.</td>
+          </tr>
+          <tr>
+            <td><code>script.js</code></td>
+            <td>The central brain. Manages the <code>state</code> object, persistence, calculations, and UI event listeners.</td>
+          </tr>
+          <tr>
+            <td><code>style.css</code></td>
+            <td>The presentation engine. Contains the Obsidian Glass design system, CSS variables, and layout breakpoints.</td>
+          </tr>
+          <tr>
+            <td><code>api/chat.js</code></td>
+            <td>The serverless backend. Handles AI requests, injects financial context when needed, and enforces rate limits.</td>
+          </tr>
+          <tr>
+            <td><code>vercel.json</code></td>
+            <td>Deployment configuration. Configures clean routing and injects production security headers.</td>
+          </tr>
+          <tr>
+            <td><code>test-runner.js</code></td>
+            <td>Automated test suite. Executes 19 unit tests to guarantee mathematical precision across all modules.</td>
+          </tr>
+          <tr>
+            <td><code>verify-responsive.mjs</code></td>
+            <td>Visual quality audit. Uses Chrome DevTools Protocol to inspect 14 viewports for zero overflow.</td>
+          </tr>
+          <tr>
+            <td><code>README.md</code></td>
+            <td>System documentation. Documents financial formulas, shortcut keys, and local environment setup.</td>
+          </tr>
+          <tr>
+            <td><code>.gitignore</code></td>
+            <td>Repository hygiene. Prevents testing caches, local credentials, and build artifacts from leaking to Git.</td>
+          </tr>
+          <tr>
+            <td><code>docs/...plans/...3d.md</code></td>
+            <td>Architectural specification. Detailed technical plan for 3D interactions and performance budgets.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- SECTION 6 & 7 -->
+    <section class="section">
+      <h2 class="section-title"><span class="section-number">6</span> External APIs and Services Identified</h2>
+      <ul>
+        <li><strong>Google Gemini API (Active):</strong> <code>generativelanguage.googleapis.com</code> — Primary conversational and analysis model. Configured via <code>GEMINI_API_KEY</code>.</li>
+        <li><strong>OpenAI API (Secondary Fallback):</strong> <code>api.openai.com</code> — Fallback provider. Configured via <code>OPENAI_API_KEY</code>.</li>
+        <li><strong>Lucide CDN (Active):</strong> <code>unpkg.com/lucide@latest</code> — Provides modern UI icons without local SVG bloat.</li>
+        <li><strong>Chart.js CDN (Active):</strong> <code>cdn.jsdelivr.net/npm/chart.js@4.4.1</code> — Visual canvas rendering for distributions and cashflow.</li>
+        <li><strong>Google Fonts CDN (Active):</strong> <code>fonts.googleapis.com</code> — Delivers <em>Inter</em> and <em>JetBrains Mono</em> typefaces.</li>
+        <li><strong>External Databases (Not Used):</strong> ❌ No external PostgreSQL, Supabase, or MongoDB instance exists. Storage is 100% browser-local.</li>
+        <li><strong>Payment Processors (Not Used):</strong> ❌ No Stripe or Razorpay SDK is connected. Vaultly is an analytical intelligence platform.</li>
+      </ul>
+
+      <h2 class="section-title" style="margin-top: 18px;"><span class="section-number">7</span> Proposed Learning Roadmap</h2>
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 15%;">Module</th>
+            <th style="width: 32%;">Topic</th>
+            <th>Learning Objective & Deliverable</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="roadmap-badge active-badge">Module 1</span></td>
+            <td><strong>The Blueprint (index.html)</strong></td>
+            <td>Single Page Application (SPA) structure, view switching, DOM hierarchy, and modals. <em>(Current Lesson)</em></td>
+          </tr>
+          <tr>
+            <td><span class="roadmap-badge">Module 2</span></td>
+            <td><strong>The Visual Layer (style.css)</strong></td>
+            <td>CSS custom properties, glassmorphism filters, responsive grids, and scroll-snapping carousels.</td>
+          </tr>
+          <tr>
+            <td><span class="roadmap-badge">Module 3</span></td>
+            <td><strong>The Brain & Memory (script.js)</strong></td>
+            <td>Reactive state management, data modeling, event delegation, and <code>localStorage</code> serialization.</td>
+          </tr>
+          <tr>
+            <td><span class="roadmap-badge">Module 4</span></td>
+            <td><strong>Financial Intelligence</strong></td>
+            <td>Mathematical formulation of Health Scores, What-If simulation, Anomaly Detection, and Runway.</td>
+          </tr>
+          <tr>
+            <td><span class="roadmap-badge">Module 5</span></td>
+            <td><strong>Interactive 3D & UI</strong></td>
+            <td>Spatial canvas particle effects, cursor proximity math, modal lifecycles, and keyboard shortcuts.</td>
+          </tr>
+          <tr>
+            <td><span class="roadmap-badge">Module 6</span></td>
+            <td><strong>The AI Gateway (api/chat.js)</strong></td>
+            <td>Serverless API routing, prompt conditioning, streaming/JSON parsing, and rate limiting.</td>
+          </tr>
+          <tr>
+            <td><span class="roadmap-badge">Module 7</span></td>
+            <td><strong>Testing & Verification</strong></td>
+            <td>Writing automated unit tests in Node.js, mock testing, and Chrome CDP viewport testing.</td>
+          </tr>
+          <tr>
+            <td><span class="roadmap-badge">Module 8</span></td>
+            <td><strong>Deployment & Security</strong></td>
+            <td>Vercel deployment, security headers, CSP rules, performance caching, and production maintenance.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- SECTION 8: LESSON 1 (PAGE BREAK FOR CLEAN LESSON UNIT) -->
+    <section class="section section-break-before">
+      <h2 class="section-title"><span class="section-number">8</span> Lesson 1: The Entry Point (index.html & The Anatomy of a Single Page Application)</h2>
+      
+      <p><strong>1. What Are We Learning & Why?</strong><br>
+      We are learning how a <strong>Single Page Application (SPA)</strong> displays 7 completely different screens (Overview, Transactions, Analytics, Budgets, Goals, AI, Settings) <em>without ever reloading the browser page</em>. In traditional websites, clicking a link forces the browser to destroy the page and fetch a new HTML file. In modern applications, we download one HTML file once, and use CSS and JavaScript to swap what the user sees instantly.
+      </p>
+
+      <div class="analogy-box">
+        <div class="analogy-title">🎭 The Beginner Analogy: The Theatre Stage and Scenery Backdrops</div>
+        Imagine sitting in a theatre watching a play:
+        <br>• In a traditional website, when Scene 2 begins, the entire theatre building is demolished and rebuilt from scratch. It is slow and causes a jarring white flash.
+        <br>• In a <strong>Single Page Application</strong>, the stage stays in place. Behind the curtain, all 7 backdrops (the Castle, the Market, the Forest) are already standing. When Scene 2 starts, the stage crew simply shines a spotlight on the Market and turns off the lights on the Castle.
+        <br><br>In Vaultly, <code>index.html</code> is that single stage containing all 7 panels at once!
+      </div>
+
+      <p><strong>2. Real Code Excerpt from <code>index.html</code>:</strong></p>
+      <pre><code><span class="code-comment">&lt;!-- THE NAVIGATION CONTROLS (The Light Switch) --&gt;</span>
+<span class="code-tag">&lt;nav</span> <span class="code-attr">class=</span><span class="code-val">"sidebar-nav"</span><span class="code-tag">&gt;</span>
+  <span class="code-tag">&lt;button</span> <span class="code-attr">type=</span><span class="code-val">"button"</span> <span class="code-attr">class=</span><span class="code-val">"sidebar-nav-item active"</span> <span class="code-attr">data-view-target=</span><span class="code-val">"overview"</span><span class="code-tag">&gt;</span>
+    <span class="code-tag">&lt;span&gt;</span>Overview<span class="code-tag">&lt;/span&gt;</span>
+  <span class="code-tag">&lt;/button&gt;</span>
+  <span class="code-tag">&lt;button</span> <span class="code-attr">type=</span><span class="code-val">"button"</span> <span class="code-attr">class=</span><span class="code-val">"sidebar-nav-item"</span> <span class="code-attr">data-view-target=</span><span class="code-val">"budgets"</span><span class="code-tag">&gt;</span>
+    <span class="code-tag">&lt;span&gt;</span>Budgets<span class="code-tag">&lt;/span&gt;</span>
+  <span class="code-tag">&lt;/button&gt;</span>
+<span class="code-tag">&lt;/nav&gt;</span>
+
+<span class="code-comment">&lt;!-- THE VIEWPORT CONTAINER (The Stage) --&gt;</span>
+<span class="code-tag">&lt;main</span> <span class="code-attr">class=</span><span class="code-val">"dashboard-viewport"</span> <span class="code-attr">id=</span><span class="code-val">"dashboard"</span><span class="code-tag">&gt;</span>
+  <span class="code-comment">&lt;!-- Panel 1: Overview (Currently Spotlighted) --&gt;</span>
+  <span class="code-tag">&lt;div</span> <span class="code-attr">class=</span><span class="code-val">"view-panel active"</span> <span class="code-attr">id=</span><span class="code-val">"viewOverview"</span> <span class="code-attr">data-view=</span><span class="code-val">"overview"</span><span class="code-tag">&gt;</span>
+    <span class="code-tag">&lt;h1&gt;</span>Your money, in focus.<span class="code-tag">&lt;/h1&gt;</span>
+  <span class="code-tag">&lt;/div&gt;</span>
+
+  <span class="code-comment">&lt;!-- Panel 2: Budgets (Currently in the Dark) --&gt;</span>
+  <span class="code-tag">&lt;div</span> <span class="code-attr">class=</span><span class="code-val">"view-panel"</span> <span class="code-attr">id=</span><span class="code-val">"viewBudgets"</span> <span class="code-attr">data-view=</span><span class="code-val">"budgets"</span><span class="code-tag">&gt;</span>
+    <span class="code-tag">&lt;h2&gt;</span>Budget Allocations<span class="code-tag">&lt;/h2&gt;</span>
+  <span class="code-tag">&lt;/div&gt;</span>
+<span class="code-tag">&lt;/main&gt;</span></code></pre>
+
+      <p><strong>3. Step-by-Step Breakdown:</strong></p>
+      <ul>
+        <li><code>class="view-panel"</code>: In <code>style.css</code>, this class is defined with <code>display: none;</code>. By default, every panel is completely hidden from view.</li>
+        <li><code>class="view-panel active"</code>: In CSS, adding the <code>.active</code> selector overrides the display: <code>.view-panel.active { display: block; }</code>. This is the spotlight!</li>
+        <li><code>data-view-target="budgets"</code>: A custom HTML5 data attribute. It acts as an address tag on the button telling JavaScript: <em>"When clicked, target the panel named 'budgets'"</em>.</li>
+        <li><code>data-view="budgets"</code>: The matching address tag on the panel element itself.</li>
+      </ul>
+
+      <p><strong>4. App Connection Flow (How HTML, CSS, and JS Collaborate):</strong></p>
+      <div class="flow-step-box">
+        <strong>Step 1 (User Action):</strong> The user clicks the navigation button with <code>data-view-target="budgets"</code>.
+      </div>
+      <div class="flow-step-box">
+        <strong>Step 2 (JavaScript Event Listener):</strong> In <code>script.js</code>, an event listener catches the click and reads <code>button.dataset.viewTarget</code>.
+      </div>
+      <div class="flow-step-box">
+        <strong>Step 3 (DOM Class Manipulation):</strong> JS runs <code>switchView('budgets')</code>:
+        <br>• It finds all elements with <code>.view-panel</code> and removes the <code>active</code> class (turning off all stage lights).
+        <br>• It finds <code>.view-panel[data-view="budgets"]</code> and adds the <code>active</code> class (turning on the spotlight).
+      </div>
+      <div class="flow-step-box">
+        <strong>Step 4 (Instant CSS Rendering):</strong> The browser immediately reveals the Budgets screen in 0.0 milliseconds without a page refresh!
+      </div>
+
+      <p style="margin-top: 14px;"><strong>5. Practical JavaScript Implementation (from <code>script.js</code>):</strong></p>
+      <pre><code><span class="code-keyword">function</span> <span class="code-func">switchView</span>(viewName) {
+  <span class="code-comment">// 1. Turn off spotlights on all panels</span>
+  document.<span class="code-func">querySelectorAll</span>(<span class="code-str">'.view-panel'</span>).<span class="code-func">forEach</span>(panel =&gt; {
+    panel.classList.<span class="code-func">remove</span>(<span class="code-str">'active'</span>);
+  });
+
+  <span class="code-comment">// 2. Turn on spotlight for the matching target panel</span>
+  <span class="code-keyword">const</span> targetPanel = document.<span class="code-func">querySelector</span>(<span class="code-str">`.view-panel[data-view="${viewName}"]`</span>);
+  <span class="code-keyword">if</span> (targetPanel) {
+    targetPanel.classList.<span class="code-func">add</span>(<span class="code-str">'active'</span>);
+  }
+
+  <span class="code-comment">// 3. Update the active highlight on the navigation buttons</span>
+  document.<span class="code-func">querySelectorAll</span>(<span class="code-str">'[data-view-target]'</span>).<span class="code-func">forEach</span>(btn =&gt; {
+    btn.classList.<span class="code-func">toggle</span>(<span class="code-str">'active'</span>, btn.dataset.viewTarget === viewName);
+  });
+}</code></pre>
+
+      <p><strong>6. Small Hands-On Task:</strong><br>
+      Open <code>index.html</code> in your editor and locate lines 230–260. Look for the main container <code>&lt;main class="dashboard-viewport" id="dashboard"&gt;</code> and note how all seven panels (<code>viewOverview</code>, <code>viewTransactions</code>, <code>viewAnalytics</code>, <code>viewBudgets</code>, <code>viewGoals</code>, <code>viewAi</code>, <code>viewSettings</code>) are nestled inside.
+      </p>
+
+      <!-- QUIZ -->
+      <div class="quiz-box">
+        <div class="quiz-title">📝 Chapter 1 Verification Quiz</div>
+        <p style="color: #6b21a8; font-size: 11.5px; margin-bottom: 8px;">Answer these 3 questions in your own words to solidify your understanding before Chapter 2:</p>
+        
+        <div class="quiz-question">
+          <strong>Question 1:</strong> Why does Vaultly load all 7 panels in a single <code>index.html</code> file instead of having 7 separate files (like <code>overview.html</code>, <code>budgets.html</code>, etc.)?
+        </div>
+        <div class="quiz-question">
+          <strong>Question 2:</strong> What does the CSS class <code>active</code> actually do when applied to a <code>.view-panel</code> element?
+        </div>
+        <div class="quiz-question">
+          <strong>Question 3:</strong> If you wanted to add an 8th screen called "Investments", what HTML element and attributes would you need to create in <code>index.html</code>?
+        </div>
+      </div>
+    </section>
+
+    <footer class="footer-note">
+      Vaultly Engineering Documentation • Created for Developer Mentorship & Codebase Ownership • 2026
+    </footer>
+
+  </div>
+</body>
+</html>

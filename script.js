@@ -899,6 +899,11 @@ const DOM = (typeof document !== 'undefined') ? {
   loadDemoBtnSettings: document.getElementById('loadDemoBtnSettings'),
   clearAllBtnSettings: document.getElementById('clearAllBtnSettings'),
   storageMetricsText: document.getElementById('storageMetricsText'),
+  geminiApiKeyInput: document.getElementById('geminiApiKeyInput'),
+  saveGeminiKeyBtn: document.getElementById('saveGeminiKeyBtn'),
+  resetGeminiKeyBtn: document.getElementById('resetGeminiKeyBtn'),
+  toggleGeminiKeyVisibilityBtn: document.getElementById('toggleGeminiKeyVisibilityBtn'),
+  geminiKeyStatusLabel: document.getElementById('geminiKeyStatusLabel'),
 
   // Modals (Transactions & Delete)
   openAddModalBtn: document.getElementById('openAddModalBtn'),
@@ -2540,7 +2545,10 @@ function localDeterministicFinancialAI(userQuery, context) {
   }
 
   // 2. Personal Finance Queries
-  if (q.includes('spend') && (q.includes('this month') || q.includes('how much') || q.includes('total'))) {
+  if (q.includes('spend') || q.includes('spending') || q.includes('outflow')) {
+    if (topCat) {
+      return `You've spent a total of **${formatCurrency(totals.totalExpenses)}** across ${totals.expenseCount || 0} transactions so far. Your largest expense is **${topCat.category}** at **${formatCurrency(topCat.total)}** (${topCat.percentage}% of all expenses).`;
+    }
     return `You've spent a total of **${formatCurrency(totals.totalExpenses)}** across ${totals.expenseCount || 0} transactions so far.`;
   }
 
@@ -2607,7 +2615,7 @@ function localDeterministicFinancialAI(userQuery, context) {
   }
 
   // 3. Finance keywords fallback
-  const financeKeywords = ['money', 'income', 'expense', 'transaction', 'cash', 'rupee', '₹', 'salary', 'cashflow', 'afford', 'cost'];
+  const financeKeywords = ['spend', 'spending', 'spent', 'money', 'income', 'expense', 'expenses', 'transaction', 'transactions', 'cash', 'rupee', '₹', 'salary', 'cashflow', 'afford', 'cost', 'bought', 'purchase', 'bill', 'bills', 'payment', 'paid'];
   if (financeKeywords.some(k => q.includes(k))) {
     return `Here's where things stand: Income is **${formatCurrency(totals.totalIncome)}**, Expenses are **${formatCurrency(totals.totalExpenses)}**, leaving a Net Balance of **${formatCurrency(totals.netBalance)}**. Want to check your top categories or safe daily spend?`;
   }
@@ -2682,6 +2690,98 @@ function parseNaturalLanguageTransaction(text) {
   return { amount, type, category, date, title };
 }
 
+function getActiveGeminiKey() {
+  const custom = localStorage.getItem('vaultly_gemini_key');
+  return (custom && custom.trim()) ? custom.trim() : '';
+}
+
+async function callClientDirectGemini(userText, context, history, apiKey) {
+  if (!apiKey) return null;
+  const totals = context?.totals || { totalIncome: 0, totalExpenses: 0, netBalance: 0 };
+  const breakdown = Array.isArray(context?.breakdown) ? context.breakdown : [];
+  const topCat = breakdown[0] || null;
+
+  const systemInstructions = `You are Vaultly AI, a friendly, intelligent, and versatile conversational assistant.
+Tone & Personality:
+- Be casual, warm, and natural — talk like a sharp, helpful friend, never like a stiff corporate bot or dry textbook.
+- Use natural conversational phrasing and contractions (I'm, you're, let's, don't).
+- Keep casual chatter lightweight and snappy. Save detailed explanations for when the user genuinely asks for them.
+- Avoid robotic clichés like "As an AI...", "Certainly!", or "According to verified records...".
+
+Capabilities & Context:
+- You can help with any topic: casual talk, learning, coding, writing, debugging, planning, and brainstorming.
+- You ALSO have access to the user's personal finance data in Vaultly when they want to talk money.
+- When the user asks about their finances, spending, budgets, or goals, use the verified financial context provided below in an encouraging, clear, and approachable way.
+- For general questions (coding, science, jokes, advice), answer directly and naturally without forcing financial topics.
+- Never invent financial data. When financial context is provided, cite exact numbers.
+
+The user's verified financial data:
+- Total Income: ₹${totals.totalIncome || 0}
+- Total Expenses: ₹${totals.totalExpenses || 0}
+- Net Balance: ₹${totals.netBalance || 0}
+- Top Category: ${topCat ? `${topCat.category} (₹${topCat.total}, ${topCat.percentage}%)` : 'None'}
+- Total Transactions: ${context?.transactionCount || 0}
+- Active Budgets: ${context?.budgetCount || 0}
+- Active Goals: ${context?.goalCount || 0}`;
+
+  const contents = [
+    { role: 'user', parts: [{ text: systemInstructions }] },
+    { role: 'model', parts: [{ text: "Understood! I'm Vaultly AI, ready to help with casual conversations, general questions, learning, coding, brainstorming, and personal finance." }] }
+  ];
+
+  if (Array.isArray(history)) {
+    for (const msg of history.slice(-10)) {
+      if (msg && msg.content) {
+        contents.push({
+          role: msg.role === 'assistant' ? 'model' : 'user',
+          parts: [{ text: msg.content }]
+        });
+      }
+    }
+  }
+
+  contents.push({
+    role: 'user',
+    parts: [{ text: userText }]
+  });
+
+  const payload = {
+    contents,
+    generationConfig: {
+      temperature: 0.7,
+      maxOutputTokens: 1500
+    }
+  };
+
+  const candidateModels = ['gemini-flash-latest', 'gemini-2.5-flash', 'gemini-1.5-flash'];
+  for (const modelName of candidateModels) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${encodeURIComponent(apiKey)}`;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 12000);
+
+      const apiRes = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+
+      if (apiRes.ok) {
+        const apiData = await apiRes.json();
+        const reply = apiData?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (reply && reply.trim()) {
+          return reply.trim();
+        }
+      }
+    } catch (subErr) {
+      // try next candidate model
+    }
+  }
+  return null;
+}
+
 async function handleAiChatSubmit(e) {
   if (e) e.preventDefault();
   const input = DOM.aiChatInput;
@@ -2735,23 +2835,41 @@ async function handleAiChatSubmit(e) {
   };
 
   let replyText = '';
+  const activeKey = getActiveGeminiKey();
 
   try {
     // Attempt secure serverless API endpoint
     const response = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: userText, context, history })
+      body: JSON.stringify({ message: userText, context, history, geminiKey: activeKey })
     });
 
     if (response.ok) {
       const data = await response.json();
       if (data && data.reply) {
-        replyText = data.reply;
+        if (data.source !== 'deterministic-fallback') {
+          replyText = data.reply;
+        } else {
+          // Keep fallback reply as backup if direct call fails
+          replyText = data.reply;
+        }
       }
     }
   } catch (err) {
     console.info('[Vaultly AI] Offline / API fallback active:', err.message);
+  }
+
+  // If serverless is offline or returned fallback, attempt direct client Gemini call with the key
+  if ((!replyText || replyText.includes('offline mode without an AI key')) && activeKey) {
+    try {
+      const directReply = await callClientDirectGemini(userText, context, history, activeKey);
+      if (directReply) {
+        replyText = directReply;
+      }
+    } catch (directErr) {
+      console.warn('[Vaultly AI] Client-side Gemini direct call failed:', directErr.message);
+    }
   }
 
   if (!replyText) {
@@ -3893,6 +4011,47 @@ function setupEventListeners() {
   if (document.getElementById('clearAllBtnMobile')) document.getElementById('clearAllBtnMobile').addEventListener('click', clearAllHandler);
   if (DOM.clearAllBtnSettings) DOM.clearAllBtnSettings.addEventListener('click', clearAllHandler);
   if (DOM.exportJsonBtn) DOM.exportJsonBtn.addEventListener('click', exportAllDataJSON);
+
+  // Gemini AI Key Settings handlers
+  if (DOM.geminiApiKeyInput) {
+    const savedKey = localStorage.getItem('vaultly_gemini_key') || '';
+    DOM.geminiApiKeyInput.value = savedKey;
+    if (DOM.geminiKeyStatusLabel) {
+      DOM.geminiKeyStatusLabel.textContent = savedKey ? 'Gemini API Key configured and active' : 'No Gemini Key configured (offline fallback active)';
+    }
+
+    if (DOM.saveGeminiKeyBtn) {
+      DOM.saveGeminiKeyBtn.addEventListener('click', () => {
+        const val = DOM.geminiApiKeyInput.value.trim();
+        if (val) {
+          localStorage.setItem('vaultly_gemini_key', val);
+          showToast('Gemini API Key saved successfully.', 'success');
+          if (DOM.geminiKeyStatusLabel) DOM.geminiKeyStatusLabel.textContent = 'Gemini API Key configured and active';
+        } else {
+          localStorage.removeItem('vaultly_gemini_key');
+          DOM.geminiApiKeyInput.value = '';
+          showToast('Cleared Gemini API key.', 'info');
+          if (DOM.geminiKeyStatusLabel) DOM.geminiKeyStatusLabel.textContent = 'No Gemini Key configured (offline fallback active)';
+        }
+      });
+    }
+
+    if (DOM.resetGeminiKeyBtn) {
+      DOM.resetGeminiKeyBtn.addEventListener('click', () => {
+        localStorage.removeItem('vaultly_gemini_key');
+        DOM.geminiApiKeyInput.value = '';
+        showToast('Cleared Gemini Key.', 'info');
+        if (DOM.geminiKeyStatusLabel) DOM.geminiKeyStatusLabel.textContent = 'No Gemini Key configured (offline fallback active)';
+      });
+    }
+
+    if (DOM.toggleGeminiKeyVisibilityBtn) {
+      DOM.toggleGeminiKeyVisibilityBtn.addEventListener('click', () => {
+        const isPassword = DOM.geminiApiKeyInput.type === 'password';
+        DOM.geminiApiKeyInput.type = isPassword ? 'text' : 'password';
+      });
+    }
+  }
 
   // Global Keyboard shortcuts
   document.addEventListener('keydown', e => {
