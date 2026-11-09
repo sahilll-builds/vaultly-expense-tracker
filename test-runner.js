@@ -434,13 +434,20 @@ const {
   calculatePrescriptiveRecommendations
 } = require('./script.js');
 
+const nowRef = new Date();
+const curYearStr = nowRef.getFullYear();
+const curMonthStr = String(nowRef.getMonth() + 1).padStart(2, '0');
+const prevDateRef = new Date(curYearStr, nowRef.getMonth() - 1, 1);
+const prevYearStr = prevDateRef.getFullYear();
+const prevMonthStr = String(prevDateRef.getMonth() + 1).padStart(2, '0');
+
 const sampleMultiMonthTxs = [
   // Current month
-  { id: 'tx-cur-1', title: 'Restaurant Dinner', amount: 3500, type: 'expense', category: 'Food & Dining', date: '2026-10-10' },
-  { id: 'tx-cur-2', title: 'Fuel & Transit', amount: 1200, type: 'expense', category: 'Transport', date: '2026-10-12' },
+  { id: 'tx-cur-1', title: 'Restaurant Dinner', amount: 3500, type: 'expense', category: 'Food & Dining', date: `${curYearStr}-${curMonthStr}-10` },
+  { id: 'tx-cur-2', title: 'Fuel & Transit', amount: 1200, type: 'expense', category: 'Transport', date: `${curYearStr}-${curMonthStr}-12` },
   // Prior month
-  { id: 'tx-prev-1', title: 'Groceries', amount: 1500, type: 'expense', category: 'Food & Dining', date: '2026-09-15' },
-  { id: 'tx-prev-2', title: 'Bus Pass', amount: 1000, type: 'expense', category: 'Transport', date: '2026-09-18' }
+  { id: 'tx-prev-1', title: 'Groceries', amount: 1500, type: 'expense', category: 'Food & Dining', date: `${prevYearStr}-${prevMonthStr}-15` },
+  { id: 'tx-prev-2', title: 'Bus Pass', amount: 1000, type: 'expense', category: 'Transport', date: `${prevYearStr}-${prevMonthStr}-18` }
 ];
 
 const diagnostic = calculateDiagnosticAnalytics(sampleMultiMonthTxs);
@@ -519,8 +526,9 @@ console.log('   ✔ PASS: What-If simulation engine computes non-mutating scenar
 // 16. Testing Hero Balance & 3D Chrome Visual Immovability (Stationary Integrity)
 console.log('16. Testing Hero Balance & 3D Chrome Visual Immovability:');
 const fs = require('fs');
-const scriptSrc = fs.readFileSync('script.js', 'utf8');
-const cssSrc = fs.readFileSync('style.css', 'utf8');
+const path = require('path');
+const scriptSrc = fs.readFileSync(path.join(__dirname, 'script.js'), 'utf8');
+const cssSrc = fs.readFileSync(path.join(__dirname, 'style.css'), 'utf8');
 
 // Verify script.js does not include .hero-balance-card in spatial tilt
 const tiltSelectorMatch = scriptSrc.match(/const targetSelector = '([^']+)';/);
@@ -546,7 +554,7 @@ assert(/position:\s*fixed;[\s\S]*?left:\s*0;/.test(cssSrc), 'desktop-sidebar mus
 assert(/margin-left:\s*250px;/.test(cssSrc), 'main-content-area must have margin-left: 250px on desktop');
 // 18. Testing Exactly Two Carousels (Horizontal Goals & Vertical AI Insights)
 console.log('18. Testing Exactly Two Carousels System:');
-const htmlSrc = fs.readFileSync('index.html', 'utf8');
+const htmlSrc = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
 
 // Check Horizontal Goals Carousel in index.html
 assert(htmlSrc.includes('id="goalsCarouselPrevBtn"') && htmlSrc.includes('id="goalsCarouselNextBtn"'), 'Goals carousel must have Prev/Next buttons');
@@ -575,8 +583,48 @@ assert(/\.btn-liquid-primary:hover|\.goal-card:hover/i.test(cssSrc), 'style.css 
 assert(scriptSrc.includes('pointer: coarse') || scriptSrc.includes('prefersReduced'), 'script.js must respect pointer: coarse and reduced motion');
 console.log('   ✔ PASS: Distinct cursor, hover, and tactile click feedback verified.');
 
+// 20. Multi-Currency Preference Engine Test
+console.log('20. Testing Multi-Currency Preference Engine:');
+const { formatCurrency, CURRENCIES, checkDueRecurringSubscriptions, resolveKeyboardAction } = require('./script.js');
+
+assert(CURRENCIES && typeof CURRENCIES === 'object', 'CURRENCIES table must be defined');
+assert(CURRENCIES.INR && CURRENCIES.USD && CURRENCIES.EUR && CURRENCIES.GBP && CURRENCIES.JPY, 'Must support INR, USD, EUR, GBP, and JPY');
+
+const formattedUSD = formatCurrency(1250.50, 'USD');
+assert(formattedUSD.includes('$') || formattedUSD.includes('USD'), 'USD must format with dollar sign');
+assert(formattedUSD.includes('1,250.50'), 'USD must format with standard thousands separator and decimals');
+
+const formattedJPY = formatCurrency(5000, 'JPY');
+assert(formattedJPY.includes('¥') || formattedJPY.includes('￥') || formattedJPY.includes('JPY'), 'JPY must format with yen symbol');
+assert(!formattedJPY.includes('.00'), 'JPY must format without fractional decimals');
+console.log('   ✔ PASS: Multi-currency formatting verified across international locales.');
+
+// 21. Automated Recurring Expense Due Detector Test
+console.log('21. Testing Automated Recurring Expense Due Detector:');
+const sampleRecurring = [
+  { id: 'rec-1', name: 'Cloud Hosting', amount: 750, nextDate: '2026-11-05', active: true },
+  { id: 'rec-2', name: 'Annual Domain', amount: 1200, nextDate: '2026-11-25', active: true },
+  { id: 'rec-3', name: 'Gym Membership', amount: 1500, nextDate: '2026-11-01', active: false } // Inactive
+];
+const testDate = new Date('2026-11-09');
+const dueItems = checkDueRecurringSubscriptions(sampleRecurring, testDate);
+assert.strictEqual(dueItems.length, 1, 'Only active items with nextDate <= reference date should be due');
+assert.strictEqual(dueItems[0].id, 'rec-1', 'Cloud Hosting should be identified as due');
+console.log('   ✔ PASS: Automated recurring expense detector flags overdue/due subscriptions accurately.');
+
+// 22. Global Keyboard Navigation Action Resolver Test
+console.log('22. Testing Global Keyboard Navigation Action Resolver:');
+assert.strictEqual(resolveKeyboardAction('t', { isInputFocused: false, isModalOpen: false }), 'open-transaction-modal');
+assert.strictEqual(resolveKeyboardAction('T', { isInputFocused: false, isModalOpen: false }), 'open-transaction-modal');
+assert.strictEqual(resolveKeyboardAction('t', { isInputFocused: true, isModalOpen: false }), null, 'Must ignore hotkeys when typing in input');
+assert.strictEqual(resolveKeyboardAction('1', { isInputFocused: false, isModalOpen: false }), 'view:overview');
+assert.strictEqual(resolveKeyboardAction('2', { isInputFocused: false, isModalOpen: false }), 'view:transactions');
+assert.strictEqual(resolveKeyboardAction('7', { isInputFocused: false, isModalOpen: false }), 'view:settings');
+assert.strictEqual(resolveKeyboardAction('Escape', { isInputFocused: false, isModalOpen: true }), 'close-modal');
+console.log('   ✔ PASS: Global keyboard navigation resolver routes keystrokes safely without input collision.');
+
 testChatEndpoint().then(() => {
-  console.log('\n--- ALL TEST SUITE CHECKS PASSED SUCCESSFULLY (19/19) ---');
+  console.log('\n--- ALL TEST SUITE CHECKS PASSED SUCCESSFULLY (22/22) ---');
 }).catch(err => {
   console.error('Test suite failed:', err);
   process.exit(1);

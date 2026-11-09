@@ -4,7 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Vaultly — AI-Powered Personal Finance Platform. Obsidian Glass Spatial Interface: Expense tracking, conversational AI financial assistant, smart budgets, savings goals, and real-time safe-to-spend analytics.">
+  <meta name="theme-color" content="#08090B">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Vaultly — AI-Powered Personal Finance Platform</title>
+
+  <!-- Web App Manifest -->
+  <link rel="manifest" href="manifest.json">
 
   <!-- Google Fonts: Space Grotesk (Brand & Display) + Manrope (UI & Numbers) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1112,12 +1118,36 @@
                 </div>
 
                 <div style="display: flex; flex-direction: column; gap: 24px;">
-                  <!-- Currency Setting Display -->
+                  <!-- Currency Setting Interactive Selector -->
                   <div class="insight-row">
                     <div class="insight-icon-box" aria-hidden="true"><i data-lucide="coins"></i></div>
-                    <div class="insight-text-group">
-                      <span class="insight-heading">Active Currency &amp; Locale</span>
-                      <p class="insight-content">Indian Rupee (INR — ₹). Standardized with <code>Intl.NumberFormat('en-IN')</code>.</p>
+                    <div class="insight-text-group" style="width: 100%;">
+                      <span class="insight-heading">Active Currency &amp; Regional Formatting</span>
+                      <p class="insight-content" id="activeCurrencyDescription">Choose your preferred currency. All balances, calculations, and forecasts adapt dynamically.</p>
+                      <div style="margin-top: 10px; max-width: 320px;">
+                        <select id="currencySelector" class="form-input-text" style="width: 100%; padding: 8px 12px; background: rgba(255,255,255,0.04); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-primary); font-size: 0.9rem;">
+                          <option value="INR">₹ INR — Indian Rupee (Default)</option>
+                          <option value="USD">$ USD — United States Dollar</option>
+                          <option value="EUR">€ EUR — European Euro</option>
+                          <option value="GBP">£ GBP — British Pound Sterling</option>
+                          <option value="JPY">¥ JPY — Japanese Yen</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Global Keyboard Shortcuts Cheatsheet -->
+                  <div class="insight-row">
+                    <div class="insight-icon-box" aria-hidden="true"><i data-lucide="keyboard"></i></div>
+                    <div class="insight-text-group" style="width: 100%;">
+                      <span class="insight-heading">Keyboard Shortcuts</span>
+                      <p class="insight-content">Control Vaultly without lifting your hands from the keyboard:</p>
+                      <div style="margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap;">
+                        <span class="glass-tag"><kbd style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; font-family: monospace;">T</kbd> or <kbd style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; font-family: monospace;">N</kbd> New Transaction</span>
+                        <span class="glass-tag"><kbd style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; font-family: monospace;">1-7</kbd> Switch View</span>
+                        <span class="glass-tag"><kbd style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; font-family: monospace;">⌘K</kbd> / <kbd style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; font-family: monospace;">Ctrl+K</kbd> Search</span>
+                        <span class="glass-tag"><kbd style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; font-family: monospace;">Esc</kbd> Close Dialog</span>
+                      </div>
                     </div>
                   </div>
 

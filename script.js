@@ -35,7 +35,8 @@ const STORAGE_KEYS = {
   budgets: 'vaultly_budgets',
   goals: 'vaultly_goals',
   recurring: 'vaultly_recurring',
-  customCategories: 'vaultly_custom_categories'
+  customCategories: 'vaultly_custom_categories',
+  currency: 'vaultly_currency'
 };
 
 const EXPENSE_CATEGORIES = [
@@ -132,6 +133,7 @@ const state = {
   goals: [],
   recurring: [],
   customCategories: [],
+  currency: 'INR',
   activeView: 'overview',
   activeTypeFilter: 'all',
   searchQuery: '',
@@ -287,9 +289,9 @@ function calculateCategoryBreakdown(transactionsList) {
   return breakdown;
 }
 
-function calculateSafeToSpend(transactionsList, recurringList = []) {
+function calculateSafeToSpend(transactionsList, recurringList = [], referenceDate = new Date()) {
   const { netBalance } = calculateTotals(transactionsList);
-  const now = new Date();
+  const now = referenceDate instanceof Date ? referenceDate : new Date(referenceDate);
   const year = now.getFullYear();
   const month = now.getMonth();
   const totalDaysInMonth = new Date(year, month + 1, 0).getDate();
@@ -316,8 +318,8 @@ function calculateSafeToSpend(transactionsList, recurringList = []) {
   };
 }
 
-function calculateSpendingForecast(transactionsList) {
-  const now = new Date();
+function calculateSpendingForecast(transactionsList, referenceDate = new Date()) {
+  const now = referenceDate instanceof Date ? referenceDate : new Date(referenceDate);
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
   const totalDays = new Date(currentYear, currentMonth + 1, 0).getDate();
@@ -340,8 +342,8 @@ function calculateSpendingForecast(transactionsList) {
  * Layer 2: Diagnostic Analytics Engine (Why did it happen?)
  * Identifies month-over-month category deltas, cost drivers, and expenditure shifts.
  */
-function calculateDiagnosticAnalytics(transactionsList) {
-  const now = new Date();
+function calculateDiagnosticAnalytics(transactionsList, referenceDate = new Date()) {
+  const now = referenceDate instanceof Date ? referenceDate : new Date(referenceDate);
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
 
@@ -413,9 +415,9 @@ function calculateDiagnosticAnalytics(transactionsList) {
  * Layer 3: Predictive Analytics Engine (What might happen next?)
  * Produces confidence-bounded month-end projections and next-month cash flow forecasts.
  */
-function calculatePredictiveAnalytics(transactionsList, recurringList = []) {
-  const forecast = calculateSpendingForecast(transactionsList);
-  const safe = calculateSafeToSpend(transactionsList, recurringList);
+function calculatePredictiveAnalytics(transactionsList, recurringList = [], referenceDate = new Date()) {
+  const forecast = calculateSpendingForecast(transactionsList, referenceDate);
+  const safe = calculateSafeToSpend(transactionsList, recurringList, referenceDate);
   const totals = calculateTotals(transactionsList);
 
   const activeRecurringSum = recurringList
@@ -709,21 +711,92 @@ function calculatePrescriptiveRecommendations(descriptiveTotals, diagnostic, pre
 }
 
 /* ==============================================================================
-   5. CURRENCY & DATE FORMATTING
+   5. CURRENCY, DATE FORMATTING & UTILITIES
    ============================================================================== */
 
-const inrFormatter = new Intl.NumberFormat('en-IN', {
-  style: 'currency',
-  currency: 'INR',
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2
-});
+const CURRENCIES = {
+  INR: { code: 'INR', symbol: '₹', name: 'Indian Rupee (INR)', locale: 'en-IN' },
+  USD: { code: 'USD', symbol: '$', name: 'US Dollar (USD)', locale: 'en-US' },
+  EUR: { code: 'EUR', symbol: '€', name: 'Euro (EUR)', locale: 'de-DE' },
+  GBP: { code: 'GBP', symbol: '£', name: 'British Pound (GBP)', locale: 'en-GB' },
+  JPY: { code: 'JPY', symbol: '¥', name: 'Japanese Yen (JPY)', locale: 'ja-JP' }
+};
 
-function formatCurrency(amount) {
-  if (typeof amount !== 'number' || isNaN(amount)) {
-    return inrFormatter.format(0);
+function getActiveCurrency() {
+  if (typeof state !== 'undefined' && state.currency && CURRENCIES[state.currency]) {
+    return state.currency;
   }
-  return inrFormatter.format(amount);
+  if (typeof localStorage !== 'undefined') {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEYS.currency);
+      if (stored && CURRENCIES[stored]) return stored;
+    } catch (e) {}
+  }
+  return 'INR';
+}
+
+function setCurrency(currencyCode) {
+  if (!CURRENCIES[currencyCode]) return;
+  if (typeof state !== 'undefined') state.currency = currencyCode;
+  if (typeof localStorage !== 'undefined') {
+    try {
+      localStorage.setItem(STORAGE_KEYS.currency, currencyCode);
+    } catch (e) {}
+  }
+  if (typeof renderDashboard === 'function') {
+    renderDashboard();
+  }
+  if (typeof showToast === 'function') {
+    showToast(`Currency updated to ${CURRENCIES[currencyCode].name}`, 'info');
+  }
+}
+
+function formatCurrency(amount, currencyCode = null) {
+  const code = (currencyCode && CURRENCIES[currencyCode]) ? currencyCode : getActiveCurrency();
+  const meta = CURRENCIES[code] || CURRENCIES.INR;
+  const num = (typeof amount === 'number' && !isNaN(amount)) ? amount : 0;
+  return new Intl.NumberFormat(meta.locale, {
+    style: 'currency',
+    currency: meta.code,
+    minimumFractionDigits: meta.code === 'JPY' ? 0 : 2,
+    maximumFractionDigits: meta.code === 'JPY' ? 0 : 2
+  }).format(num);
+}
+
+function checkDueRecurringSubscriptions(recurringList, referenceDate = new Date()) {
+  if (!Array.isArray(recurringList)) return [];
+  const ref = referenceDate instanceof Date ? referenceDate : new Date(referenceDate);
+  const refYear = ref.getFullYear();
+  const refMonth = String(ref.getMonth() + 1).padStart(2, '0');
+  const refDay = String(ref.getDate()).padStart(2, '0');
+  const refDateStr = `${refYear}-${refMonth}-${refDay}`;
+
+  return recurringList.filter(rec => {
+    if (!rec || rec.active === false || !rec.nextDate) return false;
+    return rec.nextDate <= refDateStr;
+  });
+}
+
+function resolveKeyboardAction(key, { isInputFocused = false, isModalOpen = false } = {}) {
+  if (isInputFocused) return null;
+
+  if (key === 'Escape' || key === 'Esc') {
+    return isModalOpen ? 'close-modal' : null;
+  }
+
+  if (isModalOpen) return null;
+
+  const lower = typeof key === 'string' ? key.toLowerCase() : '';
+  if (lower === 't' || lower === 'n') return 'open-transaction-modal';
+  if (lower === '1') return 'view:overview';
+  if (lower === '2') return 'view:transactions';
+  if (lower === '3') return 'view:analytics';
+  if (lower === '4') return 'view:budgets';
+  if (lower === '5') return 'view:goals';
+  if (lower === '6') return 'view:ai';
+  if (lower === '7') return 'view:settings';
+
+  return null;
 }
 
 function formatDate(dateString) {
@@ -789,7 +862,7 @@ const DOM = (typeof document !== 'undefined') ? {
   overviewGoalTarget: document.getElementById('overviewGoalTarget'),
   overviewGoalCurrent: document.getElementById('overviewGoalCurrent'),
   overviewGoalPercent: document.getElementById('overviewGoalPercent'),
-  overviewGoalProgressBar: document.getElementById('overviewGoalProgressBar'),
+  overviewGoalProgressBar: document.getElementById('overviewGoalProgressBar') || document.getElementById('overviewGoalBar'),
   overviewGoalContribBtn: document.getElementById('overviewGoalContribBtn'),
   overviewSpendingCard: document.getElementById('overviewSpendingCard'),
   overviewSpendingBars: document.getElementById('overviewSpendingBars'),
@@ -805,9 +878,6 @@ const DOM = (typeof document !== 'undefined') ? {
 
   // Insights Elements
   insightsBody: document.getElementById('insightsBody'),
-  insightTopCategory: document.getElementById('insightTopCategory'),
-  insightLargestTx: document.getElementById('insightLargestTx'),
-  insightSavingsRate: document.getElementById('insightSavingsRate'),
 
   // Chart & Breakdown
   spendingChart: document.getElementById('spendingChart'),
@@ -895,6 +965,7 @@ const DOM = (typeof document !== 'undefined') ? {
   aiStatusPill: document.getElementById('aiStatusPill'),
 
   // Settings View
+  currencySelector: document.getElementById('currencySelector'),
   exportJsonBtn: document.getElementById('exportJsonBtn'),
   loadDemoBtnSettings: document.getElementById('loadDemoBtnSettings'),
   clearAllBtnSettings: document.getElementById('clearAllBtnSettings'),
@@ -3276,10 +3347,12 @@ function renderOverview() {
   const activeGoal = state.goals.find(g => (g.currentAmount || 0) < g.targetAmount) || state.goals[0];
   if (activeGoal) {
     if (DOM.overviewGoalTitle) DOM.overviewGoalTitle.textContent = activeGoal.title;
-    if (DOM.overviewGoalTarget) DOM.overviewGoalTarget.textContent = formatCurrency(activeGoal.targetAmount);
+    if (DOM.overviewGoalTarget) {
+      DOM.overviewGoalTarget.textContent = `${formatCurrency(activeGoal.currentAmount || 0)} / ${formatCurrency(activeGoal.targetAmount)}`;
+    }
     if (DOM.overviewGoalCurrent) DOM.overviewGoalCurrent.textContent = formatCurrency(activeGoal.currentAmount || 0);
     const goalPct = Math.min(100, Math.round(((activeGoal.currentAmount || 0) / activeGoal.targetAmount) * 100));
-    if (DOM.overviewGoalPercent) DOM.overviewGoalPercent.textContent = `${goalPct}%`;
+    if (DOM.overviewGoalPercent) DOM.overviewGoalPercent.textContent = `${goalPct}% Funded`;
     if (DOM.overviewGoalProgressBar) DOM.overviewGoalProgressBar.style.width = `${goalPct}%`;
     if (DOM.overviewGoalContribBtn) {
       DOM.overviewGoalContribBtn.onclick = () => openGoalContributionModal(activeGoal.id);
@@ -3287,9 +3360,9 @@ function renderOverview() {
     }
   } else {
     if (DOM.overviewGoalTitle) DOM.overviewGoalTitle.textContent = 'No Active Goals';
-    if (DOM.overviewGoalTarget) DOM.overviewGoalTarget.textContent = '₹0.00';
+    if (DOM.overviewGoalTarget) DOM.overviewGoalTarget.textContent = '₹0.00 / ₹0.00';
     if (DOM.overviewGoalCurrent) DOM.overviewGoalCurrent.textContent = '₹0.00';
-    if (DOM.overviewGoalPercent) DOM.overviewGoalPercent.textContent = '0%';
+    if (DOM.overviewGoalPercent) DOM.overviewGoalPercent.textContent = '0% Funded';
     if (DOM.overviewGoalProgressBar) DOM.overviewGoalProgressBar.style.width = '0%';
     if (DOM.overviewGoalContribBtn) DOM.overviewGoalContribBtn.hidden = true;
   }
@@ -3700,6 +3773,14 @@ function dismissCinematicLoader() {
 }
 
 function initCinematicLoader() {
+  const urlParams = typeof window !== 'undefined' && window.location ? new URLSearchParams(window.location.search) : null;
+  if (urlParams && urlParams.has('no_loader')) {
+    const loader = document.getElementById('cinematicLoader');
+    if (loader) loader.remove();
+    if (document.body) document.body.classList.remove('is-loading');
+    return;
+  }
+
   const prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (prefersReduced) {
     dismissCinematicLoader();
@@ -4070,6 +4151,56 @@ function setupEventListeners() {
   initWhatIfSimulatorListeners();
 }
 
+function initKeyboardShortcuts() {
+  if (typeof window === 'undefined') return;
+
+  window.addEventListener('keydown', (e) => {
+    // Quick search hotkey: Cmd+K or Ctrl+K
+    if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+      e.preventDefault();
+      switchView('transactions');
+      if (DOM.searchInput) {
+        setTimeout(() => DOM.searchInput.focus(), 80);
+      }
+      return;
+    }
+
+    const activeEl = document.activeElement;
+    const isInputFocused = activeEl && (
+      activeEl.tagName === 'INPUT' ||
+      activeEl.tagName === 'TEXTAREA' ||
+      activeEl.tagName === 'SELECT' ||
+      activeEl.isContentEditable
+    );
+
+    const isModalOpen = document.body.classList.contains('modal-open') || !!document.querySelector('.modal-backdrop.active, dialog[open]');
+
+    const action = resolveKeyboardAction(e.key, { isInputFocused, isModalOpen });
+    if (!action) return;
+
+    if (action === 'open-transaction-modal') {
+      e.preventDefault();
+      if (DOM.openAddModalBtn) {
+        DOM.openAddModalBtn.click();
+      } else if (DOM.sidebarAddTxBtn) {
+        DOM.sidebarAddTxBtn.click();
+      }
+    } else if (action === 'close-modal') {
+      if (DOM.closeModalBtn) DOM.closeModalBtn.click();
+      if (DOM.cancelModalBtn) DOM.cancelModalBtn.click();
+      if (DOM.cancelDeleteBtn) DOM.cancelDeleteBtn.click();
+      if (DOM.closeBudgetModalBtn) DOM.closeBudgetModalBtn.click();
+      if (DOM.closeGoalModalBtn) DOM.closeGoalModalBtn.click();
+      if (DOM.closeContribModalBtn) DOM.closeContribModalBtn.click();
+      if (DOM.closeRecurringModalBtn) DOM.closeRecurringModalBtn.click();
+      closeMobileDrawer();
+    } else if (action.startsWith('view:')) {
+      const view = action.split(':')[1];
+      switchView(view);
+    }
+  });
+}
+
 /* ==============================================================================
    19. APPLICATION INITIALIZATION
    ============================================================================== */
@@ -4084,6 +4215,7 @@ function initApp() {
   state.goals = loadGoals();
   state.recurring = loadRecurring();
   state.customCategories = loadCustomCategories();
+  state.currency = getActiveCurrency();
 
   // Setup options and views
   updateFormCategoryOptions('expense');
@@ -4092,19 +4224,44 @@ function initApp() {
   initSpatialBalanceOrb();
   initSpatialCardTilt();
   initBlankSpaceSparksEffect();
+  initKeyboardShortcuts();
+
+  // Wire up Currency Selector
+  if (DOM.currencySelector) {
+    DOM.currencySelector.value = state.currency;
+    DOM.currencySelector.addEventListener('change', (e) => {
+      setCurrency(e.target.value);
+    });
+  }
 
   // Initial render
   renderDashboard();
 
-  // Check URL hash for direct view routing
-  const hash = window.location.hash.replace('#', '');
-  if (hash) {
+  // Overdue / Due Recurring Commitment Alert
+  const dueRecurring = checkDueRecurringSubscriptions(state.recurring);
+  if (dueRecurring.length > 0) {
+    setTimeout(() => {
+      showToast(`🔔 ${dueRecurring.length} recurring subscription${dueRecurring.length > 1 ? 's are' : ' is'} due for payment (${dueRecurring[0].name}).`, 'info');
+    }, 1500);
+  }
+
+  // Register Progressive Web App Service Worker
+  if (typeof window !== 'undefined' && 'serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').catch(() => {});
+    });
+  }
+
+  // Check URL query param or hash for direct view routing
+  const urlParams = typeof window !== 'undefined' && window.location ? new URLSearchParams(window.location.search) : null;
+  const hash = (urlParams && urlParams.get('view')) || (typeof window !== 'undefined' && window.location.hash ? window.location.hash.replace('#', '') : '');
+  if (['overview', 'transactions', 'analytics', 'budgets', 'goals', 'ai', 'settings'].includes(hash)) {
     switchView(hash);
   } else {
     switchView('overview');
   }
 
-  console.info('[Vaultly] Initialized with Obsidian Spatial Architecture.');
+  console.info('[Vaultly] Initialized with Obsidian Spatial Architecture, Multi-Currency & PWA.');
 }
 
 if (typeof document !== 'undefined') {
@@ -4128,6 +4285,12 @@ if (typeof module !== 'undefined' && module.exports) {
     calculateFinancialHealthScore,
     simulateFinancialScenario,
     calculatePrescriptiveRecommendations,
-    parseNaturalLanguageTransaction
+    parseNaturalLanguageTransaction,
+    CURRENCIES,
+    formatCurrency,
+    getActiveCurrency,
+    setCurrency,
+    checkDueRecurringSubscriptions,
+    resolveKeyboardAction
   };
 }

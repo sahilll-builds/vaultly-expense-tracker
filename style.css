@@ -13,6 +13,7 @@
   --bg-primary: #08090B;             /* Main canvas background */
   --bg-secondary: #111318;           /* Secondary background */
   --bg-surface-raised: #17191F;      /* Elevated surfaces & cards */
+  --bg-card: #17191F;                /* Explicit card surface token */
   --bg-surface-elevated: #1F222A;    /* Popovers, dropdowns & tooltips */
   --bg-sidebar: #0C0E12;             /* Sidebar navigation background */
   --bg-deep-blue: #08090B;           /* Backward compatibility fallback */
