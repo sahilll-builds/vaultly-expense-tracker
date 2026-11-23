@@ -9,6 +9,24 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Vaultly — AI-Powered Personal Finance Platform</title>
 
+  <!-- Canonical & Favicons -->
+  <link rel="canonical" href="https://vaultly-expense-tracker-one.vercel.app">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+
+  <!-- Open Graph / Social Media -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://vaultly-expense-tracker-one.vercel.app">
+  <meta property="og:title" content="Vaultly — AI-Powered Personal Finance Platform">
+  <meta property="og:description" content="Obsidian Glass Spatial Interface: Expense tracking, conversational AI financial assistant, smart budgets, savings goals, and real-time safe-to-spend analytics.">
+  <meta property="og:image" content="icons/icon-512.png">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Vaultly — AI-Powered Personal Finance Platform">
+  <meta name="twitter:description" content="Obsidian Glass Spatial Interface: Expense tracking, conversational AI financial assistant, smart budgets, savings goals, and real-time safe-to-spend analytics.">
+  <meta name="twitter:image" content="icons/icon-512.png">
+
   <!-- Web App Manifest -->
   <link rel="manifest" href="manifest.json">
 
@@ -27,6 +45,9 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="is-loading">
+  <!-- Accessibility Skip Link for Keyboard & Screen Reader Users -->
+  <a href="#dashboard" class="skip-to-content">Skip to main content</a>
+
   <!-- =========================================================================
        PREMIUM MONOCHROME INTRODUCTORY LOADING SCREEN (<= 1.0s)
        ========================================================================= -->
@@ -1087,6 +1108,7 @@
                     id="aiChatInput" 
                     class="ai-text-input" 
                     placeholder="Ask me anything, or log a transaction like: Spent ₹250 on lunch..." 
+                    aria-label="Ask Vaultly AI or log a transaction"
                     autocomplete="off"
                     rows="1"
                     required
@@ -1125,7 +1147,8 @@
                       <span class="insight-heading">Active Currency &amp; Regional Formatting</span>
                       <p class="insight-content" id="activeCurrencyDescription">Choose your preferred currency. All balances, calculations, and forecasts adapt dynamically.</p>
                       <div style="margin-top: 10px; max-width: 320px;">
-                        <select id="currencySelector" class="form-input-text" style="width: 100%; padding: 8px 12px; background: rgba(255,255,255,0.04); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-primary); font-size: 0.9rem;">
+                        <label for="currencySelector" class="visually-hidden">Choose preferred currency</label>
+                        <select id="currencySelector" class="form-input-text" aria-label="Choose preferred currency" style="width: 100%; padding: 8px 12px; background: rgba(255,255,255,0.04); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-primary); font-size: 0.9rem;">
                           <option value="INR">₹ INR — Indian Rupee (Default)</option>
                           <option value="USD">$ USD — United States Dollar</option>
                           <option value="EUR">€ EUR — European Euro</option>
@@ -1158,7 +1181,8 @@
                       <span class="insight-heading">Gemini AI Intelligence Key</span>
                       <p class="insight-content">Power Vaultly AI with Google Gemini for real-time conversation, deep financial advice, learning, and coding support.</p>
                       <div style="margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; max-width: 580px;">
-                        <input type="password" id="geminiApiKeyInput" class="form-input-text" placeholder="Enter Gemini API key..." style="flex: 1; min-width: 240px; padding: 7px 12px; background: rgba(255,255,255,0.04); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-primary); font-family: monospace; font-size: 0.85rem;" autocomplete="off" spellcheck="false">
+                        <label for="geminiApiKeyInput" class="visually-hidden">Gemini API Key</label>
+                        <input type="password" id="geminiApiKeyInput" class="form-input-text" placeholder="Enter Gemini API key..." aria-label="Gemini API Key" style="flex: 1; min-width: 240px; padding: 7px 12px; background: rgba(255,255,255,0.04); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-primary); font-family: monospace; font-size: 0.85rem;" autocomplete="off" spellcheck="false">
                         <button type="button" id="toggleGeminiKeyVisibilityBtn" class="btn-ghost-glass btn-sm" title="Show / Hide Key">
                           <i data-lucide="eye" class="btn-icon-xs" aria-hidden="true"></i>
                         </button>
@@ -1305,14 +1329,14 @@
           <label class="form-label" id="typeGroupLabel">Transaction Type <span class="required-star" aria-hidden="true">*</span></label>
           <div class="type-toggle-switch" role="radiogroup" aria-labelledby="typeGroupLabel">
             <label class="type-option">
-              <input type="radio" name="transactionType" value="expense" checked id="typeExpense">
+              <input type="radio" name="transactionType" value="expense" checked id="typeExpense" aria-label="Expense">
               <span class="type-pill expense-pill">
                 <i data-lucide="arrow-up-right" class="toggle-icon" aria-hidden="true"></i>
                 <span>Expense</span>
               </span>
             </label>
             <label class="type-option">
-              <input type="radio" name="transactionType" value="income" id="typeIncome">
+              <input type="radio" name="transactionType" value="income" id="typeIncome" aria-label="Income">
               <span class="type-pill income-pill">
                 <i data-lucide="arrow-down-left" class="toggle-icon" aria-hidden="true"></i>
                 <span>Income</span>

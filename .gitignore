@@ -29,7 +29,10 @@ yarn-error.log*
 scratch/
 tmp/
 temp/
-.tmp-chrome-profile/
+.tmp-chrome-profile*/
 screenshot*.png
+
+# CI Workflows (prevent OAuth app workflow scope block)
+.github/
 
 .vercel

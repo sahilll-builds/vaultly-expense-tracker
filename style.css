@@ -124,6 +124,43 @@
   --font-size-metric: clamp(1.35rem, 2.2vw + 0.6rem, 2.05rem);
   --font-size-title: clamp(1.1rem, 1.2vw + 0.7rem, 1.45rem);
   --font-size-body: clamp(0.88rem, 0.35vw + 0.78rem, 0.98rem);
+
+  /* Interactive 3D Tilt, Spotlight & Gauge Defaults */
+  --tilt-x: 0deg;
+  --tilt-y: 0deg;
+  --spotlight-x: 50%;
+  --spotlight-y: 50%;
+  --mouse-x: 50%;
+  --mouse-y: 50%;
+  --health-score: 85;
+  --health-color: #10B981;
+}
+
+/* --------------------------------------------------------------------------
+   0. ACCESSIBILITY SKIP LINK
+   -------------------------------------------------------------------------- */
+.skip-to-content {
+  position: absolute;
+  top: -100px;
+  left: 20px;
+  z-index: 10000;
+  background: #17191F;
+  color: #FFFFFF;
+  padding: 10px 18px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-decoration: none;
+  box-shadow: var(--shadow-modal);
+  transition: top 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.skip-to-content:focus {
+  top: 16px;
+  outline: 2px solid #FFFFFF;
+  outline-offset: 2px;
 }
 
 /* --------------------------------------------------------------------------

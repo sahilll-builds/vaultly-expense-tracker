@@ -595,9 +595,9 @@ function calculateFinancialHealthScore(transactionsList, budgetsList = [], goals
  */
 function simulateFinancialScenario(baseTotals, transactionsList, goalsList = [], params = {}) {
   const incomeDelta = Number(params.incomeDelta || 0);
-  const fixedCostDelta = Number(params.fixedCostDelta || 0);
-  const discretionaryCutPercent = Number(params.discretionaryCutPercent || 0);
-  const oneOffPurchase = Number(params.oneOffPurchase || 0);
+  const fixedCostDelta = Number(params.fixedCostDelta !== undefined ? params.fixedCostDelta : (params.rentDelta || 0));
+  const discretionaryCutPercent = Number(params.discretionaryCutPercent !== undefined ? params.discretionaryCutPercent : (params.discretionaryTrimPct || 0));
+  const oneOffPurchase = Number(params.oneOffPurchase !== undefined ? params.oneOffPurchase : (params.majorPurchase || 0));
   const extraGoalSavings = Number(params.extraGoalSavings || 0);
 
   const currentIncome = baseTotals.totalIncome || 0;
@@ -618,7 +618,7 @@ function simulateFinancialScenario(baseTotals, transactionsList, goalsList = [],
   const simulatedSafeDaily = Math.max(0, Math.round((simulatedMonthlySurplus - oneOffPurchase) / 30));
 
   const goalProjections = goalsList.map(g => {
-    const remaining = Math.max(0, g.targetAmount - g.currentAmount);
+    const remaining = Math.max(0, g.targetAmount - (g.currentAmount || 0));
     const baselineMonthly = Math.max(500, Math.round(Math.max(0, simulatedMonthlySurplus) * 0.2));
     const acceleratedMonthly = baselineMonthly + extraGoalSavings;
 
@@ -636,14 +636,29 @@ function simulateFinancialScenario(baseTotals, transactionsList, goalsList = [],
     };
   });
 
+  const primaryGoal = goalsList[0];
+  const goalImpact = {
+    runwayStatus: primaryGoal
+      ? (simulatedMonthlySurplus > 0 ? `${Math.ceil(Math.max(0, primaryGoal.targetAmount - (primaryGoal.currentAmount || 0)) / Math.max(1, simulatedMonthlySurplus * 0.2))} mo` : 'Delayed')
+      : 'Stable',
+    details: primaryGoal ? `${primaryGoal.title} target timeline` : 'No impact on active targets'
+  };
+
+  const baselineSurplus = (baseTotals.totalIncome || 0) - (baseTotals.totalExpenses || 0);
+  const surplusDelta = simulatedMonthlySurplus - baselineSurplus;
+
   return {
     simulatedIncome,
     simulatedExpenses,
     simulatedMonthlySurplus,
+    simulatedSurplus: simulatedMonthlySurplus,
+    surplusDelta,
     simulatedSavingsRate,
     simulatedSafeDaily,
+    simulatedDailyAllowance: simulatedSafeDaily,
     discretionarySavings,
     goalProjections,
+    goalImpact,
     narrative: `Under this simulation, your monthly surplus becomes ${formatCurrency(simulatedMonthlySurplus)} (${simulatedSavingsRate}% savings rate). Daily safe-to-spend adjusts to ~${formatCurrency(simulatedSafeDaily)}/day.`
   };
 }
@@ -735,6 +750,24 @@ function getActiveCurrency() {
   return 'INR';
 }
 
+function updateCurrencyGlyphs(code) {
+  const meta = CURRENCIES[code] || CURRENCIES.INR;
+  if (typeof document === 'undefined') return;
+  document.querySelectorAll('.currency-glyph').forEach(el => {
+    el.textContent = meta.symbol;
+  });
+  const formLabels = document.querySelectorAll('label[for="txAmount"], label[for="budgetLimitInput"], label[for="goalTargetInput"], label[for="contribAmountInput"], label[for="recurringAmountInput"]');
+  formLabels.forEach(lbl => {
+    if (lbl.innerHTML.includes('(')) {
+      lbl.innerHTML = lbl.innerHTML.replace(/\([^)]+\)/, `(${meta.symbol} ${meta.code})`);
+    }
+  });
+  const shiftHeader = document.querySelector('.diagnostic-shift-table th:nth-child(4)');
+  if (shiftHeader) {
+    shiftHeader.textContent = `Net Shift (${meta.symbol})`;
+  }
+}
+
 function setCurrency(currencyCode) {
   if (!CURRENCIES[currencyCode]) return;
   if (typeof state !== 'undefined') state.currency = currencyCode;
@@ -743,6 +776,7 @@ function setCurrency(currencyCode) {
       localStorage.setItem(STORAGE_KEYS.currency, currencyCode);
     } catch (e) {}
   }
+  updateCurrencyGlyphs(currencyCode);
   if (typeof renderDashboard === 'function') {
     renderDashboard();
   }
@@ -860,9 +894,8 @@ const DOM = (typeof document !== 'undefined') ? {
   overviewGoalCard: document.getElementById('overviewGoalCard'),
   overviewGoalTitle: document.getElementById('overviewGoalTitle'),
   overviewGoalTarget: document.getElementById('overviewGoalTarget'),
-  overviewGoalCurrent: document.getElementById('overviewGoalCurrent'),
   overviewGoalPercent: document.getElementById('overviewGoalPercent'),
-  overviewGoalProgressBar: document.getElementById('overviewGoalProgressBar') || document.getElementById('overviewGoalBar'),
+  overviewGoalProgressBar: document.getElementById('overviewGoalBar'),
   overviewGoalContribBtn: document.getElementById('overviewGoalContribBtn'),
   overviewSpendingCard: document.getElementById('overviewSpendingCard'),
   overviewSpendingBars: document.getElementById('overviewSpendingBars'),
@@ -1339,13 +1372,29 @@ function initLiquidChromeSculpture() {
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         isVisible = entry.isIntersecting;
-        if (isVisible && !chromeSculptureLoopId) {
+        if (isVisible && !chromeSculptureLoopId && !document.hidden) {
           render();
         }
       });
     }, { threshold: 0.1 });
     observer.observe(canvas);
   }
+
+  // Pause WebGL rendering loop when browser tab is inactive/hidden
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      isVisible = false;
+      if (chromeSculptureLoopId) {
+        cancelAnimationFrame(chromeSculptureLoopId);
+        chromeSculptureLoopId = null;
+      }
+    } else {
+      isVisible = true;
+      if (!chromeSculptureLoopId) {
+        render();
+      }
+    }
+  });
 
   function render() {
     if (!isVisible) {
@@ -1570,6 +1619,12 @@ function initBlankSpaceSparksEffect() {
 
   document.addEventListener('mousemove', onPointerMove, { passive: true });
   document.addEventListener('mouseleave', onPointerLeave, { passive: true });
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && animFrameId) {
+      cancelAnimationFrame(animFrameId);
+      animFrameId = null;
+    }
+  });
 
   function render(now) {
     // Smoothly interpolate neon ambient light intensity
@@ -2436,10 +2491,10 @@ function renderWhatIfSimulation() {
     DOM.simOutcomeSavingsRate.textContent = result.simulatedSavingsRate + '%';
   }
   if (DOM.simOutcomeGoalRunway) {
-    DOM.simOutcomeGoalRunway.textContent = result.goalImpact.runwayStatus;
+    DOM.simOutcomeGoalRunway.textContent = result.goalImpact ? result.goalImpact.runwayStatus : 'Stable';
   }
   if (DOM.simOutcomeGoalText) {
-    DOM.simOutcomeGoalText.textContent = result.goalImpact.details;
+    DOM.simOutcomeGoalText.textContent = result.goalImpact ? result.goalImpact.details : 'No impact on active targets';
   }
   if (DOM.simNarrative) {
     DOM.simNarrative.textContent = result.narrative;
@@ -3310,7 +3365,7 @@ function renderOverview() {
   } else if (totals.netBalance < 0) {
     DOM.balanceStatusBadge.innerHTML = `<span class="tag-dot tag-dot-negative" aria-hidden="true"></span><span>Net Deficit (Expenses exceed income)</span>`;
   } else {
-    DOM.balanceStatusBadge.innerHTML = `<span class="tag-dot" aria-hidden="true"></span><span>Net Neutral (₹0.00 balance)</span>`;
+    DOM.balanceStatusBadge.innerHTML = `<span class="tag-dot" aria-hidden="true"></span><span>Net Neutral (${formatCurrency(0)} balance)</span>`;
   }
 
   // Update Totals
@@ -3360,8 +3415,8 @@ function renderOverview() {
     }
   } else {
     if (DOM.overviewGoalTitle) DOM.overviewGoalTitle.textContent = 'No Active Goals';
-    if (DOM.overviewGoalTarget) DOM.overviewGoalTarget.textContent = '₹0.00 / ₹0.00';
-    if (DOM.overviewGoalCurrent) DOM.overviewGoalCurrent.textContent = '₹0.00';
+    if (DOM.overviewGoalTarget) DOM.overviewGoalTarget.textContent = `${formatCurrency(0)} / ${formatCurrency(0)}`;
+    if (DOM.overviewGoalCurrent) DOM.overviewGoalCurrent.textContent = formatCurrency(0);
     if (DOM.overviewGoalPercent) DOM.overviewGoalPercent.textContent = '0% Funded';
     if (DOM.overviewGoalProgressBar) DOM.overviewGoalProgressBar.style.width = '0%';
     if (DOM.overviewGoalContribBtn) DOM.overviewGoalContribBtn.hidden = true;
@@ -3668,12 +3723,14 @@ function showToast(message, type = 'info') {
 
 function openModal(modal) {
   if (!modal) return;
+  modal.classList.add('active');
   modal.setAttribute('aria-hidden', 'false');
   document.body.classList.add('modal-open');
 }
 
 function closeModal(modal) {
   if (!modal) return;
+  modal.classList.remove('active');
   modal.setAttribute('aria-hidden', 'true');
   document.body.classList.remove('modal-open');
 }
@@ -4173,18 +4230,14 @@ function initKeyboardShortcuts() {
       activeEl.isContentEditable
     );
 
-    const isModalOpen = document.body.classList.contains('modal-open') || !!document.querySelector('.modal-backdrop.active, dialog[open]');
+    const isModalOpen = document.body.classList.contains('modal-open') || !!document.querySelector('.modal-overlay.active');
 
     const action = resolveKeyboardAction(e.key, { isInputFocused, isModalOpen });
     if (!action) return;
 
     if (action === 'open-transaction-modal') {
       e.preventDefault();
-      if (DOM.openAddModalBtn) {
-        DOM.openAddModalBtn.click();
-      } else if (DOM.sidebarAddTxBtn) {
-        DOM.sidebarAddTxBtn.click();
-      }
+      openAddTransactionModal();
     } else if (action === 'close-modal') {
       if (DOM.closeModalBtn) DOM.closeModalBtn.click();
       if (DOM.cancelModalBtn) DOM.cancelModalBtn.click();
@@ -4227,6 +4280,7 @@ function initApp() {
   initKeyboardShortcuts();
 
   // Wire up Currency Selector
+  updateCurrencyGlyphs(state.currency);
   if (DOM.currencySelector) {
     DOM.currencySelector.value = state.currency;
     DOM.currencySelector.addEventListener('change', (e) => {
