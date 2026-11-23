@@ -1,0 +1,19 @@
+{
+  "name": "vaultly-expense-tracker",
+  "version": "1.0.0",
+  "description": "Vaultly - Intelligent Personal Expense Tracker & Financial Digital Twin",
+  "private": true,
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "test": "node test-runner.js",
+    "test:browser": "node test-browser-interactions.mjs"
+  },
+  "dependencies": {
+    "@ai-sdk/google": "^1.1.0",
+    "@ai-sdk/openai": "^1.1.0",
+    "ai": "^4.1.0",
+    "zod": "^3.24.0"
+  }
+}

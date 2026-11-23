@@ -1,7 +1,7 @@
 // api/chat.js - Vercel Serverless Function for Vaultly AI Assistant
-// Multi-provider support (Gemini / OpenAI) with zero-leakage error handling
-// and guaranteed offline deterministic fallback.
-// General-purpose conversational AI with deep Vaultly finance integration.
+// Powered by Vercel AI SDK Core with Multi-Provider Support, Real-Time Streaming,
+// In-Memory Request-Scoped Financial Tools, Zero-Leakage Error Handling,
+// and Guaranteed Offline Deterministic Fallback.
 
 const rateLimitMap = new Map();
 
@@ -152,11 +152,77 @@ function generateDeterministicAnswer(message, context = {}) {
   return `I'm currently running in offline mode without an AI key connected. For open-ended conversation on any topic, configure GEMINI_API_KEY or OPENAI_API_KEY in your environment. I can still help with your Vaultly finances anytime though — ask about your spending, budgets, or savings goals!`;
 }
 
+/**
+ * Builds request-scoped in-memory financial tools for the Vercel AI SDK
+ */
+function createFinancialTools(context, z, tool) {
+  if (!context || !z || !tool) return undefined;
+
+  const transactions = Array.isArray(context.recentTransactions) ? context.recentTransactions : [];
+  const budgets = Array.isArray(context.budgets) ? context.budgets : [];
+
+  return {
+    queryTransactions: tool({
+      description: 'Search or filter recent transactions by category, type (income/expense), or amount',
+      parameters: z.object({
+        category: z.string().optional().describe('Filter by category (e.g. Food & Dining, Shopping, Transport)'),
+        type: z.enum(['income', 'expense']).optional().describe('Transaction type'),
+        minAmount: z.number().optional().describe('Minimum monetary amount'),
+        maxAmount: z.number().optional().describe('Maximum monetary amount')
+      }),
+      execute: async ({ category, type, minAmount, maxAmount }) => {
+        let results = transactions;
+        if (category) {
+          results = results.filter(t => t.category && t.category.toLowerCase().includes(category.toLowerCase()));
+        }
+        if (type) {
+          results = results.filter(t => t.type === type);
+        }
+        if (typeof minAmount === 'number') {
+          results = results.filter(t => t.amount >= minAmount);
+        }
+        if (typeof maxAmount === 'number') {
+          results = results.filter(t => t.amount <= maxAmount);
+        }
+        return {
+          count: results.length,
+          transactions: results.slice(0, 10).map(t => ({
+            title: t.title,
+            amount: t.amount,
+            category: t.category,
+            date: t.date,
+            type: t.type
+          }))
+        };
+      }
+    }),
+
+    checkBudget: tool({
+      description: 'Check configured budget limit and current spending for a specific category',
+      parameters: z.object({
+        category: z.string().describe('The category name to check')
+      }),
+      execute: async ({ category }) => {
+        const found = budgets.find(b => b.category && b.category.toLowerCase().includes(category.toLowerCase()));
+        if (!found) {
+          return { configured: false, message: `No specific budget configured for ${category}.` };
+        }
+        return {
+          configured: true,
+          category: found.category,
+          limit: found.limit,
+          message: `Budget for ${found.category} is ₹${found.limit}.`
+        };
+      }
+    })
+  };
+}
+
 module.exports = async function handler(req, res) {
   // 1. CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Vaultly-Stream');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
@@ -173,7 +239,7 @@ module.exports = async function handler(req, res) {
   }
 
   // 3. Payload validation
-  const { message, context, history } = req.body || {};
+  const { message, context, history, stream: wantsStreamBody } = req.body || {};
   if (!message || typeof message !== 'string' || message.trim() === '') {
     return res.status(400).json({ error: 'Invalid request: "message" string is required.' });
   }
@@ -182,6 +248,10 @@ module.exports = async function handler(req, res) {
   if (trimmedMessage.length > 4000) {
     return res.status(400).json({ error: 'Message exceeds maximum length of 4000 characters.' });
   }
+
+  const isStreamRequested = wantsStreamBody === true || 
+    req.headers['x-vaultly-stream'] === 'true' || 
+    (typeof req.headers.accept === 'string' && req.headers.accept.includes('text/event-stream'));
 
   // Normalize and limit conversation history to last 20 messages
   const conversationHistory = Array.isArray(history) ? history.slice(-20) : [];
@@ -235,135 +305,110 @@ Rules for financial responses:
 4. If the user expresses intent to record a transaction (e.g., "spent 200 on coffee"), confirm the details and mention that it has been pre-filled for their review.`;
   }
 
-  // 5. Provider dispatch: Gemini first
-  if (geminiKey) {
+  // 5. Attempt Vercel AI SDK Core Execution (Gemini -> OpenAI)
+  if (geminiKey || openaiKey) {
     try {
-      // Build contents array with conversation history for Gemini
-      // Gemini uses role: 'user' and role: 'model'
-      const contents = [];
+      const { streamText, generateText, tool } = await import('ai');
+      const { z } = await import('zod');
 
-      // Prepend system instructions as first user message context
-      contents.push({
-        role: 'user',
-        parts: [{ text: systemInstructions }]
-      });
-      contents.push({
-        role: 'model',
-        parts: [{ text: "Understood! I'm Vaultly AI, ready to help with casual conversations, general questions, learning, coding, brainstorming, and personal finance." }]
-      });
-
-      // Add conversation history
+      // Prepare unified message structure for Vercel AI SDK
+      const messages = [];
       for (const msg of conversationHistory) {
         if (msg && msg.content && (msg.role === 'user' || msg.role === 'assistant')) {
-          contents.push({
-            role: msg.role === 'assistant' ? 'model' : 'user',
-            parts: [{ text: msg.content }]
+          messages.push({
+            role: msg.role,
+            content: msg.content
           });
         }
       }
-
-      // Add the current user message
-      contents.push({
+      messages.push({
         role: 'user',
-        parts: [{ text: trimmedMessage }]
+        content: trimmedMessage
       });
 
-      const payload = {
-        contents,
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 1500
-        }
-      };
+      // Initialize tools if financial context is present
+      const tools = financeMode ? createFinancialTools(context, z, tool) : undefined;
 
-      // Try latest models in descending order of capability & availability
-      const candidateModels = ['gemini-flash-latest', 'gemini-3.8-flash', 'gemini-2.5-flash', 'gemini-1.5-flash'];
-      for (const modelName of candidateModels) {
+      // Primary: Google Gemini via @ai-sdk/google
+      let modelInstance = null;
+      let sourceName = '';
+
+      if (geminiKey) {
         try {
-          const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${geminiKey}`;
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 12000);
+          const { createGoogleGenerativeAI } = await import('@ai-sdk/google');
+          const google = createGoogleGenerativeAI({ apiKey: geminiKey });
+          modelInstance = google('gemini-2.5-flash');
+          sourceName = 'ai-gemini';
+        } catch (initErr) {
+          console.warn('[Vaultly AI SDK] Gemini init error:', initErr.message);
+        }
+      }
 
-          const apiRes = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-            signal: controller.signal
+      // Secondary: OpenAI via @ai-sdk/openai
+      if (!modelInstance && openaiKey) {
+        try {
+          const { createOpenAI } = await import('@ai-sdk/openai');
+          const openai = createOpenAI({ apiKey: openaiKey });
+          modelInstance = openai('gpt-4o-mini');
+          sourceName = 'ai-openai';
+        } catch (initErr) {
+          console.warn('[Vaultly AI SDK] OpenAI init error:', initErr.message);
+        }
+      }
+
+      if (modelInstance) {
+        if (isStreamRequested && typeof res.writeHead === 'function') {
+          // Streaming text response via Vercel AI SDK
+          const streamResult = streamText({
+            model: modelInstance,
+            system: systemInstructions,
+            messages,
+            tools,
+            maxSteps: tools ? 2 : 1,
+            temperature: 0.7
           });
-          clearTimeout(timeoutId);
 
-          if (apiRes.ok) {
-            const apiData = await apiRes.json();
-            const reply = apiData?.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (reply) {
-              return res.status(200).json({ reply: reply.trim(), source: 'ai-gemini', model: modelName });
-            }
+          res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+          res.setHeader('X-Vaultly-Source', sourceName);
+          res.setHeader('X-Vaultly-Model', 'flash-core');
+          return streamResult.pipeTextStreamToResponse(res);
+        } else {
+          // Synchronous full text generation (or testing/legacy clients)
+          const result = await generateText({
+            model: modelInstance,
+            system: systemInstructions,
+            messages,
+            tools,
+            maxSteps: tools ? 2 : 1,
+            temperature: 0.7
+          });
+
+          if (result && result.text) {
+            return res.status(200).json({
+              reply: result.text.trim(),
+              source: sourceName,
+              model: 'flash-core'
+            });
           }
-        } catch (subErr) {
-          // Attempt next candidate
         }
       }
-    } catch (err) {
-      // Gracefully fall through to fallback, never leak keys
-      console.warn('[Vaultly API] Gemini request failed, using deterministic fallback');
+    } catch (sdkError) {
+      console.warn('[Vaultly AI SDK] Error during SDK execution, using deterministic fallback:', sdkError.message);
     }
   }
 
-  // 6. Provider dispatch: OpenAI second
-  if (openaiKey) {
-    try {
-      const url = 'https://api.openai.com/v1/chat/completions';
-
-      // Build messages array with conversation history for OpenAI
-      const messages = [
-        { role: 'system', content: systemInstructions }
-      ];
-
-      // Add conversation history
-      for (const msg of conversationHistory) {
-        if (msg && msg.content && (msg.role === 'user' || msg.role === 'assistant')) {
-          messages.push({ role: msg.role, content: msg.content });
-        }
-      }
-
-      // Add the current user message
-      messages.push({ role: 'user', content: trimmedMessage });
-
-      const payload = {
-        model: 'gpt-4o-mini',
-        messages,
-        temperature: 0.7,
-        max_tokens: 1500
-      };
-
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
-
-      const apiRes = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${openaiKey}`
-        },
-        body: JSON.stringify(payload),
-        signal: controller.signal
-      });
-      clearTimeout(timeoutId);
-
-      if (apiRes.ok) {
-        const apiData = await apiRes.json();
-        const reply = apiData?.choices?.[0]?.message?.content;
-        if (reply) {
-          return res.status(200).json({ reply: reply.trim(), source: 'ai-openai' });
-        }
-      }
-    } catch (err) {
-      console.warn('[Vaultly API] OpenAI request failed, using deterministic fallback');
-    }
-  }
-
-  // 7. Deterministic Local Fallback (zero key requirement, 100% offline-ready)
+  // 6. Deterministic Local Fallback (zero key requirement, 100% offline-ready)
   const fallbackReply = generateDeterministicAnswer(trimmedMessage, context);
+
+  if (isStreamRequested && typeof res.writeHead === 'function') {
+    res.writeHead(200, {
+      'Content-Type': 'text/plain; charset=utf-8',
+      'X-Vaultly-Source': 'deterministic-fallback'
+    });
+    res.write(fallbackReply);
+    return res.end();
+  }
+
   return res.status(200).json({
     reply: fallbackReply,
     source: 'deterministic-fallback'
@@ -373,3 +418,4 @@ Rules for financial responses:
 // Export helpers for testing
 module.exports.generateDeterministicAnswer = generateDeterministicAnswer;
 module.exports.isRateLimited = isRateLimited;
+module.exports.isFinanceRelated = isFinanceRelated;

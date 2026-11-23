@@ -420,7 +420,33 @@ async function testChatEndpoint() {
   assert.strictEqual(statusCaptured, 200);
   assert(jsonCaptured.reply.toLowerCase().includes('digital twin') || jsonCaptured.reply.toLowerCase().includes('simulate'), 'Must point to simulator');
 
-  console.log('   ✔ PASS: api/chat handler verified for CORS, 405, 400, grounded finance, health scores, anomalies, simulations, natural greetings, bank clarity, corrections, and conversation history.');
+  // Test 10l: Vercel AI SDK real-time streaming mode
+  let streamHeaders = {};
+  let streamChunks = [];
+  let streamEnded = false;
+  const mockStreamRes = {
+    setHeader: (k, v) => { streamHeaders[k] = v; },
+    writeHead: (code, headers) => {
+      statusCaptured = code;
+      if (headers) Object.assign(streamHeaders, headers);
+    },
+    write: (chunk) => { streamChunks.push(String(chunk)); },
+    end: () => { streamEnded = true; }
+  };
+
+  await chatHandler({
+    method: 'POST',
+    body: { message: 'How much did I spend this month?', context: testContext, stream: true },
+    headers: { 'x-vaultly-stream': 'true' }
+  }, mockStreamRes);
+
+  assert.strictEqual(statusCaptured, 200, 'Streaming request must return 200');
+  assert(streamHeaders['Content-Type'].includes('text/plain'), 'Streaming response must be text/plain');
+  assert.strictEqual(streamEnded, true, 'Stream must end cleanly');
+  const fullStreamed = streamChunks.join('');
+  assert(fullStreamed.includes('₹2,500'), 'Stream must deliver grounded financial metrics');
+
+  console.log('   ✔ PASS: api/chat handler verified for CORS, 405, 400, grounded finance, health scores, anomalies, simulations, real-time streaming, and conversation history.');
 }
 
 // 11. Diagnostic Analytics Engine Test
@@ -623,8 +649,61 @@ assert.strictEqual(resolveKeyboardAction('7', { isInputFocused: false, isModalOp
 assert.strictEqual(resolveKeyboardAction('Escape', { isInputFocused: false, isModalOpen: true }), 'close-modal');
 console.log('   ✔ PASS: Global keyboard navigation resolver routes keystrokes safely without input collision.');
 
-testChatEndpoint().then(() => {
-  console.log('\n--- ALL TEST SUITE CHECKS PASSED SUCCESSFULLY (22/22) ---');
+// 23. Structured Natural Language Transaction Parsing Endpoint Test
+console.log('23. Testing Structured Natural Language Transaction Parser (api/parse-transaction.js):');
+const parseTxHandler = require('./api/parse-transaction.js');
+
+async function testParseTxEndpoint() {
+  let statusCaptured = 0;
+  let jsonCaptured = null;
+  const mockRes = {
+    setHeader: () => {},
+    status: (code) => {
+      statusCaptured = code;
+      return {
+        json: (data) => { jsonCaptured = data; }
+      };
+    }
+  };
+
+  // Test 23a: GET 405 Method Not Allowed
+  await parseTxHandler({ method: 'GET', body: {}, headers: {} }, mockRes);
+  assert.strictEqual(statusCaptured, 405, 'GET must return 405 Method Not Allowed');
+
+  // Test 23b: Empty input 400 Bad Request
+  await parseTxHandler({ method: 'POST', body: { input: '' }, headers: {} }, mockRes);
+  assert.strictEqual(statusCaptured, 400, 'Empty input must return 400 Bad Request');
+
+  // Test 23c: Expense parsing (Groceries)
+  await parseTxHandler({
+    method: 'POST',
+    body: { input: 'Spent 450 on groceries yesterday', referenceDate: '2026-11-23' },
+    headers: {}
+  }, mockRes);
+  assert.strictEqual(statusCaptured, 200);
+  assert.strictEqual(jsonCaptured.success, true);
+  assert.strictEqual(jsonCaptured.transaction.amount, 450);
+  assert.strictEqual(jsonCaptured.transaction.type, 'expense');
+  assert.strictEqual(jsonCaptured.transaction.category, 'Food & Dining');
+  assert.strictEqual(jsonCaptured.transaction.date, '2026-11-22');
+
+  // Test 23d: Income parsing (Salary)
+  await parseTxHandler({
+    method: 'POST',
+    body: { input: 'Received 85000 salary for October', referenceDate: '2026-11-23' },
+    headers: {}
+  }, mockRes);
+  assert.strictEqual(statusCaptured, 200);
+  assert.strictEqual(jsonCaptured.success, true);
+  assert.strictEqual(jsonCaptured.transaction.amount, 85000);
+  assert.strictEqual(jsonCaptured.transaction.type, 'income');
+  assert.strictEqual(jsonCaptured.transaction.category, 'Salary');
+
+  console.log('   ✔ PASS: api/parse-transaction structured entity extraction verified for CORS, 405, 400, dates, amounts, and category classification.');
+}
+
+Promise.all([testChatEndpoint(), testParseTxEndpoint()]).then(() => {
+  console.log('\n--- ALL TEST SUITE CHECKS PASSED SUCCESSFULLY (23/23) ---');
 }).catch(err => {
   console.error('Test suite failed:', err);
   process.exit(1);

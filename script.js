@@ -2908,6 +2908,25 @@ The user's verified financial data:
   return null;
 }
 
+/**
+ * Update the active assistant bubble progressively during real-time streaming
+ */
+function updateStreamingAiBubble(text) {
+  const thread = DOM.aiChatThread;
+  if (!thread) return;
+
+  const bubbles = thread.querySelectorAll('.ai-msg.assistant .ai-msg-bubble');
+  if (bubbles.length === 0) return;
+
+  const lastBubble = bubbles[bubbles.length - 1];
+  lastBubble.innerHTML = renderMarkdownSafe(text);
+
+  const isNearBottom = thread.scrollHeight - thread.scrollTop - thread.clientHeight < 160;
+  if (isNearBottom) {
+    thread.scrollTop = thread.scrollHeight;
+  }
+}
+
 async function handleAiChatSubmit(e) {
   if (e) e.preventDefault();
   const input = DOM.aiChatInput;
@@ -2941,7 +2960,7 @@ async function handleAiChatSubmit(e) {
       content: m.text.replace(/<[^>]*>/g, '') // strip HTML formatting
     }));
 
-  // Prepare grounded context enriched with financial intelligence
+  // Prepare grounded context enriched with financial intelligence & in-memory tool dataset
   const totals = calculateTotals(state.transactions);
   const breakdown = calculateCategoryBreakdown(state.transactions);
   const health = calculateFinancialHealthScore(state.transactions, state.budgets, state.goals, state.recurring);
@@ -2957,27 +2976,49 @@ async function handleAiChatSubmit(e) {
     healthScore: health.overallScore,
     healthTier: health.tier.name,
     topDriver: diagnostic.topDriver ? `${diagnostic.topDriver.category} (+₹${diagnostic.topDriver.delta})` : null,
-    anomalyCount: anomalyInfo.totalFlagged
+    anomalyCount: anomalyInfo.totalFlagged,
+    recentTransactions: state.transactions.slice(0, 30),
+    budgets: state.budgets
   };
 
   let replyText = '';
   const activeKey = getActiveGeminiKey();
+  let streamSuccess = false;
 
   try {
-    // Attempt secure serverless API endpoint
+    // Attempt secure serverless API endpoint with Vercel AI SDK real-time text streaming
     const response = await fetch('/api/chat', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: userText, context, history, geminiKey: activeKey })
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Vaultly-Stream': 'true'
+      },
+      body: JSON.stringify({ message: userText, context, history, geminiKey: activeKey, stream: true })
     });
 
     if (response.ok) {
-      const data = await response.json();
-      if (data && data.reply) {
-        if (data.source !== 'deterministic-fallback') {
-          replyText = data.reply;
-        } else {
-          // Keep fallback reply as backup if direct call fails
+      const contentType = response.headers.get('content-type') || '';
+
+      if (contentType.includes('text/plain') && response.body && typeof ReadableStream !== 'undefined') {
+        // Stream text chunks directly using browser native TextDecoderStream
+        const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
+        let accumulated = '';
+
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          accumulated += value;
+          updateStreamingAiBubble(accumulated);
+        }
+
+        if (accumulated.trim()) {
+          replyText = accumulated.trim();
+          streamSuccess = true;
+        }
+      } else {
+        // Standard JSON response fallback
+        const data = await response.json();
+        if (data && data.reply) {
           replyText = data.reply;
         }
       }
@@ -2987,7 +3028,7 @@ async function handleAiChatSubmit(e) {
   }
 
   // If serverless is offline or returned fallback, attempt direct client Gemini call with the key
-  if ((!replyText || replyText.includes('offline mode without an AI key')) && activeKey) {
+  if (!streamSuccess && (!replyText || replyText.includes('offline mode without an AI key')) && activeKey) {
     try {
       const directReply = await callClientDirectGemini(userText, context, history, activeKey);
       if (directReply) {
@@ -3003,7 +3044,7 @@ async function handleAiChatSubmit(e) {
     replyText = localDeterministicFinancialAI(userText, context);
   }
 
-  // Replace typing indicator with real reply
+  // Finalize assistant reply with full markdown and interactive copy actions
   state.aiMessages.pop();
   state.aiMessages.push({ sender: 'assistant', text: replyText });
   renderAiMessages();
@@ -3015,14 +3056,40 @@ function handleAiPromptChipClick(promptText) {
   handleAiChatSubmit();
 }
 
-function handleNaturalLanguageParseTrigger() {
+async function handleNaturalLanguageParseTrigger() {
   const rawText = DOM.aiChatInput.value.trim();
   if (!rawText) {
     showToast('Type a transaction description first, e.g. "Spent 300 on groceries"', 'warning');
     return;
   }
 
-  const parsed = parseNaturalLanguageTransaction(rawText);
+  // 1. Instant local regex baseline parsing
+  let parsed = parseNaturalLanguageTransaction(rawText);
+  const activeKey = getActiveGeminiKey();
+
+  // 2. Enhance with Vercel AI SDK generateObject structured output when online
+  try {
+    const apiRes = await fetch('/api/parse-transaction', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        input: rawText,
+        referenceDate: getTodayDateString(),
+        geminiKey: activeKey
+      })
+    });
+
+    if (apiRes.ok) {
+      const data = await apiRes.json();
+      if (data && data.success && data.transaction && data.transaction.amount > 0) {
+        parsed = data.transaction;
+      }
+    }
+  } catch (parseErr) {
+    // Graceful offline fallback to regex result
+    console.info('[Vaultly NL Parser] Using deterministic parser baseline.');
+  }
+
   if (!parsed || parsed.amount <= 0) {
     showToast('Could not detect an amount. Please specify a value like ₹250.', 'warning');
     return;
@@ -3044,7 +3111,14 @@ function handleNaturalLanguageParseTrigger() {
     updateFormCategoryOptions('expense');
   }
 
-  DOM.txCategory.value = parsed.category;
+  if (parsed.category) {
+    DOM.txCategory.value = parsed.category;
+  }
+
+  if (DOM.txNotes && parsed.notes) {
+    DOM.txNotes.value = parsed.notes;
+  }
+
   showToast(`Parsed: ${parsed.title} (${formatCurrency(parsed.amount)}). Confirm to save.`, 'info');
 }
 

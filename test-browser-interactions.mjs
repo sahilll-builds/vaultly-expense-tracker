@@ -100,7 +100,7 @@ async function runBrowserQASuite() {
 
   await send('Page.navigate', { url: FILE_URL });
   console.log('⏳ Page loaded. Waiting for loader dismissal and Lucide icons render...');
-  await sleep(1500);
+  await sleep(2200);
 
   // Helper to evaluate JS in the browser
   async function evaluate(code) {
