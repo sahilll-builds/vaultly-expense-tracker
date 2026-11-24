@@ -97,7 +97,7 @@ function deterministicParse(text, referenceDate) {
  * Zero-dependency JSON-mode fallback for structured transaction parsing.
  */
 async function callDirectGeminiParse(apiKey, input, refDate) {
-  const candidateModels = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.0-flash'];
+  const candidateModels = ['gemini-3.5-flash-lite', 'gemini-3.8-flash', 'gemini-flash-latest', 'gemini-1.5-flash'];
   const prompt = `You are a financial entity extraction engine. Today is ${refDate}.
 Extract transaction details from the text below and respond ONLY with a raw JSON object with keys:
 - amount: number (positive)
@@ -121,7 +121,7 @@ Input text: "${input}"`;
     try {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${encodeURIComponent(apiKey)}`;
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8000);
+      const timeoutId = setTimeout(() => controller.abort(), 12000);
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -201,7 +201,7 @@ module.exports = async function handler(req, res) {
       if (geminiKey) {
         const { createGoogleGenerativeAI } = await import('@ai-sdk/google');
         const google = createGoogleGenerativeAI({ apiKey: geminiKey });
-        modelInstance = google('gemini-1.5-flash');
+        modelInstance = google('gemini-3.5-flash-lite');
         sourceName = 'ai-sdk-gemini';
       } else if (openaiKey) {
         const { createOpenAI } = await import('@ai-sdk/openai');

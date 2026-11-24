@@ -356,7 +356,7 @@ function createFinancialTools(context, z, tool) {
  * Zero-dependency, bulletproof fallback for when SDK or bundling issues occur.
  */
 async function callDirectGeminiRest(apiKey, systemInstructions, history, userText) {
-  const candidateModels = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.0-flash'];
+  const candidateModels = ['gemini-3.5-flash-lite', 'gemini-3.8-flash', 'gemini-flash-latest', 'gemini-1.5-flash'];
 
   const contents = [];
   if (Array.isArray(history)) {
@@ -394,7 +394,7 @@ async function callDirectGeminiRest(apiKey, systemInstructions, history, userTex
     try {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${encodeURIComponent(apiKey)}`;
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8000);
+      const timeoutId = setTimeout(() => controller.abort(), 12000);
 
       const res = await fetch(url, {
         method: 'POST',
@@ -545,7 +545,7 @@ ${context?.lastMonthTotals ? `- Last Month: Income ₹${context.lastMonthTotals.
         const { createGoogleGenerativeAI } = await import('@ai-sdk/google');
 
         const google = createGoogleGenerativeAI({ apiKey: geminiKey });
-        const modelInstance = google('gemini-1.5-flash');
+        const modelInstance = google('gemini-3.5-flash-lite');
 
         // Prepare unified message structure for Vercel AI SDK
         const messages = [];
@@ -578,7 +578,7 @@ ${context?.lastMonthTotals ? `- Last Month: Income ₹${context.lastMonthTotals.
 
           res.setHeader('Content-Type', 'text/plain; charset=utf-8');
           res.setHeader('X-Vaultly-Source', 'ai-gemini');
-          res.setHeader('X-Vaultly-Model', 'gemini-1.5-flash');
+          res.setHeader('X-Vaultly-Model', 'gemini-3.5-flash-lite');
           return streamResult.pipeTextStreamToResponse(res);
         } else {
           // Synchronous full text generation (or testing/legacy clients)
@@ -595,7 +595,7 @@ ${context?.lastMonthTotals ? `- Last Month: Income ₹${context.lastMonthTotals.
             return res.status(200).json({
               reply: result.text.trim(),
               source: 'ai-gemini',
-              model: 'gemini-1.5-flash'
+              model: 'gemini-3.5-flash-lite'
             });
           }
         }
