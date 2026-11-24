@@ -351,6 +351,92 @@ function createFinancialTools(context, z, tool) {
   };
 }
 
+/**
+ * Direct native Google Generative Language REST API caller (Node 18+ native fetch).
+ * Zero-dependency, bulletproof fallback for when SDK or bundling issues occur.
+ */
+async function callDirectGeminiRest(apiKey, systemInstructions, history, userText) {
+  const candidateModels = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.0-flash'];
+
+  const contents = [];
+  if (Array.isArray(history)) {
+    for (const msg of history.slice(-10)) {
+      if (msg && msg.content) {
+        contents.push({
+          role: msg.role === 'assistant' ? 'model' : 'user',
+          parts: [{ text: msg.content.replace(/^\[Offline Mode[^\]]*\]\s*/i, '') }]
+        });
+      }
+    }
+  }
+  contents.push({
+    role: 'user',
+    parts: [{ text: userText }]
+  });
+
+  const payload = {
+    contents,
+    generationConfig: {
+      temperature: 0.7,
+      maxOutputTokens: 2048
+    }
+  };
+
+  if (systemInstructions) {
+    payload.system_instruction = {
+      parts: [{ text: systemInstructions }]
+    };
+  }
+
+  let lastError = null;
+
+  for (const modelName of candidateModels) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${encodeURIComponent(apiKey)}`;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        const errMsg = data?.error?.message || `HTTP ${res.status}`;
+        const errReason = data?.error?.details?.[0]?.reason || '';
+        if (res.status === 400 && (errReason === 'API_KEY_INVALID' || errMsg.toLowerCase().includes('api key not valid'))) {
+          return {
+            errorType: 'INVALID_KEY',
+            message: "⚠️ Google Gemini API Error: The configured GEMINI_API_KEY was rejected by Google (API key invalid or unauthorized). Please verify your key at https://aistudio.google.com and update it in Vercel Environment Variables."
+          };
+        }
+        if (res.status === 429 || errMsg.toLowerCase().includes('quota') || errMsg.toLowerCase().includes('rate limit')) {
+          return {
+            errorType: 'RATE_LIMIT',
+            message: "⚠️ Google Gemini Rate Limit: Your Gemini API quota or rate limit has been exceeded. Please check your usage limits at https://aistudio.google.com."
+          };
+        }
+        lastError = errMsg;
+        continue;
+      }
+
+      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (text && text.trim()) {
+        return { success: true, text: text.trim(), model: modelName };
+      }
+    } catch (fetchErr) {
+      lastError = fetchErr.message;
+    }
+  }
+
+  return { errorType: 'API_FAILURE', message: lastError || 'Failed to generate response from Gemini API.' };
+}
+
 module.exports = async function handler(req, res) {
   // 1. CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -389,9 +475,11 @@ module.exports = async function handler(req, res) {
   // Normalize conversation history
   const conversationHistory = Array.isArray(history) ? history.slice(-20) : [];
 
-  // 4. Server-Only API Keys (Zero client key acceptance)
-  const geminiKey = process.env.GEMINI_API_KEY;
-  const openaiKey = process.env.OPENAI_API_KEY;
+  // 4. Server-Only API Keys (Zero client key acceptance, whitespace/quote sanitized)
+  const rawGeminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GOOGLE_API_KEY;
+  const geminiKey = rawGeminiKey ? rawGeminiKey.trim().replace(/^['"]|['"]$/g, '') : '';
+  const rawOpenaiKey = process.env.OPENAI_API_KEY;
+  const openaiKey = rawOpenaiKey ? rawOpenaiKey.trim().replace(/^['"]|['"]$/g, '') : '';
 
   // Determine if conversation involves finance or tools
   const financeMode = isFinanceRelated(trimmedMessage, conversationHistory);
@@ -445,58 +533,38 @@ Current Financial Context Snapshot:
 ${context?.lastMonthTotals ? `- Last Month: Income ₹${context.lastMonthTotals.totalIncome || 0}, Expenses ₹${context.lastMonthTotals.totalExpenses || 0}, Balance ₹${context.lastMonthTotals.netBalance || 0}` : ''}`;
   }
 
-  // 5. Attempt Vercel AI SDK Core Execution (Gemini -> OpenAI)
+  // 5. Attempt AI Execution (Vercel AI SDK Core with Gemini 1.5 Flash -> Direct Gemini REST -> OpenAI)
   if (geminiKey || openaiKey) {
-    try {
-      const { streamText, generateText, tool } = await import('ai');
-      const { z } = await import('zod');
+    let apiErrorDiagnostic = null;
 
-      // Prepare unified message structure for Vercel AI SDK
-      const messages = [];
-      for (const msg of conversationHistory) {
-        if (msg && msg.content && (msg.role === 'user' || msg.role === 'assistant')) {
-          messages.push({
-            role: msg.role,
-            content: msg.content.replace(/^\[Offline Mode[^\]]*\]\s*/i, '') // strip offline prefix from history
-          });
+    // Layer 1: Vercel AI SDK Core with Gemini 1.5 Flash
+    if (geminiKey) {
+      try {
+        const { streamText, generateText, tool } = await import('ai');
+        const { z } = await import('zod');
+        const { createGoogleGenerativeAI } = await import('@ai-sdk/google');
+
+        const google = createGoogleGenerativeAI({ apiKey: geminiKey });
+        const modelInstance = google('gemini-1.5-flash');
+
+        // Prepare unified message structure for Vercel AI SDK
+        const messages = [];
+        for (const msg of conversationHistory) {
+          if (msg && msg.content && (msg.role === 'user' || msg.role === 'assistant')) {
+            messages.push({
+              role: msg.role,
+              content: msg.content.replace(/^\[Offline Mode[^\]]*\]\s*/i, '') // strip offline prefix from history
+            });
+          }
         }
-      }
-      messages.push({
-        role: 'user',
-        content: trimmedMessage
-      });
+        messages.push({
+          role: 'user',
+          content: trimmedMessage
+        });
 
-      // Provide in-memory financial tools whenever context is available
-      const tools = context ? createFinancialTools(context, z, tool) : undefined;
+        // Provide in-memory financial tools whenever context is available
+        const tools = context ? createFinancialTools(context, z, tool) : undefined;
 
-      // Primary: Google Gemini via @ai-sdk/google
-      let modelInstance = null;
-      let sourceName = '';
-
-      if (geminiKey) {
-        try {
-          const { createGoogleGenerativeAI } = await import('@ai-sdk/google');
-          const google = createGoogleGenerativeAI({ apiKey: geminiKey });
-          modelInstance = google('gemini-2.5-flash');
-          sourceName = 'ai-gemini';
-        } catch (initErr) {
-          console.warn('[Vaultly AI SDK] Gemini init error:', initErr.message);
-        }
-      }
-
-      // Secondary: OpenAI via @ai-sdk/openai
-      if (!modelInstance && openaiKey) {
-        try {
-          const { createOpenAI } = await import('@ai-sdk/openai');
-          const openai = createOpenAI({ apiKey: openaiKey });
-          modelInstance = openai('gpt-4o-mini');
-          sourceName = 'ai-openai';
-        } catch (initErr) {
-          console.warn('[Vaultly AI SDK] OpenAI init error:', initErr.message);
-        }
-      }
-
-      if (modelInstance) {
         if (isStreamRequested && typeof res.writeHead === 'function') {
           // Streaming text response via Vercel AI SDK
           const streamResult = streamText({
@@ -509,8 +577,8 @@ ${context?.lastMonthTotals ? `- Last Month: Income ₹${context.lastMonthTotals.
           });
 
           res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-          res.setHeader('X-Vaultly-Source', sourceName);
-          res.setHeader('X-Vaultly-Model', 'flash-core');
+          res.setHeader('X-Vaultly-Source', 'ai-gemini');
+          res.setHeader('X-Vaultly-Model', 'gemini-1.5-flash');
           return streamResult.pipeTextStreamToResponse(res);
         } else {
           // Synchronous full text generation (or testing/legacy clients)
@@ -526,14 +594,130 @@ ${context?.lastMonthTotals ? `- Last Month: Income ₹${context.lastMonthTotals.
           if (result && result.text) {
             return res.status(200).json({
               reply: result.text.trim(),
-              source: sourceName,
-              model: 'flash-core'
+              source: 'ai-gemini',
+              model: 'gemini-1.5-flash'
             });
           }
         }
+      } catch (sdkError) {
+        console.warn('[Vaultly AI SDK] SDK error, attempting direct REST fallback:', sdkError.message);
+        const errMsg = (sdkError.message || '').toLowerCase();
+        if (errMsg.includes('api_key_invalid') || errMsg.includes('api key not valid') || sdkError.status === 400) {
+          apiErrorDiagnostic = {
+            type: 'INVALID_KEY',
+            message: "⚠️ Google Gemini API Error: The configured GEMINI_API_KEY was rejected by Google (API key invalid or unauthorized). Please verify your key at https://aistudio.google.com and update it in Vercel Environment Variables."
+          };
+        } else if (sdkError.status === 429 || errMsg.includes('quota') || errMsg.includes('rate limit')) {
+          apiErrorDiagnostic = {
+            type: 'RATE_LIMIT',
+            message: "⚠️ Google Gemini Rate Limit: Your Gemini API quota or rate limit has been exceeded. Please check your usage limits at https://aistudio.google.com."
+          };
+        }
       }
-    } catch (sdkError) {
-      console.warn('[Vaultly AI SDK] SDK execution error, using deterministic fallback:', sdkError.message);
+    }
+
+    // Layer 2: Direct Google Generative Language REST API Fallback
+    // (If Vercel AI SDK throws or has bundling issues, this native fetch guarantees 100% direct connection to Google Gemini)
+    if (geminiKey && !apiErrorDiagnostic) {
+      try {
+        const restResult = await callDirectGeminiRest(geminiKey, systemInstructions, conversationHistory, trimmedMessage);
+        if (restResult.success && restResult.text) {
+          if (isStreamRequested && typeof res.writeHead === 'function') {
+            res.writeHead(200, {
+              'Content-Type': 'text/plain; charset=utf-8',
+              'X-Vaultly-Source': 'ai-gemini-rest',
+              'X-Vaultly-Model': restResult.model
+            });
+            res.write(restResult.text);
+            return res.end();
+          }
+          return res.status(200).json({
+            reply: restResult.text,
+            source: 'ai-gemini-rest',
+            model: restResult.model
+          });
+        }
+        if (restResult.errorType === 'INVALID_KEY' || restResult.errorType === 'RATE_LIMIT') {
+          apiErrorDiagnostic = { type: restResult.errorType, message: restResult.message };
+        }
+      } catch (restErr) {
+        console.warn('[Vaultly REST] Direct Gemini REST call error:', restErr.message);
+      }
+    }
+
+    // Layer 3: OpenAI Fallback (if OpenAI key configured)
+    if (openaiKey && !apiErrorDiagnostic) {
+      try {
+        const { streamText, generateText, tool } = await import('ai');
+        const { z } = await import('zod');
+        const { createOpenAI } = await import('@ai-sdk/openai');
+        const openai = createOpenAI({ apiKey: openaiKey });
+        const modelInstance = openai('gpt-4o-mini');
+
+        const messages = [];
+        for (const msg of conversationHistory) {
+          if (msg && msg.content && (msg.role === 'user' || msg.role === 'assistant')) {
+            messages.push({
+              role: msg.role,
+              content: msg.content.replace(/^\[Offline Mode[^\]]*\]\s*/i, '')
+            });
+          }
+        }
+        messages.push({ role: 'user', content: trimmedMessage });
+
+        const tools = context ? createFinancialTools(context, z, tool) : undefined;
+
+        if (isStreamRequested && typeof res.writeHead === 'function') {
+          const streamResult = streamText({
+            model: modelInstance,
+            system: systemInstructions,
+            messages,
+            tools,
+            maxSteps: tools ? 3 : 1,
+            temperature: 0.65
+          });
+
+          res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+          res.setHeader('X-Vaultly-Source', 'ai-openai');
+          res.setHeader('X-Vaultly-Model', 'gpt-4o-mini');
+          return streamResult.pipeTextStreamToResponse(res);
+        } else {
+          const result = await generateText({
+            model: modelInstance,
+            system: systemInstructions,
+            messages,
+            tools,
+            maxSteps: tools ? 3 : 1,
+            temperature: 0.65
+          });
+
+          if (result && result.text) {
+            return res.status(200).json({
+              reply: result.text.trim(),
+              source: 'ai-openai',
+              model: 'gpt-4o-mini'
+            });
+          }
+        }
+      } catch (openAiErr) {
+        console.warn('[Vaultly AI SDK] OpenAI init error:', openAiErr.message);
+      }
+    }
+
+    // If an explicit API key error was diagnosed, surface it cleanly to the user
+    if (apiErrorDiagnostic) {
+      if (isStreamRequested && typeof res.writeHead === 'function') {
+        res.writeHead(200, {
+          'Content-Type': 'text/plain; charset=utf-8',
+          'X-Vaultly-Source': 'api-diagnostic-error'
+        });
+        res.write(apiErrorDiagnostic.message);
+        return res.end();
+      }
+      return res.status(200).json({
+        reply: apiErrorDiagnostic.message,
+        source: 'api-diagnostic-error'
+      });
     }
   }
 

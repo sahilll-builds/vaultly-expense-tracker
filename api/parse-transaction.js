@@ -92,6 +92,57 @@ function deterministicParse(text, referenceDate) {
   return { amount, type, category, date, title };
 }
 
+/**
+ * Direct native Google Generative Language REST entity extractor.
+ * Zero-dependency JSON-mode fallback for structured transaction parsing.
+ */
+async function callDirectGeminiParse(apiKey, input, refDate) {
+  const candidateModels = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.0-flash'];
+  const prompt = `You are a financial entity extraction engine. Today is ${refDate}.
+Extract transaction details from the text below and respond ONLY with a raw JSON object with keys:
+- amount: number (positive)
+- type: "income" or "expense"
+- category: one of ["Food & Dining", "Transport", "Shopping", "Bills & Utilities", "Education", "Entertainment", "Health", "Salary", "Freelance", "Business", "Allowance", "Other"]
+- date: YYYY-MM-DD
+- title: string (concise description, merchant, or reason)
+- notes: optional string
+
+Input text: "${input}"`;
+
+  const payload = {
+    contents: [{ role: 'user', parts: [{ text: prompt }] }],
+    generationConfig: {
+      temperature: 0.1,
+      response_mime_type: 'application/json'
+    }
+  };
+
+  for (const modelName of candidateModels) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${encodeURIComponent(apiKey)}`;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      if (!res.ok) continue;
+      const data = await res.json();
+      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (text) {
+        const parsed = JSON.parse(text);
+        if (parsed && typeof parsed.amount === 'number' && parsed.amount > 0) {
+          return { success: true, transaction: parsed, model: modelName };
+        }
+      }
+    } catch (e) {}
+  }
+  return null;
+}
+
 module.exports = async function handler(req, res) {
   // 1. CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -120,8 +171,10 @@ module.exports = async function handler(req, res) {
 
   const trimmedInput = input.trim();
   const refDate = referenceDate || new Date().toISOString().split('T')[0];
-  const geminiKey = process.env.GEMINI_API_KEY;
-  const openaiKey = process.env.OPENAI_API_KEY;
+  const rawGeminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GOOGLE_API_KEY;
+  const geminiKey = rawGeminiKey ? rawGeminiKey.trim().replace(/^['"]|['"]$/g, '') : '';
+  const rawOpenaiKey = process.env.OPENAI_API_KEY;
+  const openaiKey = rawOpenaiKey ? rawOpenaiKey.trim().replace(/^['"]|['"]$/g, '') : '';
 
   // 4. Attempt Structured Entity Extraction with Vercel AI SDK generateObject
   if (geminiKey || openaiKey) {
@@ -148,7 +201,7 @@ module.exports = async function handler(req, res) {
       if (geminiKey) {
         const { createGoogleGenerativeAI } = await import('@ai-sdk/google');
         const google = createGoogleGenerativeAI({ apiKey: geminiKey });
-        modelInstance = google('gemini-2.5-flash');
+        modelInstance = google('gemini-1.5-flash');
         sourceName = 'ai-sdk-gemini';
       } else if (openaiKey) {
         const { createOpenAI } = await import('@ai-sdk/openai');
@@ -173,7 +226,23 @@ module.exports = async function handler(req, res) {
         }
       }
     } catch (sdkErr) {
-      console.warn('[Vaultly API] generateObject error, falling through to deterministic parser:', sdkErr.message);
+      console.warn('[Vaultly API] generateObject error, attempting direct REST parser:', sdkErr.message);
+    }
+
+    // Direct Gemini REST entity extraction fallback
+    if (geminiKey) {
+      try {
+        const directParsed = await callDirectGeminiParse(geminiKey, trimmedInput, refDate);
+        if (directParsed && directParsed.success && directParsed.transaction) {
+          return res.status(200).json({
+            success: true,
+            transaction: directParsed.transaction,
+            source: 'ai-gemini-rest'
+          });
+        }
+      } catch (restErr) {
+        console.warn('[Vaultly API] Direct Gemini parse error:', restErr.message);
+      }
     }
   }
 
