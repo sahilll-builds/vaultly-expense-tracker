@@ -72,11 +72,13 @@ function deterministicParse(text, referenceDate) {
   }
 
   // 4. Date Detection
-  let date = referenceDate || new Date().toISOString().split('T')[0];
+  const baseDate = referenceDate ? new Date(referenceDate + 'T00:00:00') : new Date();
+  const formatYMD = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  let date = formatYMD(baseDate);
   if (lower.includes('yesterday')) {
-    const y = new Date();
+    const y = new Date(baseDate);
     y.setDate(y.getDate() - 1);
-    date = y.toISOString().split('T')[0];
+    date = formatYMD(y);
   }
 
   // 5. Clean Title
