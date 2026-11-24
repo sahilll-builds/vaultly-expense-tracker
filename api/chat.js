@@ -141,6 +141,73 @@ function generateDeterministicAnswer(message, context = {}) {
     return tag + `Hey! 👋 I'm Vaultly AI. What's on your mind? We can check your spending, brainstorm an idea, learn something new, or just chat.`;
   }
 
+  // Brainstorming & Idea Generation
+  if (q.includes('brainstorm') || q.includes('idea') || q.includes('ideate') || q.includes('suggestion') || q.includes('concept') || q.includes('think of')) {
+    return tag + `I'd love to help you brainstorm! 💡 What area are you thinking about?
+
+Here are a few high-impact themes we can explore together:
+
+1. 🚀 **Side Hustles & Micro-Ventures:**
+   - Technical freelance services & high-value consulting
+   - Digital products, templates, and micro-SaaS utilities
+   - Niche newsletter, podcast, or creator monetization
+
+2. 💰 **Financial Optimization & Wealth Accelerators:**
+   - The 30-Day "Zero Discretionary Spend" Challenge
+   - Automated micro-savings strategy (weekly round-ups & matching)
+   - Category-by-category audit to eliminate zombie subscriptions and bank fees
+
+3. 🛠️ **Product, Web & Tech Concepts:**
+   - Privacy-first web applications using LocalStorage and local SQLite
+   - Minimalist personal productivity dashboards with zero tracking
+   - AI-assisted developer workflows and automation pipelines
+
+Tell me which domain excites you, or share a rough thought and let's expand it into a full execution roadmap!`;
+  }
+
+  // Financial Tips & Educational Advice
+  if (q.includes('advice') || q.includes('tip') || q.includes('how to save') || q.includes('invest') || q.includes('50/30/20') || q.includes('emergency fund') || q.includes('compound interest')) {
+    return tag + `Here are the core financial principles that build lasting wealth:
+
+1. **The 50/30/20 Framework:**
+   - **50% Needs:** Housing, groceries, utilities, and transit.
+   - **30% Wants:** Dining out, hobbies, personal care, and entertainment.
+   - **20% Future You:** Savings goals, debt paydown, and long-term investments.
+
+2. **The 3–6 Month Emergency Runway:**
+   - Keep 3 to 6 months of essential living expenses liquid in a High-Yield Savings Account before speculative investing.
+
+3. **Mindful Spend Friction:**
+   - Apply a 48-hour cooling-off rule on any non-essential purchase over ₹2,000 to avoid impulse spending.
+
+4. **Pay Yourself First:**
+   - Automate your savings transfer the day your salary arrives, not whatever is left at month-end.
+
+Want to check how your current Vaultly budget compares to the 50/30/20 rule?`;
+  }
+
+  // Capabilities & Help
+  if (q.includes('what can you do') || q.includes('help') || q.includes('capabilities') || q.includes('features')) {
+    return tag + `I'm Vaultly AI, your personal financial copilot! Here's what I can do:
+
+- 📊 **Spending Insights:** Track expenses by category, date, or period (*"How much did I spend this month?"*, *"What about last month?"*).
+- 🏆 **Cost Drivers:** Identify your largest expense categories (*"Which category was highest?"*).
+- 💡 **Safe-to-Spend:** Calculate your remaining daily allowance (*"What is my safe daily spend?"*).
+- ⚡ **Natural Language Transactions:** Type entries naturally (*"Spent 250 on lunch yesterday"*), review details, and confirm in the modal.
+- 🎯 **Budgets & Goals:** Monitor spending limits and track savings milestones.
+- 💬 **Conversation & Brainstorming:** Discuss savings strategies, side hustles, budgeting challenges, and tech ideas.`;
+  }
+
+  // Humor & Wit
+  if (q.includes('joke') || q.includes('funny') || q.includes('laugh')) {
+    return tag + `Why did the dollar break up with the pound? 😂\n\nIt was feeling way too much pressure from inflation!`;
+  }
+
+  // Coding & Tech Queries
+  if (q.includes('code') || q.includes('javascript') || q.includes('html') || q.includes('css') || q.includes('programming') || q.includes('debug')) {
+    return tag + `I'm always down to talk tech and code! 💻 Whether you're working with JavaScript, CSS architecture, API designs, or web performance, feel free to share the snippet or concept you're tackling and let's break it down.`;
+  }
+
   // Bank account inquiry
   if (q.includes('bank') && (q.includes('account') || q.includes('balance') || q.includes('how much'))) {
     return tag + "Vaultly is privacy-first and keeps everything stored client-side on your device, so I can't peek into your live bank account. You can log income, expenses, and account transfers right here anytime!";

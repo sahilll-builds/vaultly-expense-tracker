@@ -2627,18 +2627,85 @@ function localDeterministicFinancialAI(userQuery, context) {
     return prefix + "You can use the **Financial Digital Twin & Scenario Simulator** in the Analytics tab! It lets you adjust income shocks, rent changes, discretionary expense trims, and major purchases with real-time feedback and zero mutation of your real records.";
   }
 
-  // 12. General non-financial conversation fallback
+  // 12. Brainstorming & Idea Generation
+  if (norm.includes('brainstorm') || norm.includes('idea') || norm.includes('ideate') || norm.includes('suggestion') || norm.includes('concept') || norm.includes('think of')) {
+    return prefix + `I'd love to help you brainstorm! 💡 What area are you thinking about?
+
+Here are a few high-impact themes we can explore together:
+
+1. 🚀 **Side Hustles & Micro-Ventures:**
+   - Technical freelance services & high-value consulting
+   - Digital products, templates, and micro-SaaS utilities
+   - Niche newsletter, podcast, or creator monetization
+
+2. 💰 **Financial Optimization & Wealth Accelerators:**
+   - The 30-Day "Zero Discretionary Spend" Challenge
+   - Automated micro-savings strategy (weekly round-ups & matching)
+   - Category-by-category audit to eliminate zombie subscriptions and bank fees
+
+3. 🛠️ **Product, Web & Tech Concepts:**
+   - Privacy-first web applications using LocalStorage and local SQLite
+   - Minimalist personal productivity dashboards with zero tracking
+   - AI-assisted developer workflows and automation pipelines
+
+Tell me which domain excites you, or share a rough thought and let's expand it into a full execution roadmap!`;
+  }
+
+  // 13. Financial Tips & Educational Advice
+  if (norm.includes('advice') || norm.includes('tip') || norm.includes('how to save') || norm.includes('invest') || norm.includes('50/30/20') || norm.includes('emergency fund') || norm.includes('compound interest')) {
+    return prefix + `Here are the core financial principles that build lasting wealth:
+
+1. **The 50/30/20 Framework:**
+   - **50% Needs:** Housing, groceries, utilities, and transit.
+   - **30% Wants:** Dining out, hobbies, personal care, and entertainment.
+   - **20% Future You:** Savings goals, debt paydown, and long-term investments.
+
+2. **The 3–6 Month Emergency Runway:**
+   - Keep 3 to 6 months of essential living expenses liquid in a High-Yield Savings Account before speculative investing.
+
+3. **Mindful Spend Friction:**
+   - Apply a 48-hour cooling-off rule on any non-essential purchase over ₹2,000 to avoid impulse spending.
+
+4. **Pay Yourself First:**
+   - Automate your savings transfer the day your salary arrives, not whatever is left at month-end.
+
+Want to check how your current Vaultly budget compares to the 50/30/20 rule?`;
+  }
+
+  // 14. Capabilities & Help
+  if (norm.includes('what can you do') || norm.includes('help') || norm.includes('capabilities') || norm.includes('features')) {
+    return prefix + `I'm Vaultly AI, your personal financial copilot! Here's what I can do:
+
+- 📊 **Spending Insights:** Track expenses by category, date, or period (*"How much did I spend this month?"*, *"What about last month?"*).
+- 🏆 **Cost Drivers:** Identify your largest expense categories (*"Which category was highest?"*).
+- 💡 **Safe-to-Spend:** Calculate your remaining daily allowance (*"What is my safe daily spend?"*).
+- ⚡ **Natural Language Transactions:** Type entries naturally (*"Spent 250 on lunch yesterday"*), review details, and confirm in the modal.
+- 🎯 **Budgets & Goals:** Monitor spending limits and track savings milestones.
+- 💬 **Conversation & Brainstorming:** Discuss savings strategies, side hustles, budgeting challenges, and tech ideas.`;
+  }
+
+  // 15. Humor & Wit
+  if (norm.includes('joke') || norm.includes('funny') || norm.includes('laugh')) {
+    return prefix + `Why did the dollar break up with the pound? 😂\n\nIt was feeling way too much pressure from inflation!`;
+  }
+
+  // 16. Coding & Tech Queries
+  if (norm.includes('code') || norm.includes('javascript') || norm.includes('html') || norm.includes('css') || norm.includes('programming') || norm.includes('debug')) {
+    return prefix + `I'm always down to talk tech and code! 💻 Whether you're working with JavaScript, CSS architecture, API designs, or web performance, feel free to share the snippet or concept you're tackling and let's break it down.`;
+  }
+
+  // 17. Who are you
   if (norm.includes('who are you') || norm.includes('what are you')) {
     return prefix + "I'm Vaultly AI, your personal financial copilot! I can analyze your spending, calculate safe daily limits, forecast budgets, and help you stay on track with your goals.";
   }
 
-  // 13. General finance fallback
+  // 18. General finance fallback
   const financeKeywords = ['spend', 'spending', 'spent', 'money', 'income', 'expense', 'expenses', 'transaction', 'transactions', 'cash', 'rupee', '₹', 'salary', 'cashflow', 'afford', 'cost', 'bought', 'purchase', 'bill', 'bills', 'payment', 'paid'];
   if (financeKeywords.some(k => norm.includes(k))) {
     return prefix + `Here's where things stand: Total Income is **${formatCurrency(totals.totalIncome)}**, Total Expenses are **${formatCurrency(totals.totalExpenses)}**, leaving a Net Balance of **${formatCurrency(totals.netBalance)}**. Want to check your top categories or safe daily spend?`;
   }
 
-  // 14. Friendly general fallback
+  // 19. Friendly general fallback
   return prefix + "I'm currently running in deterministic offline mode. You can ask me anything about your finances — like spending, balance, monthly comparisons, budgets, or savings goals! For full generative responses, configure `GEMINI_API_KEY` or `OPENAI_API_KEY` on your server.";
 }
 
