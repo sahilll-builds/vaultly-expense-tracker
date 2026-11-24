@@ -56,11 +56,11 @@
     rgba(255, 255, 255, 0.04) 100%
   );
 
-  /* Glass Blur Levels */
-  --blur-sm: blur(10px);
-  --blur-md: blur(20px);
-  --blur-lg: blur(30px);
-  --blur-xl: blur(44px);
+  /* Glass Blur Levels (Optimized for 60fps composition) */
+  --blur-sm: blur(6px);
+  --blur-md: blur(10px);
+  --blur-lg: blur(14px);
+  --blur-xl: blur(16px);
 
   /* Typography Colors (Spec Aligned) */
   --text-primary: #F5F5F5;          /* Crisp high-contrast primary text */
@@ -234,21 +234,7 @@ body.drawer-open {
   background-size: 200% auto;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  animation: wordmarkShimmer 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   text-shadow: 0 0 30px rgba(255, 255, 255, 0.15);
-}
-
-@keyframes wordmarkShimmer {
-  0% {
-    background-position: 200% center;
-    opacity: 0.4;
-    transform: translateY(4px);
-  }
-  100% {
-    background-position: 0% center;
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 .loader-brand-tagline {
@@ -364,10 +350,9 @@ body {
   position: absolute;
   border-radius: 50%;
   filter: blur(100px);
-  opacity: 0.35;
+  opacity: 0.25;
   mix-blend-mode: screen;
-  will-change: transform, opacity;
-  animation: floatNebula 24s infinite alternate ease-in-out;
+  pointer-events: none;
 }
 
 .nebula-silver-1,
@@ -377,7 +362,6 @@ body {
   width: 650px;
   height: 650px;
   background: radial-gradient(circle, rgba(255, 255, 255, 0.05) 0%, rgba(220, 220, 220, 0.02) 50%, transparent 75%);
-  animation-duration: 22s;
 }
 
 .nebula-silver-2,
@@ -387,8 +371,6 @@ body {
   width: 750px;
   height: 750px;
   background: radial-gradient(circle, rgba(200, 200, 200, 0.04) 0%, rgba(160, 160, 160, 0.015) 50%, transparent 75%);
-  animation-duration: 28s;
-  animation-delay: -5s;
 }
 
 .nebula-grey,
@@ -399,21 +381,14 @@ body {
   width: 700px;
   height: 700px;
   background: radial-gradient(circle, rgba(160, 160, 160, 0.035) 0%, rgba(100, 100, 100, 0.01) 50%, transparent 75%);
-  animation-duration: 32s;
-  animation-delay: -10s;
 }
 
-@keyframes floatNebula {
-  0% { transform: translate3d(0, 0, 0) scale(1); }
-  50% { transform: translate3d(40px, -30px, 0) scale(1.08); }
-  100% { transform: translate3d(-30px, 40px, 0) scale(0.95); }
-}
-
-/* Layer 2: Monochrome Celestial Starfield */
+/* Layer 2: Monochrome Celestial Starfield (Static Ambient) */
 .stars-layer {
   position: absolute;
   inset: 0;
   background-repeat: repeat;
+  pointer-events: none;
 }
 
 .stars-1 {
@@ -425,8 +400,7 @@ body {
     radial-gradient(1px 1px at 310px 40px, #E2E2E2, rgba(0, 0, 0, 0)),
     radial-gradient(1.5px 1.5px at 390px 210px, #858585, rgba(0, 0, 0, 0));
   background-size: 450px 450px;
-  opacity: 0.40;
-  animation: twinkleStars 7s infinite alternate ease-in-out;
+  opacity: 0.28;
 }
 
 .stars-2 {
@@ -436,8 +410,7 @@ body {
     radial-gradient(1px 1px at 270px 110px, #B8B8B8, rgba(0, 0, 0, 0)),
     radial-gradient(1.5px 1.5px at 360px 300px, #E2E2E2, rgba(0, 0, 0, 0));
   background-size: 550px 550px;
-  opacity: 0.30;
-  animation: twinkleStars 10s infinite alternate ease-in-out 3s;
+  opacity: 0.20;
 }
 
 .stars-3 {
@@ -445,25 +418,17 @@ body {
     radial-gradient(2px 2px at 110px 190px, #FFFFFF, rgba(0, 0, 0, 0)),
     radial-gradient(2.5px 2.5px at 290px 400px, #A0A0A0, rgba(0, 0, 0, 0));
   background-size: 650px 650px;
-  opacity: 0.22;
-  animation: twinkleStars 12s infinite alternate ease-in-out 5s;
+  opacity: 0.15;
 }
 
-@keyframes twinkleStars {
-  0% { opacity: 0.20; }
-  50% { opacity: 0.45; }
-  100% { opacity: 0.25; }
-}
-
-/* Layer 3: Ambient Liquid Orbs (Water & Light Refraction) */
+/* Layer 3: Ambient Liquid Orbs (Static Light Refraction) */
 .liquid-orb {
   position: absolute;
   border-radius: 50%;
   filter: blur(85px);
   mix-blend-mode: screen;
-  opacity: 0.16;
-  will-change: transform;
-  animation: liquidDrift 30s infinite alternate cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0.12;
+  pointer-events: none;
 }
 
 .liquid-orb-1 {
@@ -480,34 +445,10 @@ body {
   bottom: 15%;
   right: 10%;
   background: radial-gradient(circle, rgba(220, 220, 220, 0.06) 0%, rgba(160, 160, 160, 0.015) 70%, transparent 100%);
-  animation-duration: 36s;
-  animation-delay: -12s;
 }
 
-@keyframes liquidDrift {
-  0% { transform: translate3d(0, 0, 0) scale(1) rotate(0deg); }
-  50% { transform: translate3d(60px, -40px, 0) scale(1.15) rotate(45deg); }
-  100% { transform: translate3d(-40px, 50px, 0) scale(0.9) rotate(90deg); }
-}
-
-/* --------------------------------------------------------------------------
-   MAGIC UI 3D NEON WHITE SPARKS & LIGHT CANVAS (Blank Space Interaction)
-   -------------------------------------------------------------------------- */
 .spatial-sparks-canvas {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  pointer-events: none;
-  z-index: 5;
-  mix-blend-mode: screen;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .spatial-sparks-canvas {
-    display: none !important;
-  }
+  display: none !important;
 }
 
 /* --------------------------------------------------------------------------
@@ -661,48 +602,10 @@ button:active,
 
 .border-beam {
   position: absolute;
-  width: 250%;
-  height: 250%;
-  left: -75%;
-  top: -75%;
-  background: conic-gradient(
-    transparent 0deg,
-    transparent 280deg,
-    rgba(255, 255, 255, 0.4) 320deg,
-    #FFFFFF 345deg,
-    rgba(226, 226, 226, 0.8) 360deg
-  );
-  animation: rotateBorderBeam 6s linear infinite;
+  inset: 0;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: inherit;
   pointer-events: none;
-}
-
-@keyframes rotateBorderBeam {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* --------------------------------------------------------------------------
-   WATER RIPPLE WAVE (Tactile Liquid Click Interaction)
-   -------------------------------------------------------------------------- */
-.water-ripple-wave {
-  position: absolute;
-  border-radius: 50%;
-  transform: scale(0);
-  animation: waterRippleExpand 0.6s cubic-bezier(0.1, 0.5, 0.3, 1) forwards;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.5) 0%, rgba(200, 200, 200, 0.2) 45%, transparent 70%);
-  pointer-events: none;
-  z-index: 10;
-}
-
-@keyframes waterRippleExpand {
-  to {
-    transform: scale(3.5);
-    opacity: 0;
-  }
 }
 
 /* --------------------------------------------------------------------------
@@ -1341,33 +1244,7 @@ button:active,
 
 /* Magic UI Animated Shiny Text for tags / status badges */
 .shiny-text {
-  background: linear-gradient(
-    110deg,
-    var(--text-secondary) 30%,
-    #FFFFFF 50%,
-    var(--text-secondary) 70%
-  );
-  background-size: 200% 100%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  animation: shinyTextSweep 4s ease-in-out infinite;
-}
-
-@keyframes shinyTextSweep {
-  0%, 25% {
-    background-position: 200% 0;
-  }
-  75%, 100% {
-    background-position: -200% 0;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .shiny-text {
-    animation: none;
-    -webkit-text-fill-color: currentColor;
-  }
+  color: #FFFFFF;
 }
 
 /* --------------------------------------------------------------------------
@@ -3388,6 +3265,85 @@ button:active,
   color: #FFFFFF;
   opacity: 1;
   background: rgba(255, 255, 255, 0.08);
+}
+
+/* AI Offline Mode Badge & Transaction Confirmation Action Card */
+.ai-offline-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.32);
+  color: #fbbf24;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 6px;
+  margin-bottom: 10px;
+  letter-spacing: 0.02em;
+}
+
+.ai-tx-confirm-card {
+  margin-top: 12px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ai-tx-confirm-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ai-tx-confirm-pill {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.ai-tx-confirm-pill.income {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #10b981;
+}
+
+.ai-tx-confirm-pill.expense {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #ef4444;
+}
+
+.ai-tx-confirm-amt {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 1rem;
+  color: #FFFFFF;
+}
+
+.ai-tx-confirm-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.ai-tx-confirm-details strong {
+  color: var(--text-primary);
+}
+
+.ai-tx-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 4px;
 }
 
 .ai-quick-prompts {

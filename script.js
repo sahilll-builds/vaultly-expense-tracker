@@ -1003,11 +1003,6 @@ const DOM = (typeof document !== 'undefined') ? {
   loadDemoBtnSettings: document.getElementById('loadDemoBtnSettings'),
   clearAllBtnSettings: document.getElementById('clearAllBtnSettings'),
   storageMetricsText: document.getElementById('storageMetricsText'),
-  geminiApiKeyInput: document.getElementById('geminiApiKeyInput'),
-  saveGeminiKeyBtn: document.getElementById('saveGeminiKeyBtn'),
-  resetGeminiKeyBtn: document.getElementById('resetGeminiKeyBtn'),
-  toggleGeminiKeyVisibilityBtn: document.getElementById('toggleGeminiKeyVisibilityBtn'),
-  geminiKeyStatusLabel: document.getElementById('geminiKeyStatusLabel'),
 
   // Modals (Transactions & Delete)
   openAddModalBtn: document.getElementById('openAddModalBtn'),
@@ -1516,227 +1511,14 @@ function initSpatialCardTilt() {
 }
 
 /* ==============================================================================
-   MAGIC UI 3D NEON WHITE SPARKS & LIGHT ENGINE (Blank Space Hover Effect)
+   SPATIAL SPARKS ENGINE (Deactivated for Maximum UI Responsiveness & Battery Life)
    ============================================================================== */
 
 function initBlankSpaceSparksEffect() {
+  // Permanently disabled: avoids continuous 60fps canvas loop and mousemove listeners
   const canvas = document.getElementById('spatialSparksCanvas');
-  if (!canvas) return;
-
-  const prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const isTouchDevice = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
-  if (prefersReduced || isTouchDevice) {
+  if (canvas) {
     canvas.style.display = 'none';
-    return;
-  }
-
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return;
-
-  let width = 0;
-  let height = 0;
-  let dpr = 1;
-
-  function resize() {
-    dpr = Math.min(window.devicePixelRatio || 1, 2);
-    width = window.innerWidth;
-    height = window.innerHeight;
-    canvas.width = Math.floor(width * dpr);
-    canvas.height = Math.floor(height * dpr);
-    ctx.scale(dpr, dpr);
-  }
-
-  window.addEventListener('resize', resize, { passive: true });
-  resize();
-
-  const particles = [];
-  const maxParticles = 60;
-  const focalLength = 320; // 3D perspective projection depth
-
-  let mouseX = -1000;
-  let mouseY = -1000;
-  let targetNeonIntensity = 0;
-  let currentNeonIntensity = 0;
-  let isHoveringBlankSpace = false;
-  let animFrameId = null;
-  let lastMoveTime = 0;
-
-  function spawnSpark(x, y, count = 1) {
-    if (particles.length >= maxParticles) return;
-    for (let i = 0; i < count; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const speed = 0.6 + Math.random() * 2.2;
-      const isFlare = Math.random() > 0.45; // 4-point star sparkle flare
-      particles.push({
-        x: x + (Math.random() - 0.5) * 8,
-        y: y + (Math.random() - 0.5) * 8,
-        z: (Math.random() - 0.5) * 120, // 3D depth
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed - 0.25, // Subtle upward buoyancy
-        vz: (Math.random() - 0.5) * 1.8,
-        size: 1.2 + Math.random() * 2.4,
-        alpha: 0.9 + Math.random() * 0.1,
-        decay: 0.016 + Math.random() * 0.024,
-        rotation: Math.random() * Math.PI,
-        rotSpeed: (Math.random() - 0.5) * 0.08,
-        flare: isFlare,
-        life: 0,
-        maxLife: 35 + Math.floor(Math.random() * 30)
-      });
-    }
-  }
-
-  function onPointerMove(e) {
-    mouseX = e.clientX;
-    mouseY = e.clientY;
-    lastMoveTime = performance.now();
-
-    // Determine whether cursor is over blank space vs an interactive card/control
-    const target = e.target;
-    const insideInteractive = target && target.closest && target.closest(
-      '.glass-card, .desktop-sidebar, .mobile-drawer, .glass-modal-dialog, button, input, select, textarea, a, .ai-input-bar, .modal-backdrop'
-    );
-
-    isHoveringBlankSpace = !insideInteractive;
-
-    if (isHoveringBlankSpace) {
-      targetNeonIntensity = 1.0;
-      // Spawn crisp 3D white sparks along movement path
-      spawnSpark(mouseX, mouseY, Math.random() > 0.3 ? 2 : 1);
-    } else {
-      targetNeonIntensity = 0;
-    }
-
-    if (!animFrameId) {
-      animFrameId = requestAnimationFrame(render);
-    }
-  }
-
-  function onPointerLeave() {
-    isHoveringBlankSpace = false;
-    targetNeonIntensity = 0;
-  }
-
-  document.addEventListener('mousemove', onPointerMove, { passive: true });
-  document.addEventListener('mouseleave', onPointerLeave, { passive: true });
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden && animFrameId) {
-      cancelAnimationFrame(animFrameId);
-      animFrameId = null;
-    }
-  });
-
-  function render(now) {
-    // Smoothly interpolate neon ambient light intensity
-    currentNeonIntensity += (targetNeonIntensity - currentNeonIntensity) * 0.12;
-
-    // Dim neon aura if user stops moving for > 700ms
-    if (isHoveringBlankSpace && now - lastMoveTime > 700) {
-      targetNeonIntensity = 0.45; // Soft resting pulse
-    }
-
-    ctx.clearRect(0, 0, width, height);
-
-    // 1. Draw Neon White Aura in Blank Space
-    if (currentNeonIntensity > 0.01 && mouseX > 0 && mouseY > 0) {
-      const glowRadius = 140;
-      const grad = ctx.createRadialGradient(mouseX, mouseY, 0, mouseX, mouseY, glowRadius);
-      grad.addColorStop(0, `rgba(255, 255, 255, ${0.16 * currentNeonIntensity})`);
-      grad.addColorStop(0.25, `rgba(235, 245, 255, ${0.08 * currentNeonIntensity})`);
-      grad.addColorStop(0.65, `rgba(200, 225, 255, ${0.02 * currentNeonIntensity})`);
-      grad.addColorStop(1, 'transparent');
-
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      ctx.arc(mouseX, mouseY, glowRadius, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Secondary tight neon white core halo
-      const coreRadius = 28;
-      const coreGrad = ctx.createRadialGradient(mouseX, mouseY, 0, mouseX, mouseY, coreRadius);
-      coreGrad.addColorStop(0, `rgba(255, 255, 255, ${0.45 * currentNeonIntensity})`);
-      coreGrad.addColorStop(0.5, `rgba(240, 248, 255, ${0.18 * currentNeonIntensity})`);
-      coreGrad.addColorStop(1, 'transparent');
-      ctx.fillStyle = coreGrad;
-      ctx.beginPath();
-      ctx.arc(mouseX, mouseY, coreRadius, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    // 2. Draw 3D White Spark Particles
-    for (let i = particles.length - 1; i >= 0; i--) {
-      const p = particles[i];
-      p.life++;
-      p.alpha -= p.decay;
-      p.x += p.vx;
-      p.y += p.vy;
-      p.z += p.vz;
-      p.vx *= 0.96;
-      p.vy *= 0.96;
-      p.rotation += p.rotSpeed;
-
-      if (p.alpha <= 0 || p.life >= p.maxLife) {
-        particles.splice(i, 1);
-        continue;
-      }
-
-      // 3D Perspective Projection
-      const zFactor = Math.max(0.1, (focalLength + p.z) / focalLength);
-      const px = p.x;
-      const py = p.y;
-      const radius = Math.max(0.6, p.size * zFactor);
-      const alpha = Math.min(1, Math.max(0, p.alpha));
-
-      // Draw soft neon glow disc
-      const sparkGlow = ctx.createRadialGradient(px, py, 0, px, py, radius * 3.2);
-      sparkGlow.addColorStop(0, `rgba(255, 255, 255, ${alpha})`);
-      sparkGlow.addColorStop(0.35, `rgba(240, 248, 255, ${alpha * 0.75})`);
-      sparkGlow.addColorStop(0.8, `rgba(210, 230, 255, ${alpha * 0.2})`);
-      sparkGlow.addColorStop(1, 'transparent');
-
-      ctx.fillStyle = sparkGlow;
-      ctx.beginPath();
-      ctx.arc(px, py, radius * 3.2, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Draw 4-point star flare glint if marked as flare
-      if (p.flare && alpha > 0.15) {
-        ctx.save();
-        ctx.translate(px, py);
-        ctx.rotate(p.rotation);
-
-        const flareLen = radius * 4.2;
-        const flareThick = Math.max(0.5, radius * 0.45);
-
-        ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.95})`;
-        // Horizontal Diamond
-        ctx.beginPath();
-        ctx.moveTo(-flareLen, 0);
-        ctx.lineTo(0, flareThick);
-        ctx.lineTo(flareLen, 0);
-        ctx.lineTo(0, -flareThick);
-        ctx.closePath();
-        ctx.fill();
-
-        // Vertical Diamond
-        ctx.beginPath();
-        ctx.moveTo(0, -flareLen);
-        ctx.lineTo(flareThick, 0);
-        ctx.lineTo(0, flareLen);
-        ctx.lineTo(-flareThick, 0);
-        ctx.closePath();
-        ctx.fill();
-
-        ctx.restore();
-      }
-    }
-
-    // Stop animation frame loop when idle to preserve 0% idle CPU
-    if (particles.length > 0 || currentNeonIntensity > 0.01) {
-      animFrameId = requestAnimationFrame(render);
-    } else {
-      animFrameId = null;
-    }
   }
 }
 
@@ -2553,7 +2335,63 @@ function renderAiMessages() {
     bubble.className = 'ai-msg-bubble';
 
     if (msg.sender === 'assistant') {
-      bubble.innerHTML = renderMarkdownSafe(msg.text);
+      let bodyText = msg.text || '';
+      const isOfflineEngine = bodyText.includes('[Offline Mode • Deterministic Engine]');
+      if (isOfflineEngine) {
+        bodyText = bodyText.replace(/\[Offline Mode • Deterministic Engine\]\s*/g, '');
+      }
+
+      let contentHtml = '';
+      if (isOfflineEngine) {
+        contentHtml += '<div class="ai-offline-badge"><span class="status-pulse-mono" style="background:#f59e0b;" aria-hidden="true"></span><span>Offline Mode • Deterministic Engine</span></div>';
+      }
+      contentHtml += renderMarkdownSafe(bodyText);
+      bubble.innerHTML = contentHtml;
+
+      // Transaction Review & Confirmation Action Card
+      if (msg.action && msg.action.type === 'confirm-transaction' && msg.action.transaction) {
+        const tx = msg.action.transaction;
+        const actionCard = document.createElement('div');
+        actionCard.className = 'ai-tx-confirm-card';
+        const formattedAmt = formatCurrency(tx.amount);
+        actionCard.innerHTML = `
+          <div class="ai-tx-confirm-header">
+            <span class="ai-tx-confirm-pill ${tx.type}">${tx.type === 'income' ? 'Income' : 'Expense'}</span>
+            <span class="ai-tx-confirm-amt">${formattedAmt}</span>
+          </div>
+          <div class="ai-tx-confirm-details">
+            <strong>${tx.title || 'Transaction'}</strong>
+            <span>${tx.category || 'Other'} • ${tx.date}</span>
+          </div>
+          <div class="ai-tx-confirm-actions">
+            <button type="button" class="btn-liquid-primary btn-sm ai-open-modal-btn">
+              <i data-lucide="check-circle" class="btn-icon-xs" aria-hidden="true"></i>
+              <span>Review &amp; Confirm in Modal</span>
+            </button>
+          </div>
+        `;
+        const openBtn = actionCard.querySelector('.ai-open-modal-btn');
+        if (openBtn) {
+          openBtn.onclick = () => {
+            openAddTransactionModal();
+            if (DOM.txTitle) DOM.txTitle.value = tx.title || '';
+            if (DOM.txAmount) DOM.txAmount.value = tx.amount || '';
+            if (DOM.txDate) DOM.txDate.value = tx.date || getTodayDateString();
+            if (tx.type === 'income') {
+              if (DOM.typeIncome) DOM.typeIncome.checked = true;
+              updateFormCategoryOptions('income');
+            } else {
+              if (DOM.typeExpense) DOM.typeExpense.checked = true;
+              updateFormCategoryOptions('expense');
+            }
+            if (DOM.txCategory && tx.category) DOM.txCategory.value = tx.category;
+            if (DOM.txNotes && tx.notes) DOM.txNotes.value = tx.notes;
+            showToast(`Pre-filled: ${tx.title} (${formattedAmt}). Click Save to confirm.`, 'info');
+          };
+        }
+        bubble.appendChild(actionCard);
+      }
+
       if (!msg.text.includes('ai-thinking-indicator') && index > 0) {
         const copyBtn = document.createElement('button');
         copyBtn.type = 'button';
@@ -2660,94 +2498,148 @@ function renderMarkdownSafe(text) {
  * Provides instant grounded answers for finance, and friendly offline responses for general queries.
  */
 function localDeterministicFinancialAI(userQuery, context) {
-  const q = String(userQuery || '').toLowerCase().trim();
+  const rawQ = String(userQuery || '').trim();
+  const q = rawQ.toLowerCase();
+
+  // Normalize common typos and abbreviations
+  const norm = q
+    .replace(/\bspnt\b|\bspnd\b/g, 'spent')
+    .replace(/\bbalnce\b|\bblnce\b/g, 'balance')
+    .replace(/\bmney\b/g, 'money')
+    .replace(/\bincme\b/g, 'income')
+    .replace(/\bcatgory\b|\bcategry\b/g, 'category')
+    .replace(/\bbdget\b/g, 'budget')
+    .replace(/\bsvings\b/g, 'savings')
+    .replace(/\bhiighest\b|\bhighest\b/g, 'highest');
+
   const totals = context?.totals || { totalIncome: 0, totalExpenses: 0, netBalance: 0, expenseCount: 0 };
   const breakdown = Array.isArray(context?.breakdown) ? context.breakdown : [];
-  const topCat = breakdown[0];
+  const thisMonthTotals = context?.thisMonthTotals || totals;
+  const lastMonthTotals = context?.lastMonthTotals || { totalIncome: 0, totalExpenses: 0, netBalance: 0, expenseCount: 0 };
+  const thisMonthBreakdown = Array.isArray(context?.thisMonthBreakdown) ? context.thisMonthBreakdown : breakdown;
+  const lastMonthBreakdown = Array.isArray(context?.lastMonthBreakdown) ? context.lastMonthBreakdown : [];
+
+  const topAllCat = breakdown[0];
+  const topThisCat = thisMonthBreakdown[0];
+  const topLastCat = lastMonthBreakdown[0];
+
+  // Inspect recent conversation history to resolve follow-up references ("What about last month?", "Which category was highest?")
+  let recentTopic = '';
+  if (Array.isArray(state?.aiMessages) && state.aiMessages.length > 1) {
+    const prevMsgs = state.aiMessages.slice(-4);
+    for (const m of prevMsgs) {
+      const text = (m.text || '').toLowerCase();
+      if (text.includes('last month') || text.includes('previous month')) recentTopic = 'last_month';
+      else if (text.includes('this month') || text.includes('current month')) recentTopic = 'this_month';
+    }
+  }
+
+  const isExplicitLastMonth = norm.includes('last month') || norm.includes('previous month') || norm.includes('past month');
+  const isExplicitThisMonth = norm.includes('this month') || norm.includes('current month');
+  const isLastMonth = isExplicitLastMonth || (!isExplicitThisMonth && recentTopic === 'last_month' && (norm.includes('category') || norm.includes('highest') || norm.includes('what about') || norm.includes('how much') || norm.includes('and')));
+
+  const prefix = '[Offline Mode • Deterministic Engine]\n\n';
 
   // 1. General greetings & conversational openers
-  if (/^(hey|hi|hello|howdy|yo|sup|what'?s\s*up|good\s*(morning|afternoon|evening|day))[!?.]*$/i.test(q)) {
-    return "Hey! How's it going? 👋 What's on your mind today? We can check your spending, brainstorm an idea, nerd out on something new, or just chat.";
+  if (/^(hey|hi|hello|howdy|yo|sup|what'?s\s*up|good\s*(morning|afternoon|evening|day))[!?.]*$/i.test(norm)) {
+    return prefix + "Hey! How's it going? 👋 What's on your mind today? We can check your spending, brainstorm an idea, nerd out on something new, or just chat.";
   }
 
-  // 2. Personal Finance Queries
-  if (q.includes('spend') || q.includes('spending') || q.includes('outflow')) {
-    if (topCat) {
-      return `You've spent a total of **${formatCurrency(totals.totalExpenses)}** across ${totals.expenseCount || 0} transactions so far. Your largest expense is **${topCat.category}** at **${formatCurrency(topCat.total)}** (${topCat.percentage}% of all expenses).`;
+  // 2. Anaphoric follow-up: "What about last month?" / "And last month?"
+  if (/^(what about|how about|and|what was)\s+(last month|previous month)[?.]*$/i.test(norm) || (isExplicitLastMonth && (norm.includes('spent') || norm.includes('spend') || norm.includes('expenses') || norm.includes('how much') || norm.length < 25))) {
+    return prefix + `Last month, your recorded expenses were **${formatCurrency(lastMonthTotals.totalExpenses)}** (Income: ${formatCurrency(lastMonthTotals.totalIncome)}, Net: ${formatCurrency(lastMonthTotals.netBalance)}). ${topLastCat ? `Your highest spending category last month was **${topLastCat.category}** at **${formatCurrency(topLastCat.total)}**.` : ''}`;
+  }
+
+  // 3. Category follow-up: "Which category was highest?" / "Highest category?"
+  if (norm.includes('highest') || norm.includes('largest') || norm.includes('top category') || norm.includes('most spent') || norm.includes('which category')) {
+    if (isLastMonth) {
+      if (topLastCat) {
+        return prefix + `For **last month**, your highest spending category was **${topLastCat.category}** at **${formatCurrency(topLastCat.total)}** (${topLastCat.percentage}% of last month's spending).`;
+      }
+      return prefix + "No expenses were recorded for last month to determine a top category.";
     }
-    return `You've spent a total of **${formatCurrency(totals.totalExpenses)}** across ${totals.expenseCount || 0} transactions so far.`;
-  }
-
-  if (q.includes('largest') || q.includes('top category') || q.includes('most') || q.includes('highest')) {
-    if (topCat) {
-      return `Looks like your biggest expense is **${topCat.category}**, coming out to **${formatCurrency(topCat.total)}** (${topCat.percentage}% of your spending).`;
+    if (topThisCat) {
+      return prefix + `For **this month**, your highest spending category is **${topThisCat.category}** at **${formatCurrency(topThisCat.total)}** (${topThisCat.percentage}% of this month's spending).`;
     }
-    return `You haven't logged any expenses yet to find a top category.`;
+    if (topAllCat) {
+      return prefix + `Across all records, your highest spending category is **${topAllCat.category}** at **${formatCurrency(topAllCat.total)}** (${topAllCat.percentage}% of total expenses).`;
+    }
+    return prefix + "You haven't logged any expenses yet to find a top category.";
   }
 
-  if (q.includes('balance') || q.includes('net') || q.includes('saved')) {
-    return `Your net balance is sitting at **${formatCurrency(totals.netBalance)}** right now (Income: ${formatCurrency(totals.totalIncome)} − Expenses: ${formatCurrency(totals.totalExpenses)}).`;
+  // 4. Spending queries (this month vs all time)
+  if (norm.includes('spend') || norm.includes('spent') || norm.includes('outflow') || norm.includes('cost')) {
+    if (isExplicitThisMonth) {
+      return prefix + `This month, your recorded expenses are **${formatCurrency(thisMonthTotals.totalExpenses)}** across ${thisMonthTotals.expenseCount || 0} transactions. ${topThisCat ? `Top category: **${topThisCat.category}** (${formatCurrency(topThisCat.total)}).` : ''}`;
+    }
+    if (topThisCat) {
+      return prefix + `You've spent **${formatCurrency(thisMonthTotals.totalExpenses)}** this month (and **${formatCurrency(totals.totalExpenses)}** all time). Your largest current category is **${topThisCat.category}** at **${formatCurrency(topThisCat.total)}**.`;
+    }
+    return prefix + `You've spent **${formatCurrency(totals.totalExpenses)}** across ${totals.expenseCount || 0} transactions in total.`;
   }
 
-  if (q.includes('safe') || q.includes('daily')) {
+  // 5. Balance & net worth queries
+  if (norm.includes('balance') || norm.includes('net') || norm.includes('saved') || norm.includes('left') || norm.includes('how much do i have')) {
+    return prefix + `Your net balance is sitting at **${formatCurrency(totals.netBalance)}** right now (Total Income: ${formatCurrency(totals.totalIncome)} − Total Expenses: ${formatCurrency(totals.totalExpenses)}).`;
+  }
+
+  // 6. Safe daily spend allowance
+  if (norm.includes('safe') || norm.includes('daily') || norm.includes('allowance')) {
     const safe = calculateSafeToSpend(state.transactions, state.recurring);
-    return `You're good to spend about **${formatCurrency(safe.dailyAllowance)}/day** over the remaining ${safe.daysRemaining} days this month.`;
+    return prefix + `You're good to spend about **${formatCurrency(safe.dailyAllowance)}/day** over the remaining ${safe.daysRemaining} days this month.`;
   }
 
-  if (q.includes('budget') || q.includes('limits') || q.includes('limit')) {
+  // 7. Budgets
+  if (norm.includes('budget') || norm.includes('limit')) {
     if (state.budgets.length === 0) {
-      return `No budgets set up yet! Head over to the **Budgets** view whenever you want to set a monthly cap on food, shopping, or bills.`;
+      return prefix + "No budgets set up yet! Head over to the **Budgets** view whenever you want to set monthly caps on food, shopping, or utilities.";
     }
     const list = state.budgets.map(b => `${b.category}: ${formatCurrency(b.limit)}`).join(', ');
-    return `You've got ${state.budgets.length} budgets running: ${list}. Looking solid!`;
+    return prefix + `You've got ${state.budgets.length} budgets running: ${list}. Looking solid!`;
   }
 
-  if (q.includes('goal') || q.includes('savings') || q.includes('saving')) {
+  // 8. Goals
+  if (norm.includes('goal') || norm.includes('saving')) {
     if (state.goals.length === 0) {
-      return `No savings goals yet! Hop into the **Goals** tab to start saving for a rainy day, vacation, or new tech.`;
+      return prefix + "No savings goals yet! Hop into the **Goals** tab to start saving for a rainy day, vacation, or new tech.";
     }
     const g = state.goals[0];
-    return `Your main target right now is **${g.title}** — you've saved ${formatCurrency(g.currentAmount)} of ${formatCurrency(g.targetAmount)} (${Math.round((g.currentAmount / g.targetAmount) * 100)}%).`;
+    return prefix + `Your main target right now is **${g.title}** — you've saved ${formatCurrency(g.currentAmount)} of ${formatCurrency(g.targetAmount)} (${Math.round((g.currentAmount / g.targetAmount) * 100)}%).`;
   }
 
-  // Financial Health Score inquiry
-  if (q.includes('health') || q.includes('score')) {
+  // 9. Financial Health Score
+  if (norm.includes('health') || norm.includes('score')) {
     const health = calculateFinancialHealthScore(state.transactions, state.budgets, state.goals, state.recurring);
-    return `Your Vaultly Financial Health Score is **${health.overallScore}/100** (${health.tier.name}). It's computed from 4 weighted pillars: Savings Rate, Budget Adherence, Emergency Reserves, and Recurring Commitments. Check the **Overview** dashboard for your full pillar breakdown!`;
+    return prefix + `Your Vaultly Financial Health Score is **${health.overallScore}/100** (${health.tier.name}). It's computed from 4 weighted pillars: Savings Rate, Budget Adherence, Emergency Reserves, and Recurring Commitments. Check the **Overview** dashboard for your full pillar breakdown!`;
   }
 
-  // Anomaly & duplicate detection inquiry
-  if (q.includes('anomal') || q.includes('unusual') || q.includes('suspicious') || q.includes('duplicate')) {
+  // 10. Anomalies & duplicates
+  if (norm.includes('anomal') || norm.includes('unusual') || norm.includes('suspicious') || norm.includes('duplicate')) {
     const anomalies = calculateAnomaliesAndDuplicates(state.transactions);
     if (anomalies.totalFlagged === 0) {
-      return "All clear! No unusual spending spikes (Z > 1.8) or duplicate transaction entries were detected in your records.";
+      return prefix + "All clear! No unusual spending spikes (Z > 1.8) or duplicate transaction entries were detected in your records.";
     }
-    return `I found **${anomalies.totalFlagged} items** flagged for review (${anomalies.anomalies.length} statistical outliers, ${anomalies.duplicates.length} duplicate pairs). You can review the flagged items in the **Transactions** view.`;
+    return prefix + `I found **${anomalies.totalFlagged} items** flagged for review (${anomalies.anomalies.length} statistical outliers, ${anomalies.duplicates.length} duplicate pairs). You can review the flagged items in the **Transactions** view.`;
   }
 
-  // Digital Twin & What-If simulation inquiry
-  if (q.includes('simulate') || q.includes('what if') || q.includes('scenario') || q.includes('digital twin')) {
-    return "You can use the **Financial Digital Twin & Scenario Simulator** in the Analytics tab! It lets you adjust income shocks, rent changes, discretionary expense trims, and major purchases with real-time feedback and zero mutation of your real records.";
+  // 11. Simulation / What-If
+  if (norm.includes('simulate') || norm.includes('what if') || norm.includes('scenario') || norm.includes('digital twin')) {
+    return prefix + "You can use the **Financial Digital Twin & Scenario Simulator** in the Analytics tab! It lets you adjust income shocks, rent changes, discretionary expense trims, and major purchases with real-time feedback and zero mutation of your real records.";
   }
 
-  // Bank account inquiry
-  if (q.includes('bank') && (q.includes('account') || q.includes('balance') || q.includes('how much'))) {
-    return "Vaultly keeps your finances private on your device, so I can't peek into your live bank account. You can log income, expenses, and transfers right here in Vaultly anytime!";
+  // 12. General non-financial conversation fallback
+  if (norm.includes('who are you') || norm.includes('what are you')) {
+    return prefix + "I'm Vaultly AI, your personal financial copilot! I can analyze your spending, calculate safe daily limits, forecast budgets, and help you stay on track with your goals.";
   }
 
-  // User correction
-  if (q.includes('no, i meant') || q.includes('i meant') || q.includes('not what i asked') || q.includes('that is wrong')) {
-    return "Ah, my bad! Apologies for the confusion. Could you clarify what you'd like to explore instead? I'm all ears!";
-  }
-
-  // 3. Finance keywords fallback
+  // 13. General finance fallback
   const financeKeywords = ['spend', 'spending', 'spent', 'money', 'income', 'expense', 'expenses', 'transaction', 'transactions', 'cash', 'rupee', '₹', 'salary', 'cashflow', 'afford', 'cost', 'bought', 'purchase', 'bill', 'bills', 'payment', 'paid'];
-  if (financeKeywords.some(k => q.includes(k))) {
-    return `Here's where things stand: Income is **${formatCurrency(totals.totalIncome)}**, Expenses are **${formatCurrency(totals.totalExpenses)}**, leaving a Net Balance of **${formatCurrency(totals.netBalance)}**. Want to check your top categories or safe daily spend?`;
+  if (financeKeywords.some(k => norm.includes(k))) {
+    return prefix + `Here's where things stand: Total Income is **${formatCurrency(totals.totalIncome)}**, Total Expenses are **${formatCurrency(totals.totalExpenses)}**, leaving a Net Balance of **${formatCurrency(totals.netBalance)}**. Want to check your top categories or safe daily spend?`;
   }
 
-  // 4. General query fallback when offline/no API key configured
-  return "I'm running in offline mode right now without an active AI key. You can still ask me anything about your Vaultly records — like spending, balance, budgets, or savings goals! For free-form conversations on any topic, configure `GEMINI_API_KEY` or `OPENAI_API_KEY` in your environment.";
+  // 14. Friendly general fallback
+  return prefix + "I'm currently running in deterministic offline mode. You can ask me anything about your finances — like spending, balance, monthly comparisons, budgets, or savings goals! For full generative responses, configure `GEMINI_API_KEY` or `OPENAI_API_KEY` on your server.";
 }
 
 /**
@@ -2816,98 +2708,6 @@ function parseNaturalLanguageTransaction(text) {
   return { amount, type, category, date, title };
 }
 
-function getActiveGeminiKey() {
-  const custom = localStorage.getItem('vaultly_gemini_key');
-  return (custom && custom.trim()) ? custom.trim() : '';
-}
-
-async function callClientDirectGemini(userText, context, history, apiKey) {
-  if (!apiKey) return null;
-  const totals = context?.totals || { totalIncome: 0, totalExpenses: 0, netBalance: 0 };
-  const breakdown = Array.isArray(context?.breakdown) ? context.breakdown : [];
-  const topCat = breakdown[0] || null;
-
-  const systemInstructions = `You are Vaultly AI, a friendly, intelligent, and versatile conversational assistant.
-Tone & Personality:
-- Be casual, warm, and natural — talk like a sharp, helpful friend, never like a stiff corporate bot or dry textbook.
-- Use natural conversational phrasing and contractions (I'm, you're, let's, don't).
-- Keep casual chatter lightweight and snappy. Save detailed explanations for when the user genuinely asks for them.
-- Avoid robotic clichés like "As an AI...", "Certainly!", or "According to verified records...".
-
-Capabilities & Context:
-- You can help with any topic: casual talk, learning, coding, writing, debugging, planning, and brainstorming.
-- You ALSO have access to the user's personal finance data in Vaultly when they want to talk money.
-- When the user asks about their finances, spending, budgets, or goals, use the verified financial context provided below in an encouraging, clear, and approachable way.
-- For general questions (coding, science, jokes, advice), answer directly and naturally without forcing financial topics.
-- Never invent financial data. When financial context is provided, cite exact numbers.
-
-The user's verified financial data:
-- Total Income: ₹${totals.totalIncome || 0}
-- Total Expenses: ₹${totals.totalExpenses || 0}
-- Net Balance: ₹${totals.netBalance || 0}
-- Top Category: ${topCat ? `${topCat.category} (₹${topCat.total}, ${topCat.percentage}%)` : 'None'}
-- Total Transactions: ${context?.transactionCount || 0}
-- Active Budgets: ${context?.budgetCount || 0}
-- Active Goals: ${context?.goalCount || 0}`;
-
-  const contents = [
-    { role: 'user', parts: [{ text: systemInstructions }] },
-    { role: 'model', parts: [{ text: "Understood! I'm Vaultly AI, ready to help with casual conversations, general questions, learning, coding, brainstorming, and personal finance." }] }
-  ];
-
-  if (Array.isArray(history)) {
-    for (const msg of history.slice(-10)) {
-      if (msg && msg.content) {
-        contents.push({
-          role: msg.role === 'assistant' ? 'model' : 'user',
-          parts: [{ text: msg.content }]
-        });
-      }
-    }
-  }
-
-  contents.push({
-    role: 'user',
-    parts: [{ text: userText }]
-  });
-
-  const payload = {
-    contents,
-    generationConfig: {
-      temperature: 0.7,
-      maxOutputTokens: 1500
-    }
-  };
-
-  const candidateModels = ['gemini-flash-latest', 'gemini-2.5-flash', 'gemini-1.5-flash'];
-  for (const modelName of candidateModels) {
-    try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${encodeURIComponent(apiKey)}`;
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 12000);
-
-      const apiRes = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-        signal: controller.signal
-      });
-      clearTimeout(timeoutId);
-
-      if (apiRes.ok) {
-        const apiData = await apiRes.json();
-        const reply = apiData?.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (reply && reply.trim()) {
-          return reply.trim();
-        }
-      }
-    } catch (subErr) {
-      // try next candidate model
-    }
-  }
-  return null;
-}
-
 /**
  * Update the active assistant bubble progressively during real-time streaming
  */
@@ -2940,6 +2740,13 @@ async function handleAiChatSubmit(e) {
     input.style.height = 'auto';
   }
 
+  // Detect transaction intent early (e.g. "Spent 250 on lunch", "Received 50000 salary")
+  const txParsed = parseNaturalLanguageTransaction(userText);
+  const isTxIntent = txParsed && txParsed.amount > 0 && (
+    /^(?:spent|paid|bought|received|earned|got|added|add)\b/i.test(userText) ||
+    (/\b(?:for|on)\b/i.test(userText) && /(?:lunch|dinner|food|coffee|groceries|cab|uber|bill|electricity|salary|bonus|shopping|fuel)/i.test(userText))
+  );
+
   // Append user message
   state.aiMessages.push({ sender: 'user', text: userText });
   renderAiMessages();
@@ -2960,9 +2767,26 @@ async function handleAiChatSubmit(e) {
       content: m.text.replace(/<[^>]*>/g, '') // strip HTML formatting
     }));
 
-  // Prepare grounded context enriched with financial intelligence & in-memory tool dataset
+  // Prepare grounded context enriched with monthly partitions and intelligence metrics
+  const now = new Date();
+  const curYear = now.getFullYear();
+  const curMonth = String(now.getMonth() + 1).padStart(2, '0');
+  const thisMonthPrefix = `${curYear}-${curMonth}`;
+
+  const prevMonthDate = new Date(curYear, now.getMonth() - 1, 1);
+  const prevYear = prevMonthDate.getFullYear();
+  const prevMonth = String(prevMonthDate.getMonth() + 1).padStart(2, '0');
+  const lastMonthPrefix = `${prevYear}-${prevMonth}`;
+
+  const thisMonthTxs = state.transactions.filter(t => t.date && t.date.startsWith(thisMonthPrefix));
+  const lastMonthTxs = state.transactions.filter(t => t.date && t.date.startsWith(lastMonthPrefix));
+
   const totals = calculateTotals(state.transactions);
   const breakdown = calculateCategoryBreakdown(state.transactions);
+  const thisMonthTotals = calculateTotals(thisMonthTxs);
+  const lastMonthTotals = calculateTotals(lastMonthTxs);
+  const thisMonthBreakdown = calculateCategoryBreakdown(thisMonthTxs);
+  const lastMonthBreakdown = calculateCategoryBreakdown(lastMonthTxs);
   const health = calculateFinancialHealthScore(state.transactions, state.budgets, state.goals, state.recurring);
   const diagnostic = calculateDiagnosticAnalytics(state.transactions);
   const anomalyInfo = calculateAnomaliesAndDuplicates(state.transactions);
@@ -2970,6 +2794,10 @@ async function handleAiChatSubmit(e) {
   const context = {
     totals,
     breakdown,
+    thisMonthTotals,
+    lastMonthTotals,
+    thisMonthBreakdown,
+    lastMonthBreakdown,
     transactionCount: state.transactions.length,
     budgetCount: state.budgets.length,
     goalCount: state.goals.length,
@@ -2982,7 +2810,6 @@ async function handleAiChatSubmit(e) {
   };
 
   let replyText = '';
-  const activeKey = getActiveGeminiKey();
   let streamSuccess = false;
 
   try {
@@ -2993,7 +2820,7 @@ async function handleAiChatSubmit(e) {
         'Content-Type': 'application/json',
         'X-Vaultly-Stream': 'true'
       },
-      body: JSON.stringify({ message: userText, context, history, geminiKey: activeKey, stream: true })
+      body: JSON.stringify({ message: userText, context, history, stream: true })
     });
 
     if (response.ok) {
@@ -3027,26 +2854,25 @@ async function handleAiChatSubmit(e) {
     console.info('[Vaultly AI] Offline / API fallback active:', err.message);
   }
 
-  // If serverless is offline or returned fallback, attempt direct client Gemini call with the key
-  if (!streamSuccess && (!replyText || replyText.includes('offline mode without an AI key')) && activeKey) {
-    try {
-      const directReply = await callClientDirectGemini(userText, context, history, activeKey);
-      if (directReply) {
-        replyText = directReply;
-      }
-    } catch (directErr) {
-      console.warn('[Vaultly AI] Client-side Gemini direct call failed:', directErr.message);
-    }
-  }
-
   if (!replyText) {
     // Use verified local deterministic conversational engine
     replyText = localDeterministicFinancialAI(userText, context);
   }
 
-  // Finalize assistant reply with full markdown and interactive copy actions
+  // Finalize assistant reply with explicit transaction confirmation when intent detected
   state.aiMessages.pop();
-  state.aiMessages.push({ sender: 'assistant', text: replyText });
+  if (isTxIntent) {
+    state.aiMessages.push({
+      sender: 'assistant',
+      text: replyText,
+      action: {
+        type: 'confirm-transaction',
+        transaction: txParsed
+      }
+    });
+  } else {
+    state.aiMessages.push({ sender: 'assistant', text: replyText });
+  }
   renderAiMessages();
 }
 
@@ -3065,7 +2891,6 @@ async function handleNaturalLanguageParseTrigger() {
 
   // 1. Instant local regex baseline parsing
   let parsed = parseNaturalLanguageTransaction(rawText);
-  const activeKey = getActiveGeminiKey();
 
   // 2. Enhance with Vercel AI SDK generateObject structured output when online
   try {
@@ -3074,8 +2899,7 @@ async function handleNaturalLanguageParseTrigger() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         input: rawText,
-        referenceDate: getTodayDateString(),
-        geminiKey: activeKey
+        referenceDate: getTodayDateString()
       })
     });
 
@@ -4223,47 +4047,6 @@ function setupEventListeners() {
   if (document.getElementById('clearAllBtnMobile')) document.getElementById('clearAllBtnMobile').addEventListener('click', clearAllHandler);
   if (DOM.clearAllBtnSettings) DOM.clearAllBtnSettings.addEventListener('click', clearAllHandler);
   if (DOM.exportJsonBtn) DOM.exportJsonBtn.addEventListener('click', exportAllDataJSON);
-
-  // Gemini AI Key Settings handlers
-  if (DOM.geminiApiKeyInput) {
-    const savedKey = localStorage.getItem('vaultly_gemini_key') || '';
-    DOM.geminiApiKeyInput.value = savedKey;
-    if (DOM.geminiKeyStatusLabel) {
-      DOM.geminiKeyStatusLabel.textContent = savedKey ? 'Gemini API Key configured and active' : 'No Gemini Key configured (offline fallback active)';
-    }
-
-    if (DOM.saveGeminiKeyBtn) {
-      DOM.saveGeminiKeyBtn.addEventListener('click', () => {
-        const val = DOM.geminiApiKeyInput.value.trim();
-        if (val) {
-          localStorage.setItem('vaultly_gemini_key', val);
-          showToast('Gemini API Key saved successfully.', 'success');
-          if (DOM.geminiKeyStatusLabel) DOM.geminiKeyStatusLabel.textContent = 'Gemini API Key configured and active';
-        } else {
-          localStorage.removeItem('vaultly_gemini_key');
-          DOM.geminiApiKeyInput.value = '';
-          showToast('Cleared Gemini API key.', 'info');
-          if (DOM.geminiKeyStatusLabel) DOM.geminiKeyStatusLabel.textContent = 'No Gemini Key configured (offline fallback active)';
-        }
-      });
-    }
-
-    if (DOM.resetGeminiKeyBtn) {
-      DOM.resetGeminiKeyBtn.addEventListener('click', () => {
-        localStorage.removeItem('vaultly_gemini_key');
-        DOM.geminiApiKeyInput.value = '';
-        showToast('Cleared Gemini Key.', 'info');
-        if (DOM.geminiKeyStatusLabel) DOM.geminiKeyStatusLabel.textContent = 'No Gemini Key configured (offline fallback active)';
-      });
-    }
-
-    if (DOM.toggleGeminiKeyVisibilityBtn) {
-      DOM.toggleGeminiKeyVisibilityBtn.addEventListener('click', () => {
-        const isPassword = DOM.geminiApiKeyInput.type === 'password';
-        DOM.geminiApiKeyInput.type = isPassword ? 'text' : 'password';
-      });
-    }
-  }
 
   // Global Keyboard shortcuts
   document.addEventListener('keydown', e => {

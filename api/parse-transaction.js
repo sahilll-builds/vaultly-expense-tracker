@@ -113,14 +113,14 @@ module.exports = async function handler(req, res) {
   }
 
   // 3. Payload validation
-  const { input, referenceDate, geminiKey: clientKey } = req.body || {};
+  const { input, referenceDate } = req.body || {};
   if (!input || typeof input !== 'string' || input.trim() === '') {
     return res.status(400).json({ error: 'Invalid request: "input" string is required.' });
   }
 
   const trimmedInput = input.trim();
   const refDate = referenceDate || new Date().toISOString().split('T')[0];
-  const geminiKey = process.env.GEMINI_API_KEY || clientKey;
+  const geminiKey = process.env.GEMINI_API_KEY;
   const openaiKey = process.env.OPENAI_API_KEY;
 
   // 4. Attempt Structured Entity Extraction with Vercel AI SDK generateObject

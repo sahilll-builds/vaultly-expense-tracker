@@ -1,7 +1,7 @@
 // api/chat.js - Vercel Serverless Function for Vaultly AI Assistant
 // Powered by Vercel AI SDK Core with Multi-Provider Support, Real-Time Streaming,
-// In-Memory Request-Scoped Financial Tools, Zero-Leakage Error Handling,
-// and Guaranteed Offline Deterministic Fallback.
+// In-Memory Request-Scoped Financial Tools, Zero-Leakage Server-Only Key Architecture,
+// Anaphoric Memory Resolution, and Guaranteed Offline Deterministic Fallback.
 
 const rateLimitMap = new Map();
 
@@ -31,10 +31,11 @@ function isRateLimited(ip) {
 
 // Keywords that signal a finance-related conversation
 const FINANCE_KEYWORDS = [
-  'spend', 'expense', 'income', 'budget', 'goal', 'balance',
-  'saving', 'transaction', 'money', '₹', 'rupee', 'salary',
-  'cashflow', 'finance', 'afford', 'health', 'score', 'anomaly',
-  'unusual', 'duplicate', 'simulate', 'twin', 'scenario'
+  'spend', 'spent', 'spending', 'expense', 'expenses', 'income', 'budget', 'budgets',
+  'goal', 'goals', 'balance', 'saving', 'savings', 'transaction', 'transactions',
+  'money', '₹', 'rupee', 'rupees', 'salary', 'cashflow', 'cash', 'finance', 'finances',
+  'afford', 'health', 'score', 'anomaly', 'anomalies', 'unusual', 'duplicate',
+  'simulate', 'twin', 'scenario', 'last month', 'this month', 'cost', 'paid', 'bill'
 ];
 
 /**
@@ -46,8 +47,8 @@ const FINANCE_KEYWORDS = [
 function isFinanceRelated(currentMessage, history = []) {
   const messagesToCheck = [currentMessage];
 
-  // Also check the last 2 messages from history (so total of 3 including current)
-  const recentHistory = history.slice(-2);
+  // Check the last 4 messages from history for strong conversational memory
+  const recentHistory = history.slice(-4);
   for (const msg of recentHistory) {
     if (msg && msg.content) {
       messagesToCheck.push(msg.content);
@@ -68,88 +69,95 @@ function generateDeterministicAnswer(message, context = {}) {
     return '₹' + Number(num || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 });
   };
 
-  // --- Finance-related fallbacks (preserved exactly for test compatibility) ---
+  const tag = `[Offline Mode • Deterministic Engine]\n\n`;
+
+  // --- Finance-related fallbacks (preserved for offline resilience & test suite) ---
+
+  if (q.includes('last month')) {
+    const lm = context.lastMonthTotals || { totalIncome: 0, totalExpenses: 0, netBalance: 0 };
+    return tag + `Last month, your recorded income was ${formatINR(lm.totalIncome)} and expenses were ${formatINR(lm.totalExpenses)}, leaving a net balance of ${formatINR(lm.netBalance)}.`;
+  }
 
   if (q.includes('spend') || q.includes('spending') || q.includes('outflow')) {
     if (topCat) {
-      return `You've spent a total of ${formatINR(totals.totalExpenses)} across ${totals.expenseCount || 0} logged transactions so far. Top expense is ${topCat.category} at ${formatINR(topCat.total)} (${topCat.percentage || 0}%).`;
+      return tag + `You've spent a total of ${formatINR(totals.totalExpenses)} across ${totals.expenseCount || 0} logged transactions so far. Top expense is ${topCat.category} at ${formatINR(topCat.total)} (${topCat.percentage || 0}%).`;
     }
-    return `You've spent a total of ${formatINR(totals.totalExpenses)} across ${totals.expenseCount || 0} logged transactions so far.`;
+    return tag + `You've spent a total of ${formatINR(totals.totalExpenses)} across ${totals.expenseCount || 0} logged transactions so far.`;
   }
 
   if (q.includes('largest') || q.includes('top category') || q.includes('most') || q.includes('highest')) {
     if (topCat) {
-      return `Looks like your biggest expense is ${topCat.category}, coming out to ${formatINR(topCat.total)} (${topCat.percentage || 0}% of your total spending).`;
+      return tag + `Looks like your biggest expense is ${topCat.category}, coming out to ${formatINR(topCat.total)} (${topCat.percentage || 0}% of your total spending).`;
     }
-    return `You haven't recorded any expenses yet to find a top category.`;
+    return tag + `You haven't recorded any expenses yet to find a top category.`;
   }
 
   if (q.includes('balance') || q.includes('net') || q.includes('saved')) {
-    return `Your net balance is sitting at ${formatINR(totals.netBalance)} right now (Total Income: ${formatINR(totals.totalIncome)} − Total Expenses: ${formatINR(totals.totalExpenses)}).`;
+    return tag + `Your net balance is sitting at ${formatINR(totals.netBalance)} right now (Total Income: ${formatINR(totals.totalIncome)} − Total Expenses: ${formatINR(totals.totalExpenses)}).`;
   }
 
   if (q.includes('safe') || q.includes('daily')) {
     const daysRemaining = Math.max(1, 30 - new Date().getDate());
     const remainingAfterExpenses = Math.max(0, totals.netBalance);
     const daily = Math.round(remainingAfterExpenses / daysRemaining);
-    return `You're good to spend about ${formatINR(daily)}/day over the remaining ${daysRemaining} days this month.`;
+    return tag + `You're good to spend about ${formatINR(daily)}/day over the remaining ${daysRemaining} days this month.`;
   }
 
   if (q.includes('budget') || q.includes('limit')) {
-    return `You have ${context.budgetCount || 0} active budget categories configured. Check out the Budgets tab to track your spending!`;
+    return tag + `You have ${context.budgetCount || 0} active budget categories configured. Check out the Budgets tab to track your spending!`;
   }
 
   if (q.includes('goal') || q.includes('saving')) {
-    return `You have ${context.goalCount || 0} active savings goals registered. Head to the Goals tab to track your progress or stash some funds!`;
+    return tag + `You have ${context.goalCount || 0} active savings goals registered. Head to the Goals tab to track your progress or stash some funds!`;
   }
 
   // Financial Health Score inquiry
   if (q.includes('health') || q.includes('score')) {
     if (context.healthScore !== undefined) {
-      return `Your Vaultly Financial Health Score is ${context.healthScore}/100 (${context.healthTier || 'Active'}). It reflects your savings retention, budget adherence, emergency runway, and recurring commitments. Check the Overview tab for your full pillar breakdown!`;
+      return tag + `Your Vaultly Financial Health Score is ${context.healthScore}/100 (${context.healthTier || 'Active'}). It reflects your savings retention, budget adherence, emergency runway, and recurring commitments. Check the Overview tab for your full pillar breakdown!`;
     }
-    return `Your Financial Health Score is computed across 4 weighted pillars on the Overview dashboard. Log your income and budgets to view your score!`;
+    return tag + `Your Financial Health Score is computed across 4 weighted pillars on the Overview dashboard. Log your income and budgets to view your score!`;
   }
 
   // Anomaly & duplicate detection inquiry
   if (q.includes('anomal') || q.includes('unusual') || q.includes('duplicate') || q.includes('suspicious')) {
     if (context.anomalyCount !== undefined) {
-      return context.anomalyCount > 0 
+      return tag + (context.anomalyCount > 0 
         ? `You have ${context.anomalyCount} transaction items flagged for review (statistical outliers or duplicate entries). Check the Transactions view to inspect them.`
-        : `No suspicious spikes or duplicate transactions detected in your verified records!`;
+        : `No suspicious spikes or duplicate transactions detected in your verified records!`);
     }
-    return `Vaultly automatically monitors for unusual spending spikes and duplicate records in your Transactions view.`;
+    return tag + `Vaultly automatically monitors for unusual spending spikes and duplicate records in your Transactions view.`;
   }
 
   // Digital Twin & What-If simulation inquiry
   if (q.includes('simulate') || q.includes('what if') || q.includes('scenario') || q.includes('twin')) {
-    return `Head over to the Analytics tab to test out the Financial Digital Twin! You can simulate income changes, rent adjustments, spending cuts, or major purchases with real-time feedback and zero mutation of your records.`;
+    return tag + `Head over to the Analytics tab to test out the Financial Digital Twin! You can simulate income changes, rent adjustments, spending cuts, or major purchases with real-time feedback and zero mutation of your records.`;
   }
 
   // --- General conversation fallbacks ---
 
   // Greetings
   if (/\b(hey|hi|hello|what'?s\s*up|howdy|yo)\b/i.test(q)) {
-    return `Hey! 👋 I'm Vaultly AI. What's on your mind? We can check your spending, brainstorm an idea, learn something new, or just chat.`;
+    return tag + `Hey! 👋 I'm Vaultly AI. What's on your mind? We can check your spending, brainstorm an idea, learn something new, or just chat.`;
   }
 
   // Bank account inquiry
   if (q.includes('bank') && (q.includes('account') || q.includes('balance') || q.includes('how much'))) {
-    return "Vaultly is privacy-first and keeps everything stored client-side on your device, so I can't peek into your live bank account. You can log income, expenses, and account transfers right here anytime!";
+    return tag + "Vaultly is privacy-first and keeps everything stored client-side on your device, so I can't peek into your live bank account. You can log income, expenses, and account transfers right here anytime!";
   }
 
   // User correction
   if (q.includes('no, i meant') || q.includes('i meant') || q.includes('not what i asked') || q.includes('that is wrong')) {
-    return "Ah, my bad! Apologies for the confusion. Could you clarify what you'd like to explore instead? I'm all ears!";
+    return tag + "Ah, my bad! Apologies for the confusion. Could you clarify what you'd like to explore instead? I'm all ears!";
   }
 
-  // Check if the message looks finance-related (even if not caught above)
+  // Check if the message looks finance-related
   if (FINANCE_KEYWORDS.some(keyword => q.includes(keyword))) {
-    return `Here's a quick look at your numbers: Total Income is ${formatINR(totals.totalIncome)}, Total Expenses are ${formatINR(totals.totalExpenses)}, leaving a Net Balance of ${formatINR(totals.netBalance)}. Feel free to ask about your top categories, spending habits, or safe daily spend!`;
+    return tag + `Here's a quick look at your numbers: Total Income is ${formatINR(totals.totalIncome)}, Total Expenses are ${formatINR(totals.totalExpenses)}, leaving a Net Balance of ${formatINR(totals.netBalance)}. Feel free to ask about your top categories, spending habits, or safe daily spend!`;
   }
 
   // General fallback for non-finance questions
-  return `I'm currently running in offline mode without an AI key connected. For open-ended conversation on any topic, configure GEMINI_API_KEY or OPENAI_API_KEY in your environment. I can still help with your Vaultly finances anytime though — ask about your spending, budgets, or savings goals!`;
+  return tag + `I'm currently running in offline mode without server AI credentials configured. For open-ended conversation on any topic, configure GEMINI_API_KEY or OPENAI_API_KEY in your server environment. I can still answer questions about your Vaultly numbers anytime!`;
 }
 
 /**
@@ -160,17 +168,56 @@ function createFinancialTools(context, z, tool) {
 
   const transactions = Array.isArray(context.recentTransactions) ? context.recentTransactions : [];
   const budgets = Array.isArray(context.budgets) ? context.budgets : [];
+  const goals = Array.isArray(context.goals) ? context.goals : [];
 
   return {
-    queryTransactions: tool({
-      description: 'Search or filter recent transactions by category, type (income/expense), or amount',
+    getSpendingSummary: tool({
+      description: 'Get total income, expenses, net balance, and transaction count for a specific period (this_month, last_month, or all_time)',
       parameters: z.object({
-        category: z.string().optional().describe('Filter by category (e.g. Food & Dining, Shopping, Transport)'),
+        period: z.enum(['this_month', 'last_month', 'all_time']).describe('The time period to query')
+      }),
+      execute: async ({ period }) => {
+        if (period === 'last_month' && context.lastMonthTotals) {
+          return { period: 'last_month', ...context.lastMonthTotals };
+        }
+        if (period === 'this_month' && context.thisMonthTotals) {
+          return { period: 'this_month', ...context.thisMonthTotals };
+        }
+        return { period: 'all_time', ...(context.totals || {}) };
+      }
+    }),
+
+    getCategoryBreakdown: tool({
+      description: 'Get category spending breakdown, percentages, and largest expense for a period',
+      parameters: z.object({
+        period: z.enum(['this_month', 'last_month', 'all_time']).optional().describe('Period: this_month, last_month, or all_time')
+      }),
+      execute: async ({ period = 'this_month' }) => {
+        let list = context.breakdown || [];
+        if (period === 'last_month' && context.lastMonthBreakdown) {
+          list = context.lastMonthBreakdown;
+        } else if (period === 'this_month' && context.thisMonthBreakdown) {
+          list = context.thisMonthBreakdown;
+        }
+        const top = list[0] || null;
+        return {
+          period,
+          topCategory: top ? `${top.category} (₹${top.total}, ${top.percentage}%)` : 'None',
+          categories: list.slice(0, 8)
+        };
+      }
+    }),
+
+    queryTransactions: tool({
+      description: 'Search or filter recent transactions by category, type (income/expense), amount, or query',
+      parameters: z.object({
+        category: z.string().optional().describe('Filter by category (e.g. Food & Dining, Shopping, Transport, Bills)'),
         type: z.enum(['income', 'expense']).optional().describe('Transaction type'),
         minAmount: z.number().optional().describe('Minimum monetary amount'),
-        maxAmount: z.number().optional().describe('Maximum monetary amount')
+        maxAmount: z.number().optional().describe('Maximum monetary amount'),
+        query: z.string().optional().describe('Keyword search in title or merchant name')
       }),
-      execute: async ({ category, type, minAmount, maxAmount }) => {
+      execute: async ({ category, type, minAmount, maxAmount, query }) => {
         let results = transactions;
         if (category) {
           results = results.filter(t => t.category && t.category.toLowerCase().includes(category.toLowerCase()));
@@ -184,8 +231,12 @@ function createFinancialTools(context, z, tool) {
         if (typeof maxAmount === 'number') {
           results = results.filter(t => t.amount <= maxAmount);
         }
+        if (query) {
+          const qLower = query.toLowerCase();
+          results = results.filter(t => (t.title && t.title.toLowerCase().includes(qLower)) || (t.notes && t.notes.toLowerCase().includes(qLower)));
+        }
         return {
-          count: results.length,
+          matchCount: results.length,
           transactions: results.slice(0, 10).map(t => ({
             title: t.title,
             amount: t.amount,
@@ -198,7 +249,7 @@ function createFinancialTools(context, z, tool) {
     }),
 
     checkBudget: tool({
-      description: 'Check configured budget limit and current spending for a specific category',
+      description: 'Check configured budget limit, current spending, and status for a specific category',
       parameters: z.object({
         category: z.string().describe('The category name to check')
       }),
@@ -212,6 +263,21 @@ function createFinancialTools(context, z, tool) {
           category: found.category,
           limit: found.limit,
           message: `Budget for ${found.category} is ₹${found.limit}.`
+        };
+      }
+    }),
+
+    getFinancialHealth: tool({
+      description: 'Get the verified Financial Health Score (0-100), health tier, active goals, and anomalies',
+      parameters: z.object({}),
+      execute: async () => {
+        return {
+          healthScore: context.healthScore,
+          healthTier: context.healthTier,
+          anomalyCount: context.anomalyCount || 0,
+          budgetCount: budgets.length,
+          goalCount: goals.length,
+          goals: goals.map(g => ({ title: g.title, target: g.targetAmount, current: g.currentAmount }))
         };
       }
     })
@@ -253,56 +319,63 @@ module.exports = async function handler(req, res) {
     req.headers['x-vaultly-stream'] === 'true' || 
     (typeof req.headers.accept === 'string' && req.headers.accept.includes('text/event-stream'));
 
-  // Normalize and limit conversation history to last 20 messages
+  // Normalize conversation history
   const conversationHistory = Array.isArray(history) ? history.slice(-20) : [];
 
-  // 4. Check for API keys
-  const geminiKey = process.env.GEMINI_API_KEY || req.body?.geminiKey;
+  // 4. Server-Only API Keys (Zero client key acceptance)
+  const geminiKey = process.env.GEMINI_API_KEY;
   const openaiKey = process.env.OPENAI_API_KEY;
 
-  // Determine if conversation is finance-related
+  // Determine if conversation involves finance or tools
   const financeMode = isFinanceRelated(trimmedMessage, conversationHistory);
 
-  // Build system prompt — general-purpose with conditional finance context
+  // Build rich system prompt with deep conversational awareness & anaphoric memory
   const totals = context?.totals || { totalIncome: 0, totalExpenses: 0, netBalance: 0 };
   const topCat = (context?.breakdown && context.breakdown[0]) ? context.breakdown[0] : null;
 
-  let systemInstructions = `You are Vaultly AI, a friendly, intelligent, and versatile conversational assistant.
-Tone & Personality:
-- Be casual, warm, and natural — talk like a sharp, helpful friend, never like a stiff corporate bot or dry textbook.
-- Use natural conversational phrasing and contractions (I'm, you're, let's, don't).
-- Keep casual chatter lightweight and snappy. Save detailed explanations for when the user genuinely asks for them.
-- Avoid robotic clichés like "As an AI...", "Certainly!", "I am here to assist you with...", or "According to verified records...".
+  let systemInstructions = `You are Vaultly AI, an intelligent, conversational, and highly perceptive assistant.
 
-Capabilities & Context:
-- You can help with any topic: casual talk, learning, coding, writing, debugging, planning, and brainstorming.
-- You ALSO have access to the user's personal finance data in Vaultly when they want to talk money.
-- When the user asks about their finances, spending, budgets, or goals, use the verified financial context provided below in an encouraging, clear, and approachable way.
-- For general questions (coding, science, jokes, advice), answer directly and naturally without forcing financial topics.
-- If asked about live bank accounts, explain casually that Vaultly is privacy-first and keeps everything client-side on their device, so it doesn't connect directly to external banks without an official integration.
-- Maintain context across follow-up questions, understanding pronouns ("it", "that", "the last one") and references to earlier messages.
-- If the user corrects you, acknowledge it gracefully: "Good catch!", "My bad!", etc.
-- Never invent financial data. When financial context is provided, cite exact numbers.
-- Adapt your response style to what the user needs — quick and friendly for casual chat, structured and clear for complex questions.`;
+Persona & Communication Style:
+- Sound natural, friendly, sharp, and concise — like a knowledgeable friend.
+- Avoid robotic preamble like "Certainly!", "As an AI...", "According to your records...", or "I would be happy to assist you with...".
+- Answer the user's question directly in the very first sentence.
+- Use formatting (bullet points, bold highlights, mini-tables) when comparing data or presenting lists.
+- Keep general chitchat snappy; save deep explanations for when requested.
 
-  // Conditionally append financial context only when relevant
-  if (financeMode && context) {
+Conversational Context & Memory:
+- Maintain full context across multi-turn exchanges. Resolve references like:
+  * "It", "that", "the previous one" -> Refer to the specific expense/income/topic discussed in previous turns.
+  * "What about last month?" -> Immediately query or discuss last month's figures.
+  * "Which category was highest?" -> Resolve against the relevant period discussed.
+  * "How much on food?" -> Focus on Food & Dining.
+- Gracefully handle typos, fragments, and informal language (e.g. "hw mch spnt", "spent 250 on lunch", "salary 50k received").
+- Do not force every conversation into personal finance. If the user asks about coding, physics, cooking, or general advice, answer directly without mentioning expenses.
+
+Financial Data & Tool Grounding:
+- You have access to real financial data through context and tools.
+- NEVER invent, guess, or hallucinate transactions, balances, or numbers.
+- When numbers are asked, cite exact figures formatted with ₹ (INR).
+- If financial data for a specific inquiry is not recorded or unavailable, clearly state so.
+
+Transaction Intent & Pre-filling:
+- When the user expresses intent to record a transaction (e.g. "I spent 250 on lunch", "Received 30000 salary yesterday"):
+  1. Identify amount, category, type (income/expense), and date.
+  2. Clearly confirm the details back to the user.
+  3. Inform them that the entry is pre-filled for their review and ask for their confirmation before saving.
+  4. Never state that a transaction was committed to the database without explicit user confirmation.`;
+
+  if (context) {
     systemInstructions += `
 
-The user's verified financial data (use exact numbers, never invent):
+Current Financial Context Snapshot:
 - Total Income: ₹${totals.totalIncome || 0}
 - Total Expenses: ₹${totals.totalExpenses || 0}
 - Net Balance: ₹${totals.netBalance || 0}
 - Top Category: ${topCat ? `${topCat.category} (₹${topCat.total}, ${topCat.percentage}%)` : 'None'}
 - Total Transactions: ${context?.transactionCount || 0}
 - Active Budgets: ${context?.budgetCount || 0}
-- Active Goals: ${context?.goalCount || 0}${context?.healthScore !== undefined ? `\n- Financial Health Score: ${context.healthScore}/100 (${context.healthTier || 'Evaluated'})` : ''}${context?.topDriver ? `\n- Key Spending Shift Driver: ${context.topDriver}` : ''}${context?.anomalyCount !== undefined ? `\n- Flagged Anomalies/Duplicates: ${context.anomalyCount}` : ''}
-
-Rules for financial responses:
-1. NEVER invent, guess, or hallucinate transactions or numbers that are not in the context.
-2. If the user asks how much they spent, reference the exact Total Expenses ₹${totals.totalExpenses || 0}.
-3. Always format currency using the ₹ symbol.
-4. If the user expresses intent to record a transaction (e.g., "spent 200 on coffee"), confirm the details and mention that it has been pre-filled for their review.`;
+- Active Goals: ${context?.goalCount || 0}${context?.healthScore !== undefined ? `\n- Financial Health Score: ${context.healthScore}/100 (${context.healthTier || 'Evaluated'})` : ''}${context?.anomalyCount !== undefined ? `\n- Flagged Anomalies: ${context.anomalyCount}` : ''}
+${context?.lastMonthTotals ? `- Last Month: Income ₹${context.lastMonthTotals.totalIncome || 0}, Expenses ₹${context.lastMonthTotals.totalExpenses || 0}, Balance ₹${context.lastMonthTotals.netBalance || 0}` : ''}`;
   }
 
   // 5. Attempt Vercel AI SDK Core Execution (Gemini -> OpenAI)
@@ -317,7 +390,7 @@ Rules for financial responses:
         if (msg && msg.content && (msg.role === 'user' || msg.role === 'assistant')) {
           messages.push({
             role: msg.role,
-            content: msg.content
+            content: msg.content.replace(/^\[Offline Mode[^\]]*\]\s*/i, '') // strip offline prefix from history
           });
         }
       }
@@ -326,8 +399,8 @@ Rules for financial responses:
         content: trimmedMessage
       });
 
-      // Initialize tools if financial context is present
-      const tools = financeMode ? createFinancialTools(context, z, tool) : undefined;
+      // Provide in-memory financial tools whenever context is available
+      const tools = context ? createFinancialTools(context, z, tool) : undefined;
 
       // Primary: Google Gemini via @ai-sdk/google
       let modelInstance = null;
@@ -364,8 +437,8 @@ Rules for financial responses:
             system: systemInstructions,
             messages,
             tools,
-            maxSteps: tools ? 2 : 1,
-            temperature: 0.7
+            maxSteps: tools ? 3 : 1,
+            temperature: 0.65
           });
 
           res.setHeader('Content-Type', 'text/plain; charset=utf-8');
@@ -379,8 +452,8 @@ Rules for financial responses:
             system: systemInstructions,
             messages,
             tools,
-            maxSteps: tools ? 2 : 1,
-            temperature: 0.7
+            maxSteps: tools ? 3 : 1,
+            temperature: 0.65
           });
 
           if (result && result.text) {
@@ -393,7 +466,7 @@ Rules for financial responses:
         }
       }
     } catch (sdkError) {
-      console.warn('[Vaultly AI SDK] Error during SDK execution, using deterministic fallback:', sdkError.message);
+      console.warn('[Vaultly AI SDK] SDK execution error, using deterministic fallback:', sdkError.message);
     }
   }
 
